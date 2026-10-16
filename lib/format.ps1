@@ -9,6 +9,17 @@ function Format-Span([datetime]$endUtc) {
     return ((T 'span.m') -f $span.Minutes)
 }
 
+# Reset as a clock time: "03:20" today, "tmrw 01:00" tomorrow, "Sun 01:49" further off.
+function Format-ResetClock([datetime]$at) {
+    $at = $at.ToLocalTime()
+    $hm = $at.ToString('HH:mm')
+    $days = ($at.Date - (Get-Date).Date).Days
+    if ($days -le 0) { return $hm }
+    if ($days -eq 1) { return ((T 'clock.tmrw') -f $hm) }
+    $c = [System.Globalization.CultureInfo]::GetCultureInfo($(if ((Get-Lang) -eq 'ru') { 'ru-RU' } else { 'en-US' }))
+    return $at.ToString('ddd ', $c) + $hm
+}
+
 function Get-Level([double]$pct) {
     if ($pct -ge $script:Cfg.critPercent) { return 'crit' }
     if ($pct -ge $script:Cfg.warnPercent) { return 'warn' }

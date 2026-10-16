@@ -285,6 +285,7 @@ are picked up on the fly, no restart needed.
 | `scale` | window scale, 0.6–4.0 (default 1.35; also "Larger" / "Smaller" in the tray menu) |
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |
+| `trayResetClock` | tray tooltip shows resets as clock times (`5h: 36% (resets 03:20)`, `7d: 81% (resets tmrw 01:00)`) instead of a countdown |
 | `warnPercent` / `critPercent` | yellow and red thresholds |
 | `expanded` | details expanded |
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |

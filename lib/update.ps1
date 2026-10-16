@@ -125,12 +125,29 @@ function Update-Widget {
 
         Set-TrayIcon "$pct" $Palette[$level].Drawing
         # NotifyIcon.Text is hard-limited to 63 characters - otherwise an exception.
-        $tip = (T 'tray.session') -f $pct
-        if ($resetSpan) { $tip += " · $resetSpan" }
-        $tip2 = @()
-        if ($null -ne $real.week)  { $tip2 += (T 'tray.week') -f $real.week }
-        if ($null -ne $real.fable) { $tip2 += "Fable $($real.fable)%" }
-        if ($tip2.Count) { $tip += "`n" + ($tip2 -join ' · ') }
+        if ($script:Cfg.trayResetClock) {
+            # One line per limit with the reset as a clock time; Fable only if it fits.
+            $rows = @()
+            foreach ($r in @(@('tray.clock.session', $pct, $real.sessionReset),
+                             @('tray.clock.week', $real.week, $real.weekReset),
+                             @('tray.clock.fable', $real.fable, $real.fableReset))) {
+                if ($null -eq $r[1]) { continue }
+                $row = (T $r[0]) -f $r[1]
+                if ($r[2]) { $row += (T 'tray.clock.resets') -f (Format-ResetClock $r[2]) }
+                $rows += $row
+            }
+            $tip = $rows[0]
+            for ($i = 1; $i -lt $rows.Count; $i++) {
+                if (($tip + "`n" + $rows[$i]).Length -le 63) { $tip += "`n" + $rows[$i] }
+            }
+        } else {
+            $tip = (T 'tray.session') -f $pct
+            if ($resetSpan) { $tip += " · $resetSpan" }
+            $tip2 = @()
+            if ($null -ne $real.week)  { $tip2 += (T 'tray.week') -f $real.week }
+            if ($null -ne $real.fable) { $tip2 += "Fable $($real.fable)%" }
+            if ($tip2.Count) { $tip += "`n" + ($tip2 -join ' · ') }
+        }
         if ($tip.Length -gt 63) { $tip = $tip.Substring(0, 63) }
         $notify.Text = $tip
     }

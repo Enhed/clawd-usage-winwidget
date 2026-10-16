@@ -34,6 +34,11 @@ $Strings = @{
     'tray.noData'    = 'clawd-usage-winwidget: no data'
     'tray.session'   = '{0}% of session'
     'tray.week'      = 'week {0}%'
+    'tray.clock.session' = '5h: {0}%'
+    'tray.clock.week'    = '7d: {0}%'
+    'tray.clock.fable'   = 'Fable: {0}%'
+    'tray.clock.resets'  = ' (resets {0})'
+    'clock.tmrw'     = 'tmrw {0}'
 
     'sess.none'      = 'none running'
     'sess.busy'      = '{0} working'
@@ -331,6 +336,11 @@ $Strings = @{
     'tray.noData'    = 'clawd-usage-winwidget: нет данных'
     'tray.session'   = '{0}% сессии'
     'tray.week'      = 'неделя {0}%'
+    'tray.clock.session' = '5ч: {0}%'
+    'tray.clock.week'    = '7д: {0}%'
+    'tray.clock.fable'   = 'Fable: {0}%'
+    'tray.clock.resets'  = ' (сброс {0})'
+    'clock.tmrw'     = 'завтра {0}'
 
     'sess.none'      = 'не запущено'
     'sess.busy'      = '{0} в работе'
