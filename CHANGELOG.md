@@ -6,7 +6,7 @@
   left among its temp files (an unpacked update) - deleting it asked a
   question nobody could see. The update now also cleans up after itself.
 
-## 1.4.0
+## 1.4.0 (withdrawn - could hang at start; use 1.4.1)
 
 - **The widget tells about its own updates:** once an hour it asks GitHub for the
   latest release. A new one turns the version in the corner into a yellow
