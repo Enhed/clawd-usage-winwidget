@@ -17,7 +17,7 @@ Add-Type -Namespace Win32 -Name IconUtil -MemberDefinition @'
 '@
 
 # The widget's own version; what changed in each one - CHANGELOG.md.
-$WidgetVersion = '1.4.0'
+$WidgetVersion = '1.4.1'
 
 $script:Root       = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:ConfigPath = Join-Path $script:Root 'config.json'
@@ -47,8 +47,10 @@ try {
 if (-not $isNew) { exit 0 }
 
 # Probe outputs are named by PID (cuw-usage-<pid>.txt and so on): those of earlier
-# runs are of no use to anyone - only one copy runs at a time.
-Remove-Item (Join-Path $env:TEMP 'cuw-*') -Force -ErrorAction SilentlyContinue
+# runs are of no use to anyone - only one copy runs at a time. -Recurse: an
+# unpacked update is a folder, and without it Remove-Item asks about its contents -
+# in a hidden window that question waits forever.
+Remove-Item (Join-Path $env:TEMP 'cuw-*') -Recurse -Force -Confirm:$false -ErrorAction SilentlyContinue
 
 # Modules are dot-sourced into the shared script scope: order matters, each one
 # relies on the variables and functions of the previous ones.

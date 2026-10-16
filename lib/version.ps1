@@ -265,6 +265,7 @@ function Collect-ClawdUpdate {
     $cmd = "Wait-Process -Id $PID -ErrorAction SilentlyContinue; " +
            "try { Copy-Item -Path (Join-Path $(& $q $src.FullName) '*') -Destination $(& $q $script:Root) -Recurse -Force -ErrorAction Stop } " +
            "catch { ('update: ' + `$_.Exception.Message) | Out-File $(& $q $log) -Append -Encoding utf8 }; " +
+           "Remove-Item -LiteralPath $(& $q $d.dir), $(& $q $d.zip) -Recurse -Force -Confirm:`$false -ErrorAction SilentlyContinue; " +
            "Start-Process wscript.exe -ArgumentList $(& $q ('"' + (Join-Path $script:Root 'start-widget.vbs') + '"'))"
     $enc = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
     Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -WindowStyle Hidden -ArgumentList '-NoProfile', '-EncodedCommand', $enc

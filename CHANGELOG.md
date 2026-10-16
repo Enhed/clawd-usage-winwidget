@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1
+
+- Fixed: the widget could hang at start, without a window, when a folder was
+  left among its temp files (an unpacked update) - deleting it asked a
+  question nobody could see. The update now also cleans up after itself.
+
 ## 1.4.0
 
 - **The widget tells about its own updates:** once an hour it asks GitHub for the
