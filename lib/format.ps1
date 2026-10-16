@@ -1,0 +1,28 @@
+﻿# ------------------------------------------------------------ formatters ----
+
+function Format-Span([datetime]$endUtc) {
+    $span = $endUtc.ToUniversalTime() - [datetime]::UtcNow
+    if ($span.TotalSeconds -le 0) { return $null }
+    if ($span.TotalHours -ge 24) { return ((T 'span.d') -f $span.Days, $span.Hours) }
+    # [int] in PowerShell rounds rather than truncates - Floor is what we need here.
+    if ($span.TotalHours -ge 1)  { return ((T 'span.h') -f [math]::Floor($span.TotalHours), $span.Minutes) }
+    return ((T 'span.m') -f $span.Minutes)
+}
+
+function Get-Level([double]$pct) {
+    if ($pct -ge $script:Cfg.critPercent) { return 'crit' }
+    if ($pct -ge $script:Cfg.warnPercent) { return 'warn' }
+    return 'ok'
+}
+
+$Palette = @{
+    ok   = @{ Wpf = '#FF4ADE80'; Drawing = [System.Drawing.Color]::FromArgb(74,222,128) }
+    warn = @{ Wpf = '#FFFBBF24'; Drawing = [System.Drawing.Color]::FromArgb(251,191,36) }
+    crit = @{ Wpf = '#FFF87171'; Drawing = [System.Drawing.Color]::FromArgb(248,113,113) }
+    dead = @{ Wpf = '#FF6B7280'; Drawing = [System.Drawing.Color]::FromArgb(107,114,128) }
+}
+
+function New-Brush([string]$hex) {
+    return New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString($hex))
+}
