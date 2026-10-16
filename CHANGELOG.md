@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.2
+
+- Fixed: looking a task up by name found every task - removing one from the chat
+  (`task-remove`) would have removed them all, Allow could write to the wrong
+  task, and a queued run could start the wrong one.
+- "Run now" while another task runs queues it ("queued") instead of hiding the
+  button on every task.
+- An empty answer is retried once on the chat model before it counts as a failure.
+- Each task is a card of its own, with its links right under the name and the
+  reports below them.
+- `tools\tasks-test.ps1`, run by `smoke.ps1`: the task queue, the retry and
+  removing one task, without calling Claude.
+
 ## 1.5.1
 
 - **A task refused a permission says so:** the chat shows a card with the missing

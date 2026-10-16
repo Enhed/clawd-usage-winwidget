@@ -208,14 +208,17 @@ function New-RemCard($r) {
 $script:TaskOpen = $null   # the task whose reports are shown
 
 # A recurring task: name, how often, when it last ran; run now, pause, open the file.
-# A click on the line shows its latest reports.
+# A click on the name shows its latest reports, under the links.
 function New-TaskRow($t, $st) {
+    # A card of its own, like a reminder: the links clearly belong to this task.
+    $card = New-PanelCard '#FF26262C'
     $box = New-Object System.Windows.Controls.StackPanel
-    $box.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
     $info = @($(if ($t.every) { Format-TaskEvery $t.every } else { T 'task.badEvery' }))
     if ($t.hours) { $info += "$($t.hours[0])-$($t.hours[1])" }
     $running = ($script:TaskProc -and $script:TaskProc.task.name -eq $t.name)
+    $queued = $script:TaskQueue.Contains($t.name)
     if ($running) { $info += T 'task.running' }
+    elseif ($queued) { $info += T 'task.queued' }
     elseif ($st -and $st.last -ne [datetime]::MinValue) { $info += (T 'task.last') -f (Format-RemindTime $st.last) }
     if ($t.paused) { $info += T 'task.paused' }
     $wait = Get-TaskBudgetWait $t
@@ -235,27 +238,12 @@ function New-TaskRow($t, $st) {
         Update-Panel
     })
     [void]$box.Children.Add($line)
-    if ($open) {
-        $hist = @($(if ($st) { $st.history }) | Where-Object { $_ })
-        if ($st -and $st.error) { $hist += @{ at = $st.last; text = (T 'task.lastError') -f $st.error; bad = $true } }
-        if (-not $hist.Count) {
-            $none = New-PanelText (T 'task.noReports') 9.5 '#FF6B7280'
-            $none.Margin = New-Object System.Windows.Thickness 12, 2, 0, 2
-            [void]$box.Children.Add($none)
-        }
-        # Newest first.
-        foreach ($h in @($hist | Sort-Object { $_.at } -Descending)) {
-            $r = New-PanelText "$(Format-RemindTime $h.at)  $([char]0x00B7)  $($h.text)" 9.5 $(if ($h.bad) { $Palette.warn.Wpf } else { '#FF8B8B94' })
-            $r.Margin = New-Object System.Windows.Thickness 12, 2, 0, 2
-            [void]$box.Children.Add($r)
-        }
-    }
     $row = New-Object System.Windows.Controls.StackPanel
     $row.Orientation = 'Horizontal'
-    $row.Margin = New-Object System.Windows.Thickness 0, 1, 0, 0
-    if (-not $running -and -not $script:TaskProc) {
+    $row.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
+    if (-not $running -and -not $queued) {
         [void]$row.Children.Add((New-PanelLink (T 'task.now') '#FF60A5FA' $t {
-            param($s, $e); $e.Handled = $true; Start-TaskRun $s.Tag; $script:RemKey = $null; Update-Panel }))
+            param($s, $e); $e.Handled = $true; Request-TaskRun $s.Tag; $script:RemKey = $null; Update-Panel }))
     }
     [void]$row.Children.Add((New-PanelLink $(if ($t.paused) { T 'task.resume' } else { T 'task.pause' }) '#FF8B8B94' $t {
         param($s, $e); $e.Handled = $true; Set-TaskPaused $s.Tag (-not $s.Tag.paused); Update-Panel }))
@@ -264,7 +252,23 @@ function New-TaskRow($t, $st) {
     [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $t {
         param($s, $e); $e.Handled = $true; [void](Remove-TaskFile $s.Tag.name); Update-Panel }))
     [void]$box.Children.Add($row)
-    return $box
+    if ($open) {
+        $hist = @($(if ($st) { $st.history }) | Where-Object { $_ })
+        if ($st -and $st.error) { $hist += @{ at = $st.last; text = (T 'task.lastError') -f $st.error; bad = $true } }
+        if (-not $hist.Count) {
+            $none = New-PanelText (T 'task.noReports') 9.5 '#FF6B7280'
+            $none.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
+            [void]$box.Children.Add($none)
+        }
+        # Newest first.
+        foreach ($h in @($hist | Sort-Object { $_.at } -Descending)) {
+            $r = New-PanelText "$(Format-RemindTime $h.at)  $([char]0x00B7)  $($h.text)" 9.5 $(if ($h.bad) { $Palette.warn.Wpf } else { '#FF8B8B94' })
+            $r.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
+            [void]$box.Children.Add($r)
+        }
+    }
+    $card.Child = $box
+    return $card
 }
 
 function Update-RemindPage {
@@ -274,7 +278,7 @@ function Update-RemindPage {
     $tst = Load-TaskState
     $key = (Get-Lang) + '|' + (@($rem | ForEach-Object { "$($_.path)$($_.at.Ticks)" }) -join ',') + '|' +
            (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.paused)$(if ($tst[$_.name]) { $tst[$_.name].last.Ticks })" }) -join ',') +
-           "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|$($script:TaskOpen)|" +
+           "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|$($script:TaskQueue -join ',')|$($script:TaskOpen)|" +
            (@($tasks | ForEach-Object { Get-TaskBudgetWait $_ }) -join ',') + '|' +
            (@($done | ForEach-Object { "$($_.at.Ticks)$($_.text)" }) -join ',') + "|$($script:RemEdit.path)|" +
            [int]((Get-Date) - [datetime]::Today).TotalMinutes    # "in 2 h" goes stale

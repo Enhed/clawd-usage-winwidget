@@ -106,7 +106,7 @@ function Get-DeniedRule($d) {
 function Grant-TaskRules($msg) {
     $g = $msg.grant
     if (-not $g -or $g.state -ne 'pending') { return }
-    $t = Get-Tasks | Where-Object { $_.name -eq $g.task } | Select-Object -First 1
+    $t = Find-Task $g.task
     if (-not $t) { $g.state = 'gone'; Save-Chat; Update-Panel; return }
     $all = @($t.tools) + @($g.rules | Where-Object { $t.tools -notcontains $_ })
     try {
@@ -128,6 +128,14 @@ function Grant-TaskRules($msg) {
 
 function Set-TaskGrantState($msg, [string]$state) {
     if ($msg.grant -and $msg.grant.state -eq 'pending') { $msg.grant.state = $state; Save-Chat; Update-Panel }
+}
+
+# One task by name. Get-Tasks hands its list over as one object (so an empty or
+# one-item list stays a list): piped as is, Where-Object would see the whole list
+# and "find" every task - always unroll it first.
+function Find-Task([string]$name) {
+    foreach ($t in (Get-Tasks)) { if ($t.name -eq $name) { return $t } }
+    return $null
 }
 
 function Test-TaskHours($t) {
@@ -152,7 +160,7 @@ function New-TaskFile([string]$name, [hashtable]$head, [string]$prompt) {
 }
 
 function Remove-TaskFile([string]$name) {
-    $t = Get-Tasks | Where-Object { $_.name -eq $name.Trim() } | Select-Object -First 1
+    $t = Find-Task $name.Trim()
     if (-not $t) { return $null }
     try { Remove-Item -LiteralPath $t.path -Force } catch { return $null }
     $st = Load-TaskState
@@ -199,7 +207,19 @@ function Save-TaskState($st) {
     Save-JsonFile $TasksStatePath $o
 }
 
-function Start-TaskRun($t) {
+$script:TaskQueue = New-Object System.Collections.ArrayList   # names asked to run now, in order
+
+# "Run now": at once if nothing runs, otherwise after the running one.
+function Request-TaskRun($t) {
+    if ($script:TaskProc) {
+        if ($script:TaskProc.task.name -ne $t.name -and -not $script:TaskQueue.Contains($t.name)) { [void]$script:TaskQueue.Add($t.name) }
+        return
+    }
+    Start-TaskRun $t
+}
+
+# $model - instead of the task's own (the retry after an empty answer).
+function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
     if ($script:TaskProc -or -not $t.prompt) { return }
     $st = Load-TaskState
     $prev = $st[$t.name]
@@ -220,7 +240,7 @@ function Start-TaskRun($t) {
         $text = (Get-ChatContext) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt
         [System.IO.File]::WriteAllText($in, $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
-        $model = $(if ($t.model) { $t.model } else { [string]$script:Cfg.quickModel })
+        if (-not $model) { $model = $(if ($t.model) { $t.model } else { [string]$script:Cfg.quickModel }) }
         $argv = @('-p', '--output-format', 'json', '--model', $model,
                   '--permission-mode', 'default', '--no-session-persistence',
                   '--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
@@ -231,7 +251,7 @@ function Start-TaskRun($t) {
                  -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err `
                  -WindowStyle Hidden -PassThru
         [void]$p.Handle
-        $script:TaskProc = @{ proc = $p; out = $out; err = $err; at = Get-Date; task = $t }
+        $script:TaskProc = @{ proc = $p; out = $out; err = $err; at = Get-Date; task = $t; retry = [bool]$Retry }
     } catch {
         Set-TaskResult $t $null $_.Exception.Message
     }
@@ -310,7 +330,12 @@ function Collect-TaskRun {
         $need = @($j.permission_denials | Where-Object { $_ } | ForEach-Object { Get-DeniedRule $_ })
         # No words at all is not "nothing to say" (that is NOTHING): the model stopped
         # without an answer - a failure, so it shows on the task and is not mistaken for quiet.
-        if (-not ([string]$j.result).Trim() -and -not $need.Count) { Set-TaskResult $c.task $null (T 'task.empty') }
+        # A small model now and then stops after its tool calls without a word: one
+        # more go with the chat's model before calling it a failure.
+        if (-not ([string]$j.result).Trim() -and -not $need.Count) {
+            if (-not $c.retry) { Start-TaskRun $c.task ([string]$script:Cfg.chatModel) -Retry }
+            if (-not $script:TaskProc) { Set-TaskResult $c.task $null (T 'task.empty') }
+        }
         else { Set-TaskResult $c.task ([string]$j.result) '' $need }
     } else {
         $why = ''
@@ -340,6 +365,13 @@ function Get-TaskBudgetWait($t) {
 function Update-Tasks {
     Collect-TaskRun
     if (-not $script:Cfg.showTasks -or $script:TaskProc) { return }
+    # Asked by hand first, whatever the schedule and the usage say.
+    while ($script:TaskQueue.Count) {
+        $name = $script:TaskQueue[0]
+        $script:TaskQueue.RemoveAt(0)
+        $t = Find-Task $name
+        if ($t) { Start-TaskRun $t; if ($script:TaskProc) { return } }
+    }
     $st = Load-TaskState
     $now = Get-Date
     foreach ($t in (Get-Tasks)) {

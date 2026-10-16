@@ -10,12 +10,14 @@
     update    self-update.ps1 replaces an older copy with the working tree and
               the new version comes up;
     rollback  self-update.ps1 installs a version that hangs at start, and the
-              old one comes back with the failed version in update-state.json.
+              old one comes back with the failed version in update-state.json;
+    tasks     tools/tasks-test.ps1: the task queue, the retry after an empty
+              answer, finding and removing one task (no Claude calls).
 
   powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 [-Cases start,update]
   Exit code 0 - all passed.
 #>
-param([string[]]$Cases = @('start', 'update', 'rollback'))
+param([string[]]$Cases = @('start', 'update', 'rollback', 'tasks'))
 
 $ErrorActionPreference = 'Stop'
 $Repo  = Split-Path -Parent $PSScriptRoot
@@ -146,6 +148,11 @@ foreach ($case in $Cases) {
                     elseif (-not $up)                  { Report $case $false 'the old widget did not come back' }
                     else                               { Report $case $true '' }
                 }
+            }
+            'tasks' {
+                $out = & $Shell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'tasks-test.ps1') 2>&1
+                if ($LASTEXITCODE -eq 0) { Report $case $true '' }
+                else { Report $case $false (($out | Where-Object { "$_" -match 'FAIL' }) -join ' | ') }
             }
             default { Report $case $false 'unknown case' }
         }
