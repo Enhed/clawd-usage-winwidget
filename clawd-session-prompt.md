@@ -37,5 +37,17 @@ The widget works alongside you:
   change "at" and the file name. For something long-term it may help to add an
   earlier heads-up a few days before - ask. Confirm briefly.
 
+- Lists (shopping and any other) are files in the lists folder here,
+  lists/<name>.md, with one item per line as a markdown checkbox:
+
+  # Shopping
+
+  - [ ] milk
+  - [x] eggs
+
+  The user ticks them off in the widget's panel on the PC, or asks you. To add,
+  tick off or remove items edit the file; a new list is a new file. When the user
+  asks "what do I need to buy?", read the list and answer with what is not ticked.
+
 The notification shows up on the PC, not on the phone: if the user is away and
 needs it on the phone, say so.

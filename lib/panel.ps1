@@ -1,5 +1,6 @@
 ﻿# ----------------------------------------------------------------- panel ----
-# Clawd's panel: a small window beside the widget with the tips and the chat.
+# Clawd's panel: a small window beside the widget with the tips and the chat
+# (the reminders and lists tabs are in panel-pages.ps1).
 # Opened and closed by the icon in the header (or its cross), stays open otherwise. The icon tells what
 # is waiting: a bell - a reminder went off, a blue chat - Clawd answered, a lamp
 # with a number - tips, a grey chat - nothing, just talk.
@@ -242,9 +243,19 @@ function Update-PanelBusy {
                           else { '' })
 }
 
-# Rebuilt only when something changed - a tick must not reset hover and scroll.
+# The open tab is brought up to date; the others wait until they are opened.
 function Update-Panel([switch]$Force) {
     Update-PanelBusy
+    Update-PanelTabs
+    switch ($script:PanelTab) {
+        'remind' { Update-RemindPage }
+        'lists'  { Update-ListsPage }
+        default  { Update-ChatPage -Force:$Force }
+    }
+}
+
+# Rebuilt only when something changed - a tick must not reset hover and scroll.
+function Update-ChatPage([switch]$Force) {
     $UI.AdvRescan.ToolTip = T 'adv.rescan'
     $UI.ChatNew.ToolTip   = T 'chat.new'
     if ($script:TipRef)                  { $UI.ChatHint.Text = T 'adv.refineHint' }

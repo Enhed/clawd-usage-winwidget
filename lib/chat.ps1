@@ -181,6 +181,14 @@ function Get-ChatContext {
     } else {
         $lines += 'reminders: none'
     }
+    $names = Get-Lists
+    if ($names.Count) {
+        $lines += 'lists (files in the lists folder; "[x]" - ticked off):'
+        foreach ($n in $names) {
+            $items = @((Read-List $n).items | ForEach-Object { "$(if ($_.done) { '[x] ' })$($_.text)" })
+            $lines += "- $n`: $(if ($items.Count) { $items -join '; ' } else { 'empty' })"
+        }
+    }
     $recent = @($script:Remote.items | Select-Object -Last 12)
     if ($recent.Count) {
         $lines += 'recent conversation in your own session (the user on the phone via Remote Control):'
@@ -232,7 +240,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
 function Read-ChatReply([string]$reply) {
     $run = $null
     $notes = @()
-    $rx = [regex]'(?ms)^```(run|remind|remind-cancel)[ \t]*\r?\n(.*?)^```[ \t]*$'
+    $rx = [regex]'(?ms)^```(run|remind|remind-cancel|list-add|list-check|list-uncheck|list-remove)[ \t]*\r?\n(.*?)^```[ \t]*$'
     foreach ($m in $rx.Matches($reply)) {
         $body = $m.Groups[2].Value.Trim()
         switch ($m.Groups[1].Value) {
@@ -245,6 +253,23 @@ function Read-ChatReply([string]$reply) {
                     $what = $parts[1].Trim()
                     [void](New-ReminderFile $at $what)
                     $notes += (T 'chat.remindSet') -f (Format-RemindTime $at), $what
+                }
+            }
+            { $_ -like 'list-*' } {
+                # "<list> | <item>" per line; a new list is made by adding to it.
+                $kind = $_
+                foreach ($line in $body -split '\r?\n') {
+                    $parts = $line -split '\|', 2
+                    if ($parts.Count -lt 2 -or -not $parts[0].Trim() -or -not $parts[1].Trim()) { continue }
+                    $list = Get-ListName $parts[0]; $item = $parts[1].Trim()
+                    $ok = $true
+                    switch ($kind) {
+                        'list-add'     { Add-ListItems $list $item }
+                        'list-check'   { $ok = Set-ListItemDone $list $item $true }
+                        'list-uncheck' { $ok = Set-ListItemDone $list $item $false }
+                        'list-remove'  { $ok = Remove-ListItem $list $item }
+                    }
+                    if ($ok) { $notes += (T "chat.$kind") -f $list, $item }
                 }
             }
             'remind-cancel' {

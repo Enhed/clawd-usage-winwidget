@@ -1,0 +1,34 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Clawd reminder" WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" ShowInTaskbar="False" Topmost="True" ShowActivated="False"
+        SizeToContent="WidthAndHeight" ResizeMode="NoResize">
+  <!-- a reminder that went off: stays until it is done or put off -->
+  <Border CornerRadius="10" Background="#FF1A1A1E" BorderBrush="#FFD77757"
+          BorderThickness="1" Padding="12,9,12,10" Width="270" Margin="8">
+    <Border.Effect>
+      <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.55" Color="Black"/>
+    </Border.Effect>
+    <StackPanel>
+      <Grid Margin="0,0,0,5">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="&#xEA8F;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#FFD77757"
+                     VerticalAlignment="Center" Margin="0,0,6,0"/>
+          <TextBlock x:Name="PopTitle" FontFamily="Segoe UI" FontSize="9.5" FontWeight="SemiBold"
+                     Foreground="#FF8B8B94" VerticalAlignment="Center"/>
+        </StackPanel>
+        <TextBlock x:Name="PopTime" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF6B7280"
+                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+      </Grid>
+      <TextBlock x:Name="PopText" FontFamily="Segoe UI" FontSize="12.5" Foreground="#FFF4F4F5"
+                 TextWrapping="Wrap" Margin="0,0,0,8"/>
+      <TextBlock x:Name="PopLater" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                 Foreground="#FF6B7280" Margin="0,0,0,3"/>
+      <WrapPanel x:Name="PopSnooze"/>
+      <Grid Margin="0,6,0,0">
+        <TextBlock x:Name="PopDone" FontFamily="Segoe UI" FontSize="10.5" Foreground="#FF4ADE80"
+                   HorizontalAlignment="Right" Cursor="Hand" Background="Transparent"/>
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

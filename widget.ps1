@@ -17,7 +17,7 @@ Add-Type -Namespace Win32 -Name IconUtil -MemberDefinition @'
 '@
 
 # The widget's own version; what changed in each one - CHANGELOG.md.
-$WidgetVersion = '1.1.0'
+$WidgetVersion = '1.2.0'
 
 $script:Root       = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:ConfigPath = Join-Path $script:Root 'config.json'
@@ -54,7 +54,7 @@ Remove-Item (Join-Path $env:TEMP 'cuw-*') -Force -ErrorAction SilentlyContinue
 # relies on the variables and functions of the previous ones.
 foreach ($m in @(
     'config', 'i18n', 'usage', 'version', 'account', 'sessions', 'clawd-session', 'status', 'format', 'window',
-    'mascot', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'reminders', 'chat', 'panel', 'mascot-menu', 'tray',
+    'mascot', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'reminders', 'lists', 'chat', 'panel', 'panel-pages', 'remind-popup', 'mascot-menu', 'tray',
     'update', 'tray-menu', 'events'
   )) {
     . (Join-Path $script:Root "lib\$m.ps1")
@@ -62,6 +62,16 @@ foreach ($m in @(
 
 Update-Texts
 if ($script:Cfg.expanded) { Set-Details $true }
+
+# An error in a click handler must not take the whole widget down: log it and go on.
+[System.Windows.Threading.Dispatcher]::CurrentDispatcher.add_UnhandledException({
+    param($s, $e)
+    $e.Handled = $true
+    try {
+        "$(Get-Date -Format s)`tui: $($e.Exception.Message)" |
+            Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
+    } catch {}
+})
 
 $win.Show()
 Update-Widget

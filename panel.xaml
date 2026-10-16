@@ -3,6 +3,43 @@
         Title="Clawd" WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ShowInTaskbar="False"
         SizeToContent="WidthAndHeight" ResizeMode="NoResize">
+  <Window.Resources>
+    <!-- dark text fields: the stock TextBox is white -->
+    <Style x:Key="Field" TargetType="TextBox">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="#FFE4E4E7"/>
+      <Setter Property="CaretBrush" Value="#FFE4E4E7"/>
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="10.5"/>
+      <Setter Property="Padding" Value="6,5,4,5"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="VerticalScrollBarVisibility" Value="Hidden"/>
+    </Style>
+    <Style x:Key="FieldBox" TargetType="Border">
+      <Setter Property="Background" Value="#FF26262C"/>
+      <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="7"/>
+    </Style>
+    <Style x:Key="Hint" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="10.5"/>
+      <Setter Property="Foreground" Value="#FF52525B"/>
+      <Setter Property="Margin" Value="8,5,4,5"/>
+      <Setter Property="IsHitTestVisible" Value="False"/>
+      <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+    <Style x:Key="Tab" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="10.5"/>
+      <Setter Property="Margin" Value="0,0,14,0"/>
+      <Setter Property="Padding" Value="0,0,0,4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+  </Window.Resources>
+
   <!-- the margin leaves room for the shadow -->
   <Border CornerRadius="10" Background="#FF1A1A1E" BorderBrush="#33FFFFFF"
           BorderThickness="1" Padding="12,10,12,10" Width="300" Margin="8">
@@ -26,38 +63,97 @@
         </StackPanel>
       </Grid>
 
-      <!-- tips first, then the conversation; the scrollbar is hidden, the wheel scrolls -->
-      <ScrollViewer x:Name="PanelScroll" MaxHeight="380" VerticalScrollBarVisibility="Hidden"
-                    HorizontalScrollBarVisibility="Disabled">
-        <StackPanel>
-          <TextBlock x:Name="LblTips" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
-                     Foreground="#FF6B7280" Margin="0,0,0,4"/>
-          <StackPanel x:Name="AdvList"/>
-          <StackPanel x:Name="ChatList"/>
+      <!-- tabs: the active one is white and underlined -->
+      <Grid Margin="0,0,0,8">
+        <Border Background="#1AFFFFFF" Height="1" VerticalAlignment="Bottom"/>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock x:Name="TabChat" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="TabRemind" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="TabLists" Style="{StaticResource Tab}"/>
         </StackPanel>
-      </ScrollViewer>
+      </Grid>
 
-      <TextBlock x:Name="ChatBusy" FontFamily="Segoe UI" FontSize="10" FontStyle="Italic"
-                 Foreground="#FF8B8B94" Margin="2,2,0,4" Visibility="Collapsed"/>
+      <!-- chat: tips first, then the conversation; the scrollbar is hidden, the wheel scrolls -->
+      <StackPanel x:Name="PageChat">
+        <ScrollViewer x:Name="PanelScroll" MaxHeight="380" VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock x:Name="LblTips" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                       Foreground="#FF6B7280" Margin="0,0,0,4"/>
+            <StackPanel x:Name="AdvList"/>
+            <StackPanel x:Name="ChatList"/>
+          </StackPanel>
+        </ScrollViewer>
 
-      <Border Background="#FF26262C" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="7"
-              Margin="0,4,0,0">
-        <Grid>
+        <TextBlock x:Name="ChatBusy" FontFamily="Segoe UI" FontSize="10" FontStyle="Italic"
+                   Foreground="#FF8B8B94" Margin="2,2,0,4" Visibility="Collapsed"/>
+
+        <Border Style="{StaticResource FieldBox}" Margin="0,4,0,0">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="ChatInput" Style="{StaticResource Field}" AcceptsReturn="False" MaxHeight="90"/>
+            <TextBlock x:Name="ChatHint" Style="{StaticResource Hint}"/>
+            <TextBlock x:Name="ChatSend" Grid.Column="1" Text="&#xE724;" FontFamily="Segoe MDL2 Assets"
+                       FontSize="11" Foreground="#FF60A5FA" Margin="4,0,8,0" VerticalAlignment="Center"
+                       Cursor="Hand" Background="Transparent"/>
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- reminders: upcoming, the form, recently fired -->
+      <StackPanel x:Name="PageRemind" Visibility="Collapsed">
+        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="RemList"/>
+        </ScrollViewer>
+        <Border Style="{StaticResource FieldBox}" Margin="0,6,0,0">
+          <Grid>
+            <TextBox x:Name="RemText" Style="{StaticResource Field}" MaxHeight="60"/>
+            <TextBlock x:Name="RemTextHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Grid Margin="0,4,0,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
-          <TextBox x:Name="ChatInput" Background="Transparent" BorderThickness="0" Foreground="#FFE4E4E7"
-                   CaretBrush="#FFE4E4E7" FontFamily="Segoe UI" FontSize="10.5" Padding="6,5,4,5"
-                   TextWrapping="Wrap" AcceptsReturn="False" MaxHeight="90"
-                   VerticalScrollBarVisibility="Hidden"/>
-          <TextBlock x:Name="ChatHint" FontFamily="Segoe UI" FontSize="10.5" Foreground="#FF52525B"
-                     Margin="8,5,4,5" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
-          <TextBlock x:Name="ChatSend" Grid.Column="1" Text="&#xE724;" FontFamily="Segoe MDL2 Assets"
-                     FontSize="11" Foreground="#FF60A5FA" Margin="4,0,8,0" VerticalAlignment="Center"
+          <Border Style="{StaticResource FieldBox}">
+            <Grid>
+              <TextBox x:Name="RemWhen" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
+              <TextBlock x:Name="RemWhenHint" Style="{StaticResource Hint}"/>
+            </Grid>
+          </Border>
+          <TextBlock x:Name="RemSave" Grid.Column="1" FontFamily="Segoe UI" FontSize="10.5"
+                     Foreground="#FF4ADE80" Margin="10,0,2,0" VerticalAlignment="Center"
                      Cursor="Hand" Background="Transparent"/>
         </Grid>
-      </Border>
+        <TextBlock x:Name="RemParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
+                   Margin="2,3,0,0"/>
+        <WrapPanel x:Name="RemChips" Margin="0,4,0,0"/>
+        <StackPanel x:Name="RemDone" Margin="0,8,0,0"/>
+      </StackPanel>
+
+      <!-- lists: which list, its items, add -->
+      <StackPanel x:Name="PageLists" Visibility="Collapsed">
+        <WrapPanel x:Name="ListTabs" Margin="0,0,0,6"/>
+        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="ListItems"/>
+        </ScrollViewer>
+        <Border Style="{StaticResource FieldBox}" Margin="0,6,0,0">
+          <Grid>
+            <TextBox x:Name="ListAdd" Style="{StaticResource Field}" AcceptsReturn="False" MaxHeight="60"/>
+            <TextBlock x:Name="ListAddHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Grid Margin="0,5,0,0">
+          <TextBlock x:Name="ListClear" FontFamily="Segoe UI" FontSize="10" Foreground="#FF8B8B94"
+                     Cursor="Hand" Background="Transparent"/>
+          <TextBlock x:Name="ListDelete" FontFamily="Segoe UI" FontSize="10" Foreground="#FF6B7280"
+                     HorizontalAlignment="Right" Cursor="Hand" Background="Transparent"/>
+        </Grid>
+      </StackPanel>
     </StackPanel>
   </Border>
 </Window>

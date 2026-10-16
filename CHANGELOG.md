@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.0
+
+- **Tabs in Clawd's panel:** Chat, Reminders, Lists.
+- **A reminder that goes off is a card** in the bottom-right corner, like a phone
+  notification: put it off (+15m, +1h, +3h, tomorrow 9:00, or any time) or mark
+  it done. It stays until answered; several stack up.
+- **Reminders tab:** what's coming with Change, +1 hour and Delete; a form to add
+  one with a "when" field that understands 18:30, tomorrow 10, +20m, mon 9:00,
+  19.10 14:00 and shows what it made of it, plus quick picks; recently fired ones
+  with "again".
+- **Lists tab:** shopping and any other lists - markdown files with checkboxes in
+  Clawd's home (`lists\<name>.md`). Add several items at once with commas, tick
+  them off, remove ticked ones; new lists with "+". The chat changes them through
+  `list-*` blocks, Clawd's own session edits the files - "add milk to shopping"
+  works from the phone too.
+- The panel no longer stays on top of other windows unless the widget does
+  (`topmost`).
+- Tips get **Do it** (Clawd answers with a script to approve) and **Refine**.
+- An error in a click handler is logged to `widget-error.log` instead of closing
+  the widget.
+
 ## 1.1.0
 
 - **Clawd's panel.** An icon in the header opens a panel beside the widget with

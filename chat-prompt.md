@@ -66,3 +66,15 @@ the taxes in a month") may also get earlier reminders a few days before, if the
 user would want that - ask. To cancel reminders, a block with the language
 `remind-cancel` with their files from <context>, one per line. Confirm in a few
 words.
+
+Lists (shopping and any other): files in the lists folder here, shown in
+<context> and in the panel's Lists tab, where the user ticks items off. To change
+them, blocks with one "<list> | <item>" per line - `list-add` (a new list is made
+by adding to it), `list-check`, `list-uncheck`, `list-remove`:
+
+```list-add
+Shopping | milk
+Shopping | bread
+```
+
+Use the list names from <context>; the user's language for new ones.

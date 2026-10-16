@@ -172,13 +172,24 @@ touched), with the current tips, time and reminders attached. Clawd may look
 around but can't change anything himself: no write tools, MCP servers off, only
 read-only commands allowed. A change comes as a script you see in full, with
 **Run**, **Refine** (write what to change — the script is replaced) and **Not
-now**. Reminders are kept by the widget and fire on time with a Windows
-notification, a bell in the header and a hop from Clawd — even with the panel
+now**. Reminders are kept by the widget and fire on time with a card to
+put them off, a bell in the header and a hop from Clawd — even with the panel
 closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
 default), `showChat` turns it off.
 
+**Reminders and lists.** A reminder that goes off shows as a card in the
+bottom-right corner, like a phone notification: put it off — +15m, +1h, +3h,
+tomorrow 9:00 or any time — or mark it done; it waits until you answer. The panel has three tabs: Chat, Reminders and Lists.
+Reminders shows what's coming (Change, +1 hour, Delete) and a form to add one:
+the "when" field understands `18:30`, `tomorrow 10`, `+20m`, `mon 9:00`,
+`19.10 14:00` and shows what it made of it. Lists keeps shopping and any other
+lists with checkboxes — add several items at once with commas, tick them off,
+remove the ticked ones, start a new list with "+". Both are plain files in Clawd's
+home, so the chat ("add milk to shopping") and Clawd on your phone ("what do I need
+to buy?") work with the same ones.
+
 **Clawd's home and his own session.** The chat works in Clawd's home folder
-(`clawdHome`). Reminders are plain files there —
+(`clawdHome`). Reminders are plain files there (lists too, in `lists\`) —
 `reminders\2026-11\2026-11-16 10-00 Pay the taxes.md` with an `at:` line — so
 anyone can make one: the chat, Clawd's session, or you by hand; fired ones move to
 `reminders\done`. After each check the tips are written to `tips.md` there. With
