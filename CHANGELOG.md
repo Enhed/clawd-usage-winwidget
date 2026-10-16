@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.3
+
+- **Tray tooltip with reset times:** `"trayResetClock": true` shows each limit
+  with its reset as a clock time - `5h: 36% (resets 03:20)`, `7d: 81% (resets
+  tmrw 01:00)`, the weekday further off; Fable on a third line when it fits.
+  Off by default. Suggested by @g3ocycle (#2).
+- `docs/PORTING.md`: what a port to macOS, Linux or a phone needs - the
+  `/usage` and session formats, parsing gotchas, Clawd's moods and the hearts.
+
 ## 1.5.2
 
 - Fixed: looking a task up by name found every task - removing one from the chat
