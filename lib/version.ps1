@@ -199,16 +199,44 @@ function Test-ClawdUpdate {
     try { return ([version]$script:ClawdRel.ver -gt [version]$WidgetVersion) } catch { return $false }
 }
 
-# A Windows notification once per new version, even across restarts.
+# update-state.json: notified - the version already announced; failed - a version
+# self-update.ps1 had to roll back, failedTold - whether the user heard about that.
+function Get-UpdateState {
+    $st = @{}
+    try {
+        $j = [System.IO.File]::ReadAllText($UpdateStatePath) | ConvertFrom-Json
+        foreach ($p in $j.PSObject.Properties) { $st[$p.Name] = $p.Value }
+    } catch {}
+    return $st
+}
+
+function Save-UpdateState($st) {
+    try { ConvertTo-Json $st | Out-File $UpdateStatePath -Encoding utf8 } catch {}
+}
+
+# A Windows notification once per new version, even across restarts; and once
+# about a rolled back one.
 function Send-ClawdUpdateNotice {
     $ver = $script:ClawdRel.ver
-    $seen = $null
-    try { $seen = [string](([System.IO.File]::ReadAllText($UpdateStatePath) | ConvertFrom-Json).notified) } catch {}
-    if ($seen -eq $ver) { return }
-    try { ConvertTo-Json @{ notified = $ver } | Out-File $UpdateStatePath -Encoding utf8 } catch {}
+    $st = Get-UpdateState
+    if ($st.failed -eq $ver) {
+        if (-not $st.failedTold) {
+            $st.failedTold = $true
+            Save-UpdateState $st
+            $notify.ShowBalloonTip(15000, 'Clawd', ((T 'clawd.rolledBack') -f $ver, $WidgetVersion),
+                                   [System.Windows.Forms.ToolTipIcon]::Warning)
+        }
+        return
+    }
+    if ($st.notified -eq $ver) { return }
+    $st.notified = $ver
+    Save-UpdateState $st
     $notify.ShowBalloonTip(15000, ((T 'clawd.notifyTitle') -f $ver), ((T 'clawd.notifyText') -f $ver),
                            [System.Windows.Forms.ToolTipIcon]::Info)
 }
+
+# A version that did not start once is not installed by a click again - the release page opens.
+function Test-ClawdUpdateFailed { return ($script:ClawdRel -and (Get-UpdateState).failed -eq $script:ClawdRel.ver) }
 
 function New-ClawdUpdateTooltip {
     $tb = New-Object System.Windows.Controls.TextBlock
@@ -219,7 +247,7 @@ function New-ClawdUpdateTooltip {
     $max   = 25
     $lines = @($script:ClawdRel.notes | Select-Object -First $max)
     if ($script:ClawdRel.notes.Count -gt $max) { $lines += (T 'chg.more') -f ($script:ClawdRel.notes.Count - $max) }
-    $click = $(if (Test-ClawdGitCopy) { T 'clawd.clickGit' } else { T 'clawd.click' })
+    $click = $(if (Test-ClawdGitCopy) { T 'clawd.clickGit' } elseif (Test-ClawdUpdateFailed) { T 'clawd.clickFailed' } else { T 'clawd.click' })
     $tb.Text = "$((T 'clawd.tipHead') -f $WidgetVersion, $script:ClawdRel.ver)`n`n$($lines -join "`n")`n`n$click"
     return $tb
 }
@@ -232,7 +260,7 @@ function Test-ClawdGitCopy { return (Test-Path (Join-Path $script:Root '.git')) 
 # widget again. Local files (config.json, chat-state.json...) are not in the release.
 function Start-ClawdUpdate {
     if (-not (Test-ClawdUpdate) -or $script:ClawdDl) { return }
-    if (Test-ClawdGitCopy) { Start-Process $script:ClawdRel.url; return }
+    if ((Test-ClawdGitCopy) -or (Test-ClawdUpdateFailed)) { Start-Process $script:ClawdRel.url; return }
     try {
         $zip = Join-Path $env:TEMP "cuw-update-$PID.zip"
         $wc = New-Object System.Net.WebClient
@@ -260,15 +288,14 @@ function Collect-ClawdUpdate {
         $notify.ShowBalloonTip(10000, 'Clawd', ((T 'clawd.failed') -f $_), [System.Windows.Forms.ToolTipIcon]::Warning)
         return
     }
-    $q = { param($s) "'" + ($s -replace "'", "''") + "'" }
-    $log = Join-Path $script:Root 'widget-error.log'
-    $cmd = "Wait-Process -Id $PID -ErrorAction SilentlyContinue; " +
-           "try { Copy-Item -Path (Join-Path $(& $q $src.FullName) '*') -Destination $(& $q $script:Root) -Recurse -Force -ErrorAction Stop } " +
-           "catch { ('update: ' + `$_.Exception.Message) | Out-File $(& $q $log) -Append -Encoding utf8 }; " +
-           "Remove-Item -LiteralPath $(& $q $d.dir), $(& $q $d.zip) -Recurse -Force -Confirm:`$false -ErrorAction SilentlyContinue; " +
-           "Start-Process wscript.exe -ArgumentList $(& $q ('"' + (Join-Path $script:Root 'start-widget.vbs') + '"'))"
-    $enc = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
-    Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -WindowStyle Hidden -ArgumentList '-NoProfile', '-EncodedCommand', $enc
+    # The rest - waiting for this process to end, the copy, the start and a rollback
+    # if the new version does not come up - is self-update.ps1's job.
+    $q = { param($s) '"' + $s + '"' }
+    $argv = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+              '-File', (& $q (Join-Path $script:Root 'self-update.ps1')),
+              '-WaitPid', $PID, '-Source', (& $q $src.FullName), '-Root', (& $q $script:Root),
+              '-Version', $script:ClawdRel.ver, '-Zip', (& $q $d.zip), '-Dir', (& $q $d.dir))
+    Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -WindowStyle Hidden -ArgumentList $argv
     Stop-Widget
 }
 

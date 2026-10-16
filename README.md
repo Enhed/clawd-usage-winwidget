@@ -82,7 +82,9 @@ The ▾ in the header expands details (remembered between runs):
   widget is out it turns into a yellow "Clawd X is out" (with a Windows
   notification once per version): hover for what's new, click to download it,
   replace the files and restart — `config.json` and the other local files stay. In a
-  git clone the click opens the release page instead.
+  git clone the click opens the release page instead. If the new version does not
+  come up within five minutes, the old one is put back and started again, and
+  the widget says so (and won't offer that version again).
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
 refresh, larger/smaller, look the computer over, open config, language, Clawd's session, exit. Drag the window anywhere —
@@ -228,8 +230,17 @@ notification. `tools` — what it may use besides reading (an MCP server as
 hours; `paused: yes`. Ask in the chat ("check my mail every 10 minutes"), put
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
 the phone, or write the file yourself; the Reminders tab lists them with Run now,
-Pause, Open and Delete. A script a task proposes always waits for a click. Each run
-uses your plan's limits; `showTasks` turns them off.
+Pause, Open and Delete; a click on a task shows its latest reports. A script a
+task proposes always waits for a click. Each run uses your plan's limits, so tasks
+wait while the five-hour session or the week is at `tasksMaxPercent` (80%) or
+more — the Reminders tab says so; `limit: 60` in a task file sets its own
+threshold. `showTasks` turns them off.
+
+The chat may use the tools you gave your tasks too, so "move it to the trash"
+after a mail report works. Without AUTO it reads at once, but an action (move,
+mark read, send) shows up as a card with the exact call and **Run** / **Not now**;
+with AUTO it just happens. Mail goes out only after Clawd shows the draft and you
+say yes.
 
 The panel and the phone are two conversations with one Clawd: the panel shows the
 phone conversation in the same feed (marked "Remote Control"), its chat gets the
@@ -280,6 +291,7 @@ are picked up on the fly, no restart needed.
 | `chatAutoRun` | run Clawd's scripts without the Run click (the AUTO toggle in the panel) |
 | `quickModel` | model for small jobs: an unclear reminder time, recurring tasks (`haiku`) |
 | `showTasks` | run recurring tasks from `tasks\` in Clawd's home |
+| `tasksMaxPercent` | tasks wait while the session or the week is at this percent or more (80; 100 — never wait) |
 | `advisorDiskGB` / `advisorJunkGB` | free space to warn below; size of temp files and caches worth mentioning, GB |
 | `advisorUnusedDays` / `advisorUptimeDays` / `advisorMemPercent` | when an app counts as unused; when to suggest a restart; memory share of one program worth a word |
 | `runAsAdmin` | run the widget itself as administrator: at start it asks UAC and restarts elevated (declined — runs as usual). Elevated, the tips also read Prefetch (the exact last start of every program, terminal ones included), Windows Temp and Windows Update downloads |
@@ -314,7 +326,13 @@ dot-sourced into one shared script scope in a fixed order; each may rely on the
 ones loaded before it. All UI text lives in `lib\i18n.ps1` — adding a language
 is one more table there.
 
-`tools/` holds the recorder that made the GIFs in this README: it boots the
+`self-update.ps1` replaces the files on an update and rolls back if the new
+version doesn't start. `tools\smoke.ps1` is the pre-release check: it starts a
+copy of the working tree in a sandbox (own folder, TEMP and mutex — the running
+widget is not touched), with the junk that once hung it, and checks an update
+and a rollback through `self-update.ps1`.
+
+`tools/` also holds the recorder that made the GIFs in this README: it boots the
 widget with scripted fake data and renders frames straight from WPF. It needs
 ffmpeg and Pillow; the widget itself doesn't.
 

@@ -49,6 +49,10 @@ function Load-Chat {
                 if ($state -eq 'running') { $state = 'done' }
                 $msg.run = @{ script = [string]$m.run.script; state = $state; code = $m.run.code }
             }
+            if ($m.act) {
+                $msg.act = @{ state = [string]$m.act.state
+                              calls = @($m.act.calls | Where-Object { $_ } | ForEach-Object { @{ tool = [string]$_.tool; input = [string]$_.input } }) }
+            }
             [void]$c.messages.Add($msg)
         }
     }
@@ -77,6 +81,7 @@ function Write-ChatLog {
         $when = $(if ($m.at -ne [datetime]::MinValue) { $m.at.ToString('yyyy-MM-dd HH:mm') } else { '' })
         $text = $m.text
         if ($m.run) { $text += "`n[proposed a script: $($m.run.state)$(if ($null -ne $m.run.code) { ", exit $($m.run.code)" })]" }
+        if ($m.act) { $text += "`n[asked to use $(@($m.act.calls | ForEach-Object { $_.tool }) -join ', '): $($m.act.state)]" }
         $lines += "**$who** $when"
         $lines += $text
         $lines += ''
@@ -229,12 +234,30 @@ function Get-ChatContext {
     return $lines -join "`n"
 }
 
+# The chat's rules for the tasks' tools. In auto mode - the whole server, as the
+# task has it. Otherwise only what reads (list_*, get_*...): an action (move a
+# letter, mark it read, send) is refused by Claude Code, and the widget turns the
+# refusal into a card the user approves with a click (Collect-ChatReply).
+$ChatReadVerbs = @('list', 'get', 'read', 'search', 'fetch', 'find', 'query', 'view', 'show')
+function Get-ChatToolRules([string[]]$tools) {
+    $rules = @()
+    foreach ($t in $tools) {
+        if ($script:Cfg.chatAutoRun -or $t -notmatch '^mcp__' -or $t -match '^mcp__.+__') { $rules += $t; continue }
+        foreach ($v in $ChatReadVerbs) { $rules += "$($t)__$($v)_*" }
+    }
+    return ,$rules
+}
+
 # $hidden - a message from the widget itself (a script's output), not shown as the user's.
-function Send-ChatMessage([string]$text, [switch]$Hidden) {
+# $allow - tools allowed for this one call only (actions the user just approved).
+function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()) {
     if ($script:ChatProc -or -not $text.Trim()) { return }
     if (-not $Hidden) {
         # A new word from the user replaces a script still waiting for approval.
-        foreach ($m in $script:Chat.messages) { if ($m.run -and $m.run.state -eq 'pending') { $m.run.state = 'replaced' } }
+        foreach ($m in $script:Chat.messages) {
+            if ($m.run -and $m.run.state -eq 'pending') { $m.run.state = 'replaced' }
+            if ($m.act -and $m.act.state -eq 'pending') { $m.act.state = 'replaced' }
+        }
         $script:AutoChain = 0
         [void](Add-ChatMessage 'user' $text)
     }
@@ -248,7 +271,10 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
         # MCP servers at all, they only slow the start down.
         $tools = @(Get-Tasks | ForEach-Object { $_.tools } | Where-Object { $_ } | Sort-Object -Unique)
         $ctx = Get-ChatContext
-        if ($tools.Count) { $ctx = $ctx -replace '</context>$', "tools you may use besides reading: $($tools -join ' ')`n</context>" }
+        if ($tools.Count) {
+            $how = $(if ($script:Cfg.chatAutoRun) { 'all of them at once' } else { 'reading at once; actions after the user approves them' })
+            $ctx = $ctx -replace '</context>$', "tools you may use besides reading: $($tools -join ' ') ($how)`n</context>"
+        }
         [System.IO.File]::WriteAllText($in, $ctx + "`n`n" + $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
         $argv = @('-p', '--output-format', 'json', '--model', [string]$script:Cfg.chatModel,
@@ -257,7 +283,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
         $argv += @('--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
                    '--append-system-prompt-file', (& $q $ChatPromptPath),
                    '--allowedTools') + @($ChatReadOnly | ForEach-Object { & $q "PowerShell($_`:*)" }) +
-                 @($tools | ForEach-Object { & $q $_ })
+                 @((Get-ChatToolRules $tools) + $Allow | ForEach-Object { & $q $_ })
         if ($script:Chat.started) { $argv += @('--resume', $script:Chat.sessionId) }
         else                      { $argv += @('--session-id', $script:Chat.sessionId) }
         $p = Start-Process -FilePath $script:ClaudeExe -WorkingDirectory $home_ -ArgumentList $argv `
@@ -370,8 +396,12 @@ function Collect-ChatReply {
         # A block that failed to parse must not swallow the reply itself.
         try { $r = Read-ChatReply ([string]$j.result) }
         catch { $r = @{ text = [string]$j.result; run = $null; notes = @((T 'chat.error') -f $_.Exception.Message) } }
+        # Actions Claude Code refused for want of permission: a card for the user to approve.
+        $calls = @($j.permission_denials | Where-Object { $_ -and ([string]$_.tool_name).StartsWith('mcp__') } | ForEach-Object {
+            @{ tool = [string]$_.tool_name; input = (ConvertTo-Json -InputObject $_.tool_input -Depth 6 -Compress) } })
         $msg = $null
-        if ($r.text -or $r.run) { $msg = Add-ChatMessage 'clawd' $r.text $r.run }
+        if ($r.text -or $r.run -or $calls.Count) { $msg = Add-ChatMessage 'clawd' $r.text $r.run }
+        if ($calls.Count) { $msg.act = @{ state = 'pending'; calls = $calls }; Save-Chat }
         foreach ($n in $r.notes) { [void](Add-ChatMessage 'note' $n) }
         # Auto mode: the script runs without a click, but only a few in a row on their
         # own - Clawd answering each result with yet another script stops for a word from the user.
@@ -409,7 +439,7 @@ function Start-ChatRun($msg) {
         $body = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`r`n" + $msg.run.script
         [System.IO.File]::WriteAllText($ps1, $body, (New-Object System.Text.UTF8Encoding $true))
         $p = Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') `
-                 -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$ps1`"" `
+                 -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$ps1`"" `
                  -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden -PassThru
         # Taking the handle now keeps ExitCode readable after the process ends.
         [void]$p.Handle
@@ -442,6 +472,23 @@ function Collect-ChatRun {
 
 function Set-RunState($msg, [string]$state) {
     if ($msg.run -and $msg.run.state -eq 'pending') { $msg.run.state = $state; Save-Chat; Update-Panel }
+}
+
+# ---------------------------------------------------- approved tool calls ----
+# Clawd asked to act with a tool (move a letter, send one...) and was refused: on
+# "Run" the same conversation goes on with exactly those tools allowed, once.
+
+function Approve-ChatAct($msg) {
+    if ($script:ChatProc -or -not $msg.act -or $msg.act.state -ne 'pending') { return }
+    $msg.act.state = 'approved'
+    Save-Chat
+    $list = @($msg.act.calls | ForEach-Object { "- $($_.tool) $($_.input)" }) -join "`n"
+    Send-ChatMessage -Hidden -Allow @($msg.act.calls | ForEach-Object { $_.tool } | Sort-Object -Unique) `
+        "[approved] The user clicked Run: make exactly these calls now, then say briefly what came of them.`n$list"
+}
+
+function Set-ActState($msg, [string]$state) {
+    if ($msg.act -and $msg.act.state -eq 'pending') { $msg.act.state = $state; Save-Chat; Update-Panel }
 }
 
 # "+" in the panel: a new conversation here, and the phone conversation so far is

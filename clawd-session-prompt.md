@@ -61,7 +61,8 @@ The widget works alongside you:
   Check the inbox for mail that came since the last run. Tell me only about ...
 
   every - 10m, 2h, 1d; tools - what it may use besides reading files (an MCP
-  server as mcp__<server>); hours, model and "paused: yes" are optional. Write the
+  server as mcp__<server>); hours, model, limit (wait while the plan's usage is at
+  this percent or more) and "paused: yes" are optional. Write the
   text as an instruction to yourself. To stop one, delete its file or pause it.
 
 The notification shows up on the PC, not on the phone: if the user is away and

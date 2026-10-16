@@ -195,6 +195,39 @@ function New-RunBlock($msg) {
     return $box
 }
 
+# Tool calls Clawd was refused and asks the user to approve: the tool and its
+# arguments as they are, Run / Not now.
+function New-ActBlock($msg) {
+    $box = New-Object System.Windows.Controls.StackPanel
+    [void]$box.Children.Add((New-PanelText (T 'chat.actHead') 9.5 '#FF8B8B94'))
+    $code = New-Object System.Windows.Controls.TextBox
+    $code.Text            = (@($msg.act.calls | ForEach-Object { "$($_.tool -replace '^mcp__', '') $($_.input)" }) -join "`n")
+    $code.IsReadOnly      = $true
+    $code.FontFamily      = 'Consolas'
+    $code.FontSize        = 9.5
+    $code.Foreground      = New-Brush '#FFB4B4BC'
+    $code.Background      = New-Brush '#FF141416'
+    $code.BorderThickness = New-Object System.Windows.Thickness 0
+    $code.Padding         = New-Object System.Windows.Thickness 5, 4, 5, 4
+    $code.Margin          = New-Object System.Windows.Thickness 0, 3, 0, 5
+    $code.TextWrapping    = 'Wrap'
+    $code.MaxHeight       = 120
+    $code.VerticalScrollBarVisibility = 'Hidden'
+    [void]$box.Children.Add($code)
+    $row = New-Object System.Windows.Controls.StackPanel
+    $row.Orientation = 'Horizontal'
+    if ($msg.act.state -eq 'pending') {
+        [void]$row.Children.Add((New-PanelLink (T 'chat.run') '#FF4ADE80' $msg {
+            param($s, $e); $e.Handled = $true; Approve-ChatAct $s.Tag }))
+        [void]$row.Children.Add((New-PanelLink (T 'chat.skip') '#FF6B7280' $msg {
+            param($s, $e); $e.Handled = $true; Set-ActState $s.Tag 'skipped' }))
+    } else {
+        [void]$row.Children.Add((New-PanelText (T "chat.act.$($msg.act.state)") 10 '#FF6B7280'))
+    }
+    [void]$box.Children.Add($row)
+    return $box
+}
+
 # Messages from the phone carry a small mark: they were not written here.
 function New-RemoteBox($msg, [string]$color) {
     $box = New-Object System.Windows.Controls.StackPanel
@@ -237,6 +270,7 @@ function New-ChatItem($msg) {
             $box = New-Object System.Windows.Controls.StackPanel
             if ($msg.text) { [void]$box.Children.Add((New-PanelText $msg.text)) }
             if ($msg.run) { [void]$box.Children.Add((New-RunBlock $msg)) }
+            if ($msg.act) { [void]$box.Children.Add((New-ActBlock $msg)) }
             $card.Child = $box
             return $card
         }
@@ -284,7 +318,7 @@ function Update-ChatPage([switch]$Force) {
               ForEach-Object { @{ m = $_; n = $i++ } } |
               Sort-Object { $_.m.at }, { $_.n } | ForEach-Object { $_.m })
     $key = (Get-Lang) + '|' + (@($tips | ForEach-Object { "$($_.sig)=$($_.text)" }) -join "`n") + '|' +
-           (@($feed | ForEach-Object { "$($_.role):$($_.text.Length):$(if ($_.run) { $_.run.state })" }) -join ',')
+           (@($feed | ForEach-Object { "$($_.role):$($_.text.Length):$(if ($_.run) { $_.run.state }):$(if ($_.act) { $_.act.state })" }) -join ',')
     if (-not $Force -and $key -eq $script:PanelKey) { return }
     $script:PanelKey = $key
 

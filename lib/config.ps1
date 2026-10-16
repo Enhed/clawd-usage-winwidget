@@ -34,6 +34,7 @@ $DefaultConfig = [ordered]@{
     chatAutoRun            = $false # run Clawd's scripts at once, without the "Run" click (toggle in the panel)
     quickModel             = 'haiku' # model for small jobs: an unclear reminder time, recurring tasks by default
     showTasks              = $true  # recurring tasks from the tasks folder in Clawd's home
+    tasksMaxPercent        = 80     # tasks wait while the session or the week is at this percent or more (100 - never)
     language               = 'en'   # UI language: en or ru
     runAsAdmin             = $false # run the widget elevated (UAC prompt at start)
     clawdHome              = $null  # Clawd's folder: chat, reminders, tips.md, his session; empty - ~\Clawd

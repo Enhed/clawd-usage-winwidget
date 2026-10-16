@@ -17,7 +17,7 @@ Add-Type -Namespace Win32 -Name IconUtil -MemberDefinition @'
 '@
 
 # The widget's own version; what changed in each one - CHANGELOG.md.
-$WidgetVersion = '1.4.1'
+$WidgetVersion = '1.5.0'
 
 $script:Root       = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:ConfigPath = Join-Path $script:Root 'config.json'
@@ -31,18 +31,34 @@ try { $wantAdmin = [bool](([System.IO.File]::ReadAllText($script:ConfigPath) | C
 if ($wantAdmin -and -not $script:IsAdmin) {
     try {
         Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -ErrorAction Stop `
-            -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$($MyInvocation.MyCommand.Path)`""
+            -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$($MyInvocation.MyCommand.Path)`""
         exit 0
     } catch {}
 }
 
 $ErrorActionPreference = 'Stop'
+# The widget has no console: a question from PowerShell ("delete the folder with
+# everything in it?") would wait forever unseen. Never ask - and with -NonInteractive
+# in start-widget.vbs a question that slips through is an error, not a hang.
+$ConfirmPreference = 'None'
+
+# An error while starting up (a module failing to load...) would end the hidden
+# process without a trace - write it down first.
+trap {
+    try {
+        "$(Get-Date -Format s)`tstart: $($_.Exception.Message)`t$($_.InvocationInfo.PositionMessage)" |
+            Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
+    } catch {}
+    exit 1
+}
 
 # One instance per user - otherwise autostart plus a manual start would give two icons.
 # The mutex of an elevated copy is closed to a normal one - that also means "already running".
 $isNew = $false
 try {
-    $script:Mutex = New-Object System.Threading.Mutex($true, 'Local\clawd-usage-winwidget', [ref]$isNew)
+    # tools/smoke.ps1 starts a test copy next to the running widget - under a mutex of its own.
+    $mutexName = 'Local\clawd-usage-winwidget' + $(if ($env:CUW_SMOKE) { '-smoke' } else { '' })
+    $script:Mutex = New-Object System.Threading.Mutex($true, $mutexName, [ref]$isNew)
 } catch { exit 0 }
 if (-not $isNew) { exit 0 }
 
@@ -77,5 +93,7 @@ if ($script:Cfg.expanded) { Set-Details $true }
 
 $win.Show()
 Update-Widget
+# Got as far as the window and the first update: tools/smoke.ps1 waits for this file.
+if ($env:CUW_READY_FILE) { try { [System.IO.File]::WriteAllText($env:CUW_READY_FILE, "$WidgetVersion $PID") } catch {} }
 $kick.Start()
 [System.Windows.Threading.Dispatcher]::Run()

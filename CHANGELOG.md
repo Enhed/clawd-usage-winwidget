@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0
+
+- **Mail actions need a click** unless AUTO is on: the chat reads with your
+  tasks' tools at once, but moving, marking or sending shows up as a card with the
+  exact call and Run / Not now.
+- **Tasks wait while usage is high:** at `tasksMaxPercent` (80%) of the session or
+  the week, or a task's own `limit`. The Reminders tab says when a task waits.
+- **Task history:** a click on a task shows its latest reports and the last error.
+- **Self-update rolls back:** if the new version does not come up in five
+  minutes, the old files come back, the old version starts and says so; that
+  version is not offered again.
+- **No more silent hangs:** the widget runs with `-NonInteractive` and never asks
+  PowerShell questions; an error while starting goes to `widget-error.log`.
+- `tools\smoke.ps1` - the pre-release check: start with junk in TEMP, update and
+  rollback, each in a sandbox next to the running widget.
+
 ## 1.4.1
 
 - Fixed: the widget could hang at start, without a window, when a folder was
