@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0
+
+- **The widget tells about its own updates:** once an hour it asks GitHub for the
+  latest release. A new one turns the version in the corner into a yellow
+  "Clawd X is out" with what's new on hover, and a Windows notification comes
+  once per version. A click downloads the release, replaces the files and
+  restarts the widget; `config.json` and the other local files stay. In a git
+  clone the click opens the release page instead.
+
 ## 1.3.0
 
 - **Recurring tasks:** files `tasks\<name>.md` in Clawd's home with `every`,

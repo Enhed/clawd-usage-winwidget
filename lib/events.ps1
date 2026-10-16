@@ -47,7 +47,9 @@ $UI.LineVersion.add_MouseLeftButtonDown({
 $UI.LineClawdVer.add_MouseLeftButtonDown({
     param($s, $e)
     $e.Handled = $true
-    Open-ClawdChangelog
+    # A new release out - update to it; otherwise the changelog.
+    if (Test-ClawdUpdate) { Start-ClawdUpdate; $script:ClawdVerKey = $null; Update-Widget }
+    else                  { Open-ClawdChangelog }
 })
 $UI.Mascot.add_MouseLeftButtonDown({
     param($s, $e)

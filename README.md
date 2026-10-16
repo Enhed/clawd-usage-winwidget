@@ -78,7 +78,11 @@ The ▾ in the header expands details (remembered between runs):
   yellow: hover for the official CHANGELOG between your version and the latest,
   click to run `claude update` in a separate window; otherwise a click opens
   Claude Code's changelog. Next to it is the widget's own version: hover for what's
-  new in it, click for its `CHANGELOG.md` on GitHub.
+  new in it, click for its `CHANGELOG.md` on GitHub. When a new release of the
+  widget is out it turns into a yellow "Clawd X is out" (with a Windows
+  notification once per version): hover for what's new, click to download it,
+  replace the files and restart — `config.json` and the other local files stay. In a
+  git clone the click opens the release page instead.
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
 refresh, larger/smaller, look the computer over, open config, language, Clawd's session, exit. Drag the window anywhere —
@@ -243,6 +247,7 @@ a new conversation there and hides the phone conversation so far; on the phone
 | account | `claude auth status` | every 10 min |
 | latest version | `downloads.claude.ai/claude-code-releases/latest` (or `stable` if `autoUpdatesChannel` says so) — the same URL the official installer uses | hourly |
 | changelog | `raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` | only when an update is available |
+| widget release | `api.github.com/repos/Enhed/clawd-usage-winwidget/releases/latest` | hourly |
 | status | `status.claude.com/api/v2/summary.json` | every 2 min |
 | weather | Open-Meteo / met.no, location via ipwho.is | every 15 min |
 

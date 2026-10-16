@@ -22,6 +22,7 @@ function Get-UpdateChannel {
 function Start-VersionProbe {
     if ($script:VerTask -and -not $script:VerTask.IsCompleted) { return }
     $script:VerAt = Get-Date
+    Start-ReleaseProbe
     # Re-read the local version every time: Claude Code updates itself.
     try {
         $raw = & $script:ClaudeExe --version
@@ -148,6 +149,126 @@ function New-ClawdChangesTooltip {
     } catch {}
     $tb.Text = "$((T 'chg.clawdHead') -f $WidgetVersion)`n`n$($items -join "`n")`n`n$(T 'chg.clawdClick')"
     return $tb
+}
+
+# ------------------------------------------------ the widget's own release ----
+# The latest release of the widget itself, from GitHub, checked together with
+# Claude Code's version. A new one: the version line in the corner turns yellow,
+# a Windows notification once per version, a click updates the files and restarts.
+
+$ReleaseApi = 'https://api.github.com/repos/Enhed/clawd-usage-winwidget/releases/latest'
+$UpdateStatePath = Join-Path $script:Root 'update-state.json'
+
+$script:ClawdRel     = $null   # @{ ver; url; zip; notes = @() }
+$script:ClawdRelTask = $null
+$script:ClawdDl      = $null   # @{ task; zip; dir } - an update being downloaded
+
+function Start-ReleaseProbe {
+    if ($script:ClawdRelTask -and -not $script:ClawdRelTask.IsCompleted) { return }
+    try {
+        $wc = New-Object System.Net.WebClient
+        $wc.Encoding = [System.Text.Encoding]::UTF8
+        # GitHub's API turns away requests without a User-Agent.
+        $wc.Headers.Add('User-Agent', 'clawd-usage-winwidget')
+        $script:ClawdRelTask = $wc.DownloadStringTaskAsync($ReleaseApi)
+    } catch {
+        $script:ClawdRelTask = $null
+    }
+}
+
+function Collect-ReleaseProbe {
+    if (-not $script:ClawdRelTask -or -not $script:ClawdRelTask.IsCompleted) { return }
+    $t = $script:ClawdRelTask
+    $script:ClawdRelTask = $null
+    if ($t.Status -ne 'RanToCompletion') { return }
+    try { $j = [string]$t.Result | ConvertFrom-Json } catch { return }
+    $m = [regex]::Match([string]$j.tag_name, '(\d+\.\d+\.\d+)')
+    if (-not $m.Success) { return }
+    # Bullets may wrap over several lines - glue them back, drop markdown marks.
+    $notes = @()
+    foreach ($b in ([string]$j.body -split '(?m)^- ')) {
+        $b = ($b -replace '\s+', ' ').Trim() -replace '\*\*', '' -replace '`', ''
+        if ($b -and $b -notmatch '^To install:') { $notes += "• $b" }
+    }
+    $script:ClawdRel = @{ ver = $m.Groups[1].Value; url = [string]$j.html_url; zip = [string]$j.zipball_url; notes = $notes }
+    if (Test-ClawdUpdate) { Send-ClawdUpdateNotice }
+}
+
+function Test-ClawdUpdate {
+    if (-not $script:ClawdRel) { return $false }
+    try { return ([version]$script:ClawdRel.ver -gt [version]$WidgetVersion) } catch { return $false }
+}
+
+# A Windows notification once per new version, even across restarts.
+function Send-ClawdUpdateNotice {
+    $ver = $script:ClawdRel.ver
+    $seen = $null
+    try { $seen = [string](([System.IO.File]::ReadAllText($UpdateStatePath) | ConvertFrom-Json).notified) } catch {}
+    if ($seen -eq $ver) { return }
+    try { ConvertTo-Json @{ notified = $ver } | Out-File $UpdateStatePath -Encoding utf8 } catch {}
+    $notify.ShowBalloonTip(15000, ((T 'clawd.notifyTitle') -f $ver), ((T 'clawd.notifyText') -f $ver),
+                           [System.Windows.Forms.ToolTipIcon]::Info)
+}
+
+function New-ClawdUpdateTooltip {
+    $tb = New-Object System.Windows.Controls.TextBlock
+    $tb.MaxWidth     = 460
+    $tb.TextWrapping = 'Wrap'
+    $tb.FontFamily   = 'Segoe UI'
+    $tb.FontSize     = 11
+    $max   = 25
+    $lines = @($script:ClawdRel.notes | Select-Object -First $max)
+    if ($script:ClawdRel.notes.Count -gt $max) { $lines += (T 'chg.more') -f ($script:ClawdRel.notes.Count - $max) }
+    $click = $(if (Test-ClawdGitCopy) { T 'clawd.clickGit' } else { T 'clawd.click' })
+    $tb.Text = "$((T 'clawd.tipHead') -f $WidgetVersion, $script:ClawdRel.ver)`n`n$($lines -join "`n")`n`n$click"
+    return $tb
+}
+
+# A git clone is the developer's working copy: files are not overwritten there.
+function Test-ClawdGitCopy { return (Test-Path (Join-Path $script:Root '.git')) }
+
+# Click on the version: download the release, unpack it next to the old files, then
+# a helper waits for this process to end, copies the files over and starts the
+# widget again. Local files (config.json, chat-state.json...) are not in the release.
+function Start-ClawdUpdate {
+    if (-not (Test-ClawdUpdate) -or $script:ClawdDl) { return }
+    if (Test-ClawdGitCopy) { Start-Process $script:ClawdRel.url; return }
+    try {
+        $zip = Join-Path $env:TEMP "cuw-update-$PID.zip"
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add('User-Agent', 'clawd-usage-winwidget')
+        $script:ClawdDl = @{ task = $wc.DownloadFileTaskAsync($script:ClawdRel.zip, $zip); zip = $zip
+                             dir = Join-Path $env:TEMP "cuw-update-$PID" }
+    } catch {
+        $script:ClawdDl = $null
+        $notify.ShowBalloonTip(10000, 'Clawd', ((T 'clawd.failed') -f $_.Exception.Message), [System.Windows.Forms.ToolTipIcon]::Warning)
+    }
+}
+
+function Collect-ClawdUpdate {
+    $d = $script:ClawdDl
+    if (-not $d -or -not $d.task.IsCompleted) { return }
+    $script:ClawdDl = $null
+    try {
+        if ($d.task.Status -ne 'RanToCompletion') { throw $d.task.Exception.InnerException }
+        if (Test-Path $d.dir) { Remove-Item $d.dir -Recurse -Force }
+        Expand-Archive -LiteralPath $d.zip -DestinationPath $d.dir -Force
+        # GitHub's archive has everything in one top folder.
+        $src = Get-ChildItem $d.dir -Directory | Select-Object -First 1
+        if (-not $src -or -not (Test-Path (Join-Path $src.FullName 'widget.ps1'))) { throw 'no widget.ps1 in the archive' }
+    } catch {
+        $notify.ShowBalloonTip(10000, 'Clawd', ((T 'clawd.failed') -f $_), [System.Windows.Forms.ToolTipIcon]::Warning)
+        return
+    }
+    $q = { param($s) "'" + ($s -replace "'", "''") + "'" }
+    $log = Join-Path $script:Root 'widget-error.log'
+    $cmd = "Wait-Process -Id $PID -ErrorAction SilentlyContinue; " +
+           "try { Copy-Item -Path (Join-Path $(& $q $src.FullName) '*') -Destination $(& $q $script:Root) -Recurse -Force -ErrorAction Stop } " +
+           "catch { ('update: ' + `$_.Exception.Message) | Out-File $(& $q $log) -Append -Encoding utf8 }; " +
+           "Start-Process wscript.exe -ArgumentList $(& $q ('"' + (Join-Path $script:Root 'start-widget.vbs') + '"'))"
+    $enc = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
+    Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -WindowStyle Hidden -ArgumentList '-NoProfile', '-EncodedCommand', $enc
+    Stop-Widget
 }
 
 function Start-ClaudeUpdate {

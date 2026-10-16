@@ -40,8 +40,7 @@ function Update-Texts {
     Update-SkyTip
     $script:VerTipKey = $null
     $script:SessTip   = $null
-    $UI.LineClawdVer.Text    = "Clawd v$WidgetVersion"
-    $UI.LineClawdVer.ToolTip = New-ClawdChangesTooltip
+    $script:ClawdVerKey = $null
     Update-Widget
 }
 
@@ -64,6 +63,8 @@ function Update-Widget {
         Start-UsageProbe
     }
     Collect-VersionProbe
+    Collect-ReleaseProbe
+    Collect-ClawdUpdate
     if (([datetime]::Now - $script:VerAt).TotalSeconds -ge [double]$script:Cfg.versionIntervalSeconds) {
         Start-VersionProbe
     }
@@ -287,6 +288,26 @@ function Update-Widget {
         }
     } else {
         $UI.LineVersion.Text = ''
+    }
+
+    # The widget's own version: yellow with a new release out. The tooltip is
+    # recreated only when something changes - otherwise it closes under the cursor.
+    $hasRel = Test-ClawdUpdate
+    $relKey = "$(Get-Lang)|$hasRel|$(if ($script:ClawdRel) { $script:ClawdRel.ver })|$([bool]$script:ClawdDl)"
+    if ($relKey -ne $script:ClawdVerKey) {
+        $script:ClawdVerKey = $relKey
+        if ($script:ClawdDl) {
+            $UI.LineClawdVer.Text       = T 'clawd.updating'
+            $UI.LineClawdVer.Foreground = New-Brush $Palette.warn.Wpf
+        } elseif ($hasRel) {
+            $UI.LineClawdVer.Text       = (T 'clawd.available') -f $script:ClawdRel.ver
+            $UI.LineClawdVer.Foreground = New-Brush $Palette.warn.Wpf
+            $UI.LineClawdVer.ToolTip    = New-ClawdUpdateTooltip
+        } else {
+            $UI.LineClawdVer.Text       = "Clawd v$WidgetVersion"
+            $UI.LineClawdVer.Foreground = New-Brush '#FF6B7280'
+            $UI.LineClawdVer.ToolTip    = New-ClawdChangesTooltip
+        }
     }
 
     # Time of the last /usage reply; if it hasn't come for a while - say so honestly.

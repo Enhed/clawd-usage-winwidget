@@ -61,6 +61,14 @@ $Strings = @{
     'chg.open'       = 'Click for the Claude Code changelog'
     'chg.clawdHead'  = 'What''s new in Clawd v{0}'
     'chg.clawdClick' = 'Click for the whole changelog'
+    'clawd.available' = 'Clawd {0} is out'
+    'clawd.updating' = 'Clawd: updating...'
+    'clawd.tipHead'  = 'Clawd {0} → {1}'
+    'clawd.click'    = 'Click to update and restart the widget (your settings stay)'
+    'clawd.clickGit' = 'This is a git clone - click to open the release, update with git pull'
+    'clawd.notifyTitle' = 'Clawd {0} is out'
+    'clawd.notifyText' = 'Click "Clawd {0} is out" in the widget''s corner to update.'
+    'clawd.failed'   = 'Could not update: {0}'
 
     'acc.out'        = 'not logged in: claude /login'
 
@@ -333,6 +341,14 @@ $Strings = @{
     'chg.open'       = 'Клик — список изменений Claude Code'
     'chg.clawdHead'  = 'Что нового в Clawd v{0}'
     'chg.clawdClick' = 'Клик — весь список изменений'
+    'clawd.available' = 'есть Clawd {0}'
+    'clawd.updating' = 'Clawd обновляется…'
+    'clawd.tipHead'  = 'Clawd {0} → {1}'
+    'clawd.click'    = 'Клик — обновить и перезапустить виджет (настройки сохранятся)'
+    'clawd.clickGit' = 'Это git-клон — клик откроет релиз, обновляй через git pull'
+    'clawd.notifyTitle' = 'Вышел Clawd {0}'
+    'clawd.notifyText' = 'Клик по «есть Clawd {0}» в углу виджета — обновится.'
+    'clawd.failed'   = 'Не удалось обновиться: {0}'
 
     'acc.out'        = 'не залогинен: claude /login'
 
