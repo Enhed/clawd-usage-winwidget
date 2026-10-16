@@ -340,6 +340,14 @@ and a rollback through `self-update.ps1`.
 widget with scripted fake data and renders frames straight from WPF. It needs
 ffmpeg and Pillow; the widget itself doesn't.
 
+## Ports
+
+The widget is Windows-only, but the data behind it is simple: `claude -p /usage`
+for the limits and `~/.claude/sessions` for live sessions.
+[docs/PORTING.md](docs/PORTING.md) describes the formats, the parsing gotchas,
+Clawd's moods and the hearts — enough to build it for macOS, Linux, a phone or a
+status bar. Made a port? Open an issue with a link and it'll be listed here.
+
 ## License
 
 [MIT](LICENSE)
