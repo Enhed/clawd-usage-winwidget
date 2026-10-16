@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.4
+
+- **Français:** a French UI, in the tray menu under Language or with
+  `"language": "fr"`. Reminder times can be typed in French too: `demain 10h`,
+  `lun 10:00`, `dans une semaine`, `le ven 18h30`.
+
 ## 1.5.3
 
 - **Tray tooltip with reset times:** `"trayResetClock": true` shows each limit
