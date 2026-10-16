@@ -55,6 +55,8 @@
                      VerticalAlignment="Center" Margin="0,0,9,0"/>
           <TextBlock x:Name="AdvRescan" Text="&#x21BB;" FontSize="12" Foreground="#FF8B8B94"
                      Margin="0,0,9,0" Cursor="Hand" Background="Transparent"/>
+          <TextBlock x:Name="ChatAuto" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                     Margin="0,0,9,0" Cursor="Hand" Background="Transparent" VerticalAlignment="Center"/>
           <TextBlock x:Name="ChatNew" Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="10"
                      Foreground="#FF8B8B94" Margin="0,0,9,0" Cursor="Hand" Background="Transparent"
                      VerticalAlignment="Center"/>
@@ -132,6 +134,7 @@
         <TextBlock x:Name="RemParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
                    Margin="2,3,0,0"/>
         <WrapPanel x:Name="RemChips" Margin="0,4,0,0"/>
+        <StackPanel x:Name="RemTasks" Margin="0,8,0,0"/>
         <StackPanel x:Name="RemDone" Margin="0,8,0,0"/>
       </StackPanel>
 

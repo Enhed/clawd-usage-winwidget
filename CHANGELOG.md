@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.0
+
+- **Recurring tasks:** files `tasks\<name>.md` in Clawd's home with `every`,
+  `tools` (an MCP server as `mcp__<server>`), optional `hours`, `model`, `paused`.
+  The widget runs a due one as a background `claude -p` with the context and the
+  last report; only replies worth telling reach the chat, with a notification.
+  Made from the chat (`task` / `task-remove` blocks), the phone or by hand; listed
+  on the Reminders tab with Run now, Pause, Open, Delete. The chat sees the recent
+  reports and may use the tasks' tools, so "move it to the trash" after a mail
+  report works; mail goes out only after a shown draft and a yes. "Every 30
+  minutes" in the reminder form hands the request to the chat.
+- **AUTO in the chat** (`chatAutoRun`): Clawd's scripts run without the Run click,
+  up to three in a row.
+- **"When" in reminders** understands `in a week`, `через месяц`, `через полчаса`,
+  `через неделю 15:00`; anything else is not red any more - on saving it goes to a
+  small model (`quickModel`), and only what it can't place is an error.
+- Usage at 0% with no five-hour window started shows `0`, not `--`.
+
 ## 1.2.0
 
 - **Tabs in Clawd's panel:** Chat, Reminders, Lists.

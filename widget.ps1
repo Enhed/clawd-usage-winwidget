@@ -17,7 +17,7 @@ Add-Type -Namespace Win32 -Name IconUtil -MemberDefinition @'
 '@
 
 # The widget's own version; what changed in each one - CHANGELOG.md.
-$WidgetVersion = '1.2.0'
+$WidgetVersion = '1.3.0'
 
 $script:Root       = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:ConfigPath = Join-Path $script:Root 'config.json'
@@ -54,7 +54,7 @@ Remove-Item (Join-Path $env:TEMP 'cuw-*') -Force -ErrorAction SilentlyContinue
 # relies on the variables and functions of the previous ones.
 foreach ($m in @(
     'config', 'i18n', 'usage', 'version', 'account', 'sessions', 'clawd-session', 'status', 'format', 'window',
-    'mascot', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'reminders', 'lists', 'chat', 'panel', 'panel-pages', 'remind-popup', 'mascot-menu', 'tray',
+    'mascot', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'reminders', 'lists', 'chat', 'tasks', 'panel', 'panel-pages', 'remind-popup', 'mascot-menu', 'tray',
     'update', 'tray-menu', 'events'
   )) {
     . (Join-Path $script:Root "lib\$m.ps1")

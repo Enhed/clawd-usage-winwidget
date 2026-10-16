@@ -5,7 +5,7 @@
 
 foreach ($n in @('TabChat', 'TabRemind', 'TabLists', 'PageChat', 'PageRemind', 'PageLists',
                  'RemList', 'RemText', 'RemTextHint', 'RemWhen', 'RemWhenHint', 'RemSave', 'RemParsed',
-                 'RemChips', 'RemDone', 'ListTabs', 'ListItems', 'ListAdd', 'ListAddHint', 'ListClear', 'ListDelete')) {
+                 'RemChips', 'RemTasks', 'RemDone', 'ListTabs', 'ListItems', 'ListAdd', 'ListAddHint', 'ListClear', 'ListDelete')) {
     $UI[$n] = $advWin.FindName($n)
 }
 $script:PanelTab = 'chat'
@@ -21,7 +21,7 @@ function Set-PanelTab([string]$tab) {
     $UI.PageRemind.Visibility = $(if ($tab -eq 'remind') { 'Visible' } else { 'Collapsed' })
     $UI.PageLists.Visibility  = $(if ($tab -eq 'lists')  { 'Visible' } else { 'Collapsed' })
     # Rescan and "new conversation" are about the chat.
-    foreach ($b in @($UI.AdvStamp, $UI.AdvRescan, $UI.ChatNew)) {
+    foreach ($b in @($UI.AdvStamp, $UI.AdvRescan, $UI.ChatAuto, $UI.ChatNew)) {
         $b.Visibility = $(if ($tab -eq 'chat') { 'Visible' } else { 'Collapsed' })
     }
     Update-PanelTabs
@@ -55,6 +55,9 @@ foreach ($pair in @(@($UI.RemText, $UI.RemTextHint), @($UI.RemWhen, $UI.RemWhenH
 
 # ------------------------------------------------------------- reminders ----
 
+$script:RemWhenBad = $null   # a "when" Claude did not understand either
+
+# Something the parser does not know is not an error yet: on saving it goes to Claude.
 function Update-RemParsed {
     $when = $UI.RemWhen.Text.Trim()
     if (-not $when) { $UI.RemParsed.Text = ''; return }
@@ -62,22 +65,79 @@ function Update-RemParsed {
     if ($at) {
         $UI.RemParsed.Text = "$([char]0x2192) $(Format-RemindTime $at)"
         $UI.RemParsed.Foreground = New-Brush '#FF8B8B94'
-    } else {
+    } elseif (Test-RemRepeat $when) {
+        $UI.RemParsed.Text = T 'rem.repeat'
+        $UI.RemParsed.Foreground = New-Brush '#FF60A5FA'
+    } elseif ($script:WhenProc -and $script:WhenProc.when -eq $when) {
+        $UI.RemParsed.Text = T 'rem.whenAsking'
+        $UI.RemParsed.Foreground = New-Brush '#FF8B8B94'
+    } elseif ($when -eq $script:RemWhenBad) {
         $UI.RemParsed.Text = T 'rem.badWhen'
         $UI.RemParsed.Foreground = New-Brush $Palette.crit.Wpf
+    } else {
+        $UI.RemParsed.Text = T 'rem.whenAsk'
+        $UI.RemParsed.Foreground = New-Brush '#FF6B7280'
     }
 }
 $UI.RemWhen.add_TextChanged({ Update-RemParsed })
 
 function Save-RemForm {
     $text = $UI.RemText.Text.Trim()
-    $at = ConvertFrom-RemindWhen $UI.RemWhen.Text
+    $when = $UI.RemWhen.Text.Trim()
     if (-not $text) { [void]$UI.RemText.Focus(); return }
-    if (-not $at) { Update-RemParsed; [void]$UI.RemWhen.Focus(); return }
-    if ($script:RemEdit) { [void](Move-Reminder $script:RemEdit $at $text) }
-    else                 { [void](New-ReminderFile $at $text) }
+    if (-not $when) { [void]$UI.RemWhen.Focus(); return }
+    $at = ConvertFrom-RemindWhen $when
+    # "Every half an hour" is not a reminder but a recurring task: Clawd makes it
+    # in the chat - he knows which tools it needs (the mail and so on).
+    if (-not $at -and (Test-RemRepeat $when) -and $script:Cfg.showChat -and -not $script:ChatProc) {
+        Send-ChatMessage ((T 'rem.repeatMsg') -f $text, $when)
+        Reset-RemForm
+        Set-PanelTab 'chat'
+        return
+    }
+    if (-not $at) {
+        if ($when -eq $script:RemWhenBad) { [void]$UI.RemWhen.Focus(); return }
+        if (Start-WhenProbe $when @{ text = $text; edit = $script:RemEdit }) { $whenTimer.Start() }
+        Update-RemParsed
+        return
+    }
+    Save-Rem $at $text $script:RemEdit
     Reset-RemForm
 }
+
+function Test-RemRepeat([string]$when) {
+    return ($when.Trim().ToLower() -match '^(раз в|раз во|каждый|каждую|каждое|каждые|ежедневно|ежечасно|every|each|hourly|daily)(\s|$)')
+}
+
+function Save-Rem([datetime]$at, [string]$text, $edit) {
+    if ($edit) { [void](Move-Reminder $edit $at $text) }
+    else       { [void](New-ReminderFile $at $text) }
+}
+
+# Claude's answer about the time. The form is cleared only if it still holds what was asked.
+$whenTimer = New-Object System.Windows.Threading.DispatcherTimer
+$whenTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+$whenTimer.add_Tick({
+    try {
+        $r = Collect-WhenProbe
+        if (-not $r) { return }
+        $whenTimer.Stop()
+        $same = ($UI.RemWhen.Text.Trim() -eq $r.when -and $UI.RemText.Text.Trim() -eq $r.data.text)
+        if ($r.at) {
+            Save-Rem $r.at $r.data.text $r.data.edit
+            if ($same) { Reset-RemForm } else { $script:RemKey = $null; Update-Panel }
+        } else {
+            $script:RemWhenBad = $r.when
+            Update-RemParsed
+        }
+    } catch {
+        $whenTimer.Stop()
+        try {
+            "$(Get-Date -Format s)`twhen: $($_.Exception.Message)`t$($_.InvocationInfo.PositionMessage)" |
+                Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
+        } catch {}
+    }
+})
 
 function Reset-RemForm {
     $script:RemEdit = $null
@@ -145,10 +205,44 @@ function New-RemCard($r) {
     return $card
 }
 
+# A recurring task: name, how often, when it last ran; run now, pause, open the file.
+function New-TaskRow($t, $st) {
+    $box = New-Object System.Windows.Controls.StackPanel
+    $box.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
+    $info = @($(if ($t.every) { Format-TaskEvery $t.every } else { T 'task.badEvery' }))
+    if ($t.hours) { $info += "$($t.hours[0])-$($t.hours[1])" }
+    $running = ($script:TaskProc -and $script:TaskProc.task.name -eq $t.name)
+    if ($running) { $info += T 'task.running' }
+    elseif ($st -and $st.last -ne [datetime]::MinValue) { $info += (T 'task.last') -f (Format-RemindTime $st.last) }
+    if ($t.paused) { $info += T 'task.paused' }
+    $line = New-PanelText "$($t.name)  $([char]0x00B7)  $($info -join "  $([char]0x00B7)  ")" 10 $(if ($t.paused) { '#FF6B7280' } else { '#FFD4D4D8' })
+    if ($st -and $st.error) { $line.ToolTip = $st.error; $line.Foreground = New-Brush $Palette.warn.Wpf }
+    [void]$box.Children.Add($line)
+    $row = New-Object System.Windows.Controls.StackPanel
+    $row.Orientation = 'Horizontal'
+    $row.Margin = New-Object System.Windows.Thickness 0, 1, 0, 0
+    if (-not $running -and -not $script:TaskProc) {
+        [void]$row.Children.Add((New-PanelLink (T 'task.now') '#FF60A5FA' $t {
+            param($s, $e); $e.Handled = $true; Start-TaskRun $s.Tag; $script:RemKey = $null; Update-Panel }))
+    }
+    [void]$row.Children.Add((New-PanelLink $(if ($t.paused) { T 'task.resume' } else { T 'task.pause' }) '#FF8B8B94' $t {
+        param($s, $e); $e.Handled = $true; Set-TaskPaused $s.Tag (-not $s.Tag.paused); Update-Panel }))
+    [void]$row.Children.Add((New-PanelLink (T 'task.open') '#FF8B8B94' $t {
+        param($s, $e); $e.Handled = $true; try { Start-Process notepad.exe -ArgumentList "`"$($s.Tag.path)`"" } catch {} }))
+    [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $t {
+        param($s, $e); $e.Handled = $true; [void](Remove-TaskFile $s.Tag.name); Update-Panel }))
+    [void]$box.Children.Add($row)
+    return $box
+}
+
 function Update-RemindPage {
     $rem = Get-Reminders
     $done = Get-DoneReminders 5
+    $tasks = $(if ($script:Cfg.showTasks) { Get-Tasks } else { @() })
+    $tst = Load-TaskState
     $key = (Get-Lang) + '|' + (@($rem | ForEach-Object { "$($_.path)$($_.at.Ticks)" }) -join ',') + '|' +
+           (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.paused)$(if ($tst[$_.name]) { $tst[$_.name].last.Ticks })" }) -join ',') +
+           "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|" +
            (@($done | ForEach-Object { "$($_.at.Ticks)$($_.text)" }) -join ',') + "|$($script:RemEdit.path)|" +
            [int]((Get-Date) - [datetime]::Today).TotalMinutes    # "in 2 h" goes stale
     if ($key -eq $script:RemKey) { return }
@@ -175,6 +269,12 @@ function Update-RemindPage {
     if ($script:RemEdit) {
         [void]$UI.RemChips.Children.Add((New-PanelLink (T 'rem.cancel') '#FF6B7280' $null {
             param($s, $e); $e.Handled = $true; Reset-RemForm }))
+    }
+
+    $UI.RemTasks.Children.Clear()
+    if ($tasks.Count) {
+        [void]$UI.RemTasks.Children.Add((New-PanelText (T 'task.head') 9 '#FF6B7280'))
+        foreach ($t in $tasks) { [void]$UI.RemTasks.Children.Add((New-TaskRow $t $tst[$t.name])) }
     }
 
     $UI.RemDone.Children.Clear()

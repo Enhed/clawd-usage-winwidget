@@ -17,6 +17,8 @@ $ChatKeep       = 60     # messages kept for display
 $script:ChatProc   = $null   # running claude: @{ proc; out; err; hidden }
 $script:RunProc    = $null   # running approved script: @{ proc; out; err; msg }
 $script:ChatUnread = $false  # Clawd answered while the panel was closed
+$script:AutoChain  = 0       # scripts run by themselves since the user's last message
+$AutoChainMax      = 3
 
 function Load-JsonFile([string]$path) {
     try { return [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8) | ConvertFrom-Json } catch { return $null }
@@ -39,6 +41,7 @@ function Load-Chat {
         foreach ($m in @($raw.messages)) {
             if (-not $m) { continue }
             $msg = @{ role = [string]$m.role; text = [string]$m.text; at = [datetime]::MinValue }
+            if ($m.task) { $msg.task = [string]$m.task }
             if ($m.at) { try { $msg.at = [datetime]$m.at } catch {} }
             if ($m.run) {
                 $state = [string]$m.run.state
@@ -163,7 +166,8 @@ function Get-ChatContext {
     $tz = [TimeZoneInfo]::Local.GetUtcOffset($now)
     $lines = @('<context>',
                "now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm')))",
-               "widget elevated: $(if ($script:IsAdmin) { 'yes' } else { 'no' })")
+               "widget elevated: $(if ($script:IsAdmin) { 'yes' } else { 'no' })",
+               "auto-run: $(if ($script:Cfg.chatAutoRun) { 'on - your run scripts start at once, without the user''s click' } else { 'off' })")
     $tips = @(Get-AdvisorTips)
     if ($tips.Count) {
         $lines += 'tips:'
@@ -189,6 +193,29 @@ function Get-ChatContext {
             $lines += "- $n`: $(if ($items.Count) { $items -join '; ' } else { 'empty' })"
         }
     }
+    $tasks = Get-Tasks
+    if ($tasks.Count) {
+        $st = Load-TaskState
+        $lines += 'recurring tasks (files in the tasks folder):'
+        foreach ($t in $tasks) {
+            $last = $(if ($st[$t.name] -and $st[$t.name].last -ne [datetime]::MinValue) { $st[$t.name].last.ToString('MM-dd HH:mm') } else { 'never' })
+            $lines += "- $($t.name): every $($t.everyText)$(if ($t.tools.Count) { ", tools $($t.tools -join ' ')" })$(if ($t.hours) { ", hours $($t.hours -join '-')" })$(if ($t.paused) { ', paused' }), last run $last - $(($t.prompt -replace '\s+', ' '))"
+        }
+    }
+    # Task reports are put into the panel by the widget, not said in this conversation:
+    # without them "move it to the trash" right after a mail report means nothing.
+    $since = (Get-Date).AddHours(-24)
+    # Before 1.3.0 reports carried no mark, only "[task name] " in front.
+    $reports = @($script:Chat.messages | Where-Object { ($_.task -or ($_.role -eq 'clawd' -and $_.text -match '^\[[^\]]+\] ')) -and $_.at -gt $since } |
+                 Select-Object -Last 5)
+    if ($reports.Count) {
+        $lines += 'recent reports of your recurring tasks, shown to the user in this chat (the user may be replying to them):'
+        foreach ($m in $reports) {
+            $t = $m.text -replace '\s+', ' '
+            if ($t.Length -gt 800) { $t = $t.Substring(0, 800) + '...' }
+            $lines += "- $($m.at.ToString('MM-dd HH:mm')) $t"
+        }
+    }
     $recent = @($script:Remote.items | Select-Object -Last 12)
     if ($recent.Count) {
         $lines += 'recent conversation in your own session (the user on the phone via Remote Control):'
@@ -208,6 +235,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
     if (-not $Hidden) {
         # A new word from the user replaces a script still waiting for approval.
         foreach ($m in $script:Chat.messages) { if ($m.run -and $m.run.state -eq 'pending') { $m.run.state = 'replaced' } }
+        $script:AutoChain = 0
         [void](Add-ChatMessage 'user' $text)
     }
     try {
@@ -215,13 +243,21 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
         $in  = Join-Path $env:TEMP "cuw-chat-in-$PID.txt"
         $out = Join-Path $env:TEMP "cuw-chat-out-$PID.json"
         $err = Join-Path $env:TEMP "cuw-chat-err-$PID.txt"
-        [System.IO.File]::WriteAllText($in, (Get-ChatContext) + "`n`n" + $text, (New-Object System.Text.UTF8Encoding $false))
+        # What the user gave the tasks (the mail...) the chat may use too: it is the same
+        # Clawd, and he is asked to act on what the tasks report. No such tools - no
+        # MCP servers at all, they only slow the start down.
+        $tools = @(Get-Tasks | ForEach-Object { $_.tools } | Where-Object { $_ } | Sort-Object -Unique)
+        $ctx = Get-ChatContext
+        if ($tools.Count) { $ctx = $ctx -replace '</context>$', "tools you may use besides reading: $($tools -join ' ')`n</context>" }
+        [System.IO.File]::WriteAllText($in, $ctx + "`n`n" + $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
         $argv = @('-p', '--output-format', 'json', '--model', [string]$script:Cfg.chatModel,
-                  '--permission-mode', 'default', '--strict-mcp-config',
-                  '--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
-                  '--append-system-prompt-file', (& $q $ChatPromptPath),
-                  '--allowedTools') + @($ChatReadOnly | ForEach-Object { & $q "PowerShell($_`:*)" })
+                  '--permission-mode', 'default')
+        if (-not $tools.Count) { $argv += '--strict-mcp-config' }
+        $argv += @('--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
+                   '--append-system-prompt-file', (& $q $ChatPromptPath),
+                   '--allowedTools') + @($ChatReadOnly | ForEach-Object { & $q "PowerShell($_`:*)" }) +
+                 @($tools | ForEach-Object { & $q $_ })
         if ($script:Chat.started) { $argv += @('--resume', $script:Chat.sessionId) }
         else                      { $argv += @('--session-id', $script:Chat.sessionId) }
         $p = Start-Process -FilePath $script:ClaudeExe -WorkingDirectory $home_ -ArgumentList $argv `
@@ -240,7 +276,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden) {
 function Read-ChatReply([string]$reply) {
     $run = $null
     $notes = @()
-    $rx = [regex]'(?ms)^```(run|remind|remind-cancel|list-add|list-check|list-uncheck|list-remove)[ \t]*\r?\n(.*?)^```[ \t]*$'
+    $rx = [regex]'(?ms)^```(run|remind|remind-cancel|list-add|list-check|list-uncheck|list-remove|task|task-remove)[ \t]*\r?\n(.*?)^```[ \t]*$'
     foreach ($m in $rx.Matches($reply)) {
         $body = $m.Groups[2].Value.Trim()
         switch ($m.Groups[1].Value) {
@@ -279,6 +315,28 @@ function Read-ChatReply([string]$reply) {
                     if ($r) { $notes += (T 'chat.remindCancel') -f $r.text }
                 }
             }
+            'task' {
+                # "key: value" lines (name, every, tools, model, hours), "---", then the task text.
+                $parts = [regex]::Split($body, '(?m)^---[ \t]*\r?$\n?', 2)
+                if ($parts.Count -lt 2) { break }
+                $head = @{}
+                foreach ($line in $parts[0] -split '\r?\n') {
+                    $kv = [regex]::Match($line, '^\s*(\w+)\s*:\s*(.*?)\s*$')
+                    if ($kv.Success) { $head[$kv.Groups[1].Value.ToLower()] = $kv.Groups[2].Value }
+                }
+                if (-not $head.name -or -not (Read-TaskEvery ([string]$head.every)) -or -not $parts[1].Trim()) {
+                    $notes += (T 'chat.taskBad') -f $head.name
+                    break
+                }
+                if (New-TaskFile $head.name $head $parts[1]) { $notes += (T 'chat.taskSet') -f $head.name, $head.every }
+            }
+            'task-remove' {
+                foreach ($line in $body -split '\r?\n') {
+                    if (-not $line.Trim()) { continue }
+                    $t = Remove-TaskFile $line
+                    if ($t) { $notes += (T 'chat.taskRemove') -f $t.name }
+                }
+            }
         }
     }
     $text = ConvertTo-PlainText ($rx.Replace($reply, ''))
@@ -312,8 +370,15 @@ function Collect-ChatReply {
         # A block that failed to parse must not swallow the reply itself.
         try { $r = Read-ChatReply ([string]$j.result) }
         catch { $r = @{ text = [string]$j.result; run = $null; notes = @((T 'chat.error') -f $_.Exception.Message) } }
-        if ($r.text -or $r.run) { [void](Add-ChatMessage 'clawd' $r.text $r.run) }
+        $msg = $null
+        if ($r.text -or $r.run) { $msg = Add-ChatMessage 'clawd' $r.text $r.run }
         foreach ($n in $r.notes) { [void](Add-ChatMessage 'note' $n) }
+        # Auto mode: the script runs without a click, but only a few in a row on their
+        # own - Clawd answering each result with yet another script stops for a word from the user.
+        if ($msg -and $msg.run -and $script:Cfg.chatAutoRun) {
+            if ($script:AutoChain -lt $AutoChainMax) { $script:AutoChain++; Start-ChatRun $msg }
+            else { [void](Add-ChatMessage 'note' ((T 'chat.autoStop') -f $AutoChainMax)) }
+        }
     } else {
         $why = ''
         if ($j -and $j.result) { $why = [string]$j.result }

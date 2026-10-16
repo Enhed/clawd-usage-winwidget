@@ -183,6 +183,7 @@ function Update-Widget {
     Sync-Mascot
     Update-Advisor
     Update-Reminders
+    Update-Tasks
     Update-RemoteFeed
     Update-Badge
     if ($advWin.IsVisible) { Update-Panel }

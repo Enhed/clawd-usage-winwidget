@@ -96,12 +96,13 @@ function Collect-UsageProbe {
         day = $null; week7 = $null
     }
 
-    $m = [regex]::Match($text, 'Current session:\s*(\d+)%[^\r\n]*?resets\s*([^\r\n]+)')
+    # With no usage the window has not started and there is no "resets" - that is 0%, not "no data".
+    $m = [regex]::Match($text, 'Current session:\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?')
     if ($m.Success) {
         $u.session      = [int]$m.Groups[1].Value
         $u.sessionReset = Parse-ResetStamp $m.Groups[2].Value
     }
-    $m = [regex]::Match($text, 'Current week \(all models\):\s*(\d+)%[^\r\n]*?resets\s*([^\r\n]+)')
+    $m = [regex]::Match($text, 'Current week \(all models\):\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?')
     if ($m.Success) {
         $u.week      = [int]$m.Groups[1].Value
         $u.weekReset = Parse-ResetStamp $m.Groups[2].Value

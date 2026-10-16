@@ -140,22 +140,35 @@ function Get-DoneReminders([int]$count = 5) {
     return ,$list
 }
 
+# "In N units": +20m, in 2 hours, через час, через неделю. A word in front ("in",
+# "через") may stand for one. Returns @{ n; unit = min|hour|day|week|month } or $null.
+function Read-RemindOffset([string]$s) {
+    $m = [regex]::Match($s, '^(\+|через |in )?\s*(\d+|an?)?\s*(m|min|mins|minutes?|м|мин\w*|полчаса|h|hours?|ч|час\w*|d|days?|д|дн\w*|день|w|weeks?|н|нед\w*|mo|months?|мес\w*)$')
+    if (-not $m.Success) { return $null }
+    $num = $m.Groups[2].Value
+    if ($num -match '^\d+$') { $n = [int]$num }
+    elseif ($m.Groups[1].Value.Trim() -in @('через', 'in')) { $n = 1 }
+    else { return $null }
+    $u = $m.Groups[3].Value
+    $unit = $(if ($u -eq 'полчаса') { 'half' } elseif ($u -match '^(mo|мес)') { 'month' } elseif ($u -match '^(w|н)') { 'week' }
+              elseif ($u -match '^(m|м)') { 'min' } elseif ($u -match '^(h|ч)') { 'hour' } else { 'day' })
+    return @{ n = $n; unit = $unit }
+}
+
 # "When" as people write it: 18:30, tomorrow 10:00, +20m, in 2 hours, mon 9:00,
-# 19.10 14:00, 19.10.2026, 2026-10-19 14:00. A day without a time is 10:00;
-# a time already gone today is tomorrow. $null - not understood.
+# через неделю 15:00, 19.10 14:00, 19.10.2026, 2026-10-19 14:00. A day without a
+# time is 10:00; a time already gone today is tomorrow. $null - not understood
+# (the panel then asks Claude, see Start-WhenProbe).
 function ConvertFrom-RemindWhen([string]$s) {
     $s = $s.Trim().ToLower() -replace '\s+', ' '
     if (-not $s) { return $null }
     $now = Get-Date
     $time = { param($h, $m) [timespan]::new([int]$h, [int]$(if ($m) { $m } else { 0 }), 0) }
 
-    $m = [regex]::Match($s, '^(?:\+|через |in )?\s*(\d+)\s*(m|min|mins|minutes?|м|мин\w*|h|hours?|ч|час\w*|d|days?|д|дн\w*|день)$')
-    if ($m.Success) {
-        $n = [int]$m.Groups[1].Value; $u = $m.Groups[2].Value
-        if ($u -match '^(m|min|м)') { return $now.AddMinutes($n) }
-        if ($u -match '^(h|ч)')     { return $now.AddHours($n) }
-        return $now.Date.AddDays($n) + (& $time 10 0)
-    }
+    $o = Read-RemindOffset $s
+    if ($o -and $o.unit -eq 'half') { return $now.AddMinutes(30 * $o.n) }
+    if ($o -and $o.unit -eq 'min')  { return $now.AddMinutes($o.n) }
+    if ($o -and $o.unit -eq 'hour') { return $now.AddHours($o.n) }
     # Optional time at the end: "... 9", "... 9:30", "... 9.30".
     $t = $null
     $tm = [regex]::Match($s, '(?:^|\s)(?:в |at )?(\d{1,2})(?:[:.](\d{2}))?$')
@@ -171,6 +184,10 @@ function ConvertFrom-RemindWhen([string]$s) {
         return $at
     }
     if (-not $t) { $t = & $time 10 0 }
+    $o = Read-RemindOffset $rest
+    if ($o -and $o.unit -eq 'day')   { return $now.Date.AddDays($o.n) + $t }
+    if ($o -and $o.unit -eq 'week')  { return $now.Date.AddDays(7 * $o.n) + $t }
+    if ($o -and $o.unit -eq 'month') { return $now.Date.AddMonths($o.n) + $t }
     if ($rest -in @('сегодня', 'today'))                 { return $now.Date + $t }
     if ($rest -in @('завтра', 'tomorrow'))               { return $now.Date.AddDays(1) + $t }
     if ($rest -in @('послезавтра'))                      { return $now.Date.AddDays(2) + $t }
@@ -199,4 +216,53 @@ function ConvertFrom-RemindWhen([string]$s) {
         try { return (Get-Date -Year ([int]$iso.Groups[1].Value) -Month ([int]$iso.Groups[2].Value) -Day ([int]$iso.Groups[3].Value)).Date + $t } catch { return $null }
     }
     return $null
+}
+
+# What the parser above does not know ("in a week and a half", "on the 1st of
+# November", "next Friday evening") goes to a small model: one `claude -p` with no
+# tools, outside Clawd's home, answering with a date or NONE.
+$script:WhenProc = $null   # @{ proc; out; at; when; data }
+
+function Start-WhenProbe([string]$when, $data) {
+    if ($script:WhenProc) { return $false }
+    try {
+        $now = Get-Date
+        $tz  = [TimeZoneInfo]::Local.GetUtcOffset($now)
+        $in  = Join-Path $env:TEMP "cuw-when-in-$PID.txt"
+        $out = Join-Path $env:TEMP "cuw-when-out-$PID.txt"
+        $prompt = @(
+            "Now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm'))).",
+            "A user wrote when a reminder should go off: `"$when`"",
+            'Turn it into a local date and time. A day without a time is 10:00; a time already gone today is tomorrow.',
+            'If the text names no day, date, time or period at all (it is a task, a word, gibberish), the answer is NONE - never guess.',
+            'Reply with exactly one line: the time as yyyy-MM-ddTHH:mm, or NONE.'
+        ) -join "`n"
+        [System.IO.File]::WriteAllText($in, $prompt, (New-Object System.Text.UTF8Encoding $false))
+        $argv = @('-p', '--output-format', 'text', '--model', [string]$script:Cfg.quickModel,
+                  '--tools', '""', '--strict-mcp-config', '--no-session-persistence')
+        $p = Start-Process -FilePath $script:ClaudeExe -WorkingDirectory $env:TEMP -ArgumentList $argv `
+                 -RedirectStandardInput $in -RedirectStandardOutput $out -WindowStyle Hidden -PassThru
+        [void]$p.Handle
+        $script:WhenProc = @{ proc = $p; out = $out; at = $now; when = $when; data = $data }
+        return $true
+    } catch { return $false }
+}
+
+# $null while it is still thinking; then @{ at = <datetime or $null>; when; data }.
+function Collect-WhenProbe {
+    $w = $script:WhenProc
+    if (-not $w) { return $null }
+    if (-not $w.proc.HasExited) {
+        if (([datetime]::Now - $w.at).TotalSeconds -lt 60) { return $null }
+        try { & taskkill.exe /PID $w.proc.Id /T /F 2>&1 | Out-Null } catch {}
+    }
+    $script:WhenProc = $null
+    $at = $null
+    try {
+        $m = [regex]::Match([System.IO.File]::ReadAllText($w.out, [System.Text.Encoding]::UTF8), '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}')
+        if ($m.Success) { $at = [datetime]::ParseExact($m.Value, 'yyyy-MM-ddTHH:mm', $null) }
+    } catch {}
+    # A time in the past is no answer either.
+    if ($at -and $at -lt (Get-Date).AddMinutes(-1)) { $at = $null }
+    return @{ at = $at; when = $w.when; data = $w.data }
 }

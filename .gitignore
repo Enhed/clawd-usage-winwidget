@@ -3,4 +3,5 @@ widget-error.log
 advisor-state.json
 chat-state.json
 clawd-state.json
+tasks-state.json
 CLAUDE.md

@@ -7,7 +7,7 @@
 
 $panelXaml = [xml](Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'panel.xaml'))
 $advWin    = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $panelXaml))
-foreach ($n in @('PanelTitle', 'AdvStamp', 'AdvRescan', 'ChatNew', 'AdvClose', 'PanelScroll', 'LblTips', 'AdvList',
+foreach ($n in @('PanelTitle', 'AdvStamp', 'AdvRescan', 'ChatAuto', 'ChatNew', 'AdvClose', 'PanelScroll', 'LblTips', 'AdvList',
                  'ChatList', 'ChatBusy', 'ChatInput', 'ChatHint', 'ChatSend')) {
     $UI[$n] = $advWin.FindName($n)
 }
@@ -23,6 +23,22 @@ $UI.AdvRescan.add_MouseLeftButtonDown({
     Update-PanelBusy
 })
 $UI.ChatNew.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Reset-Chat })
+# "Auto": Clawd's scripts run without the "Run" click.
+$UI.ChatAuto.add_MouseLeftButtonDown({
+    param($s, $e)
+    $e.Handled = $true
+    $script:Cfg.chatAutoRun = -not $script:Cfg.chatAutoRun
+    $script:AutoChain = 0
+    Save-Config $script:Cfg
+    Update-ChatAuto
+})
+
+function Update-ChatAuto {
+    $on = [bool]$script:Cfg.chatAutoRun
+    $UI.ChatAuto.Text       = T 'chat.auto'
+    $UI.ChatAuto.Foreground = New-Brush $(if ($on) { '#FF4ADE80' } else { '#FF52525B' })
+    $UI.ChatAuto.ToolTip    = $(if ($on) { T 'chat.autoOn' } else { T 'chat.autoOff' })
+}
 
 $script:TipRef = $null   # tip being refined: the next message goes with its text
 
@@ -258,6 +274,7 @@ function Update-Panel([switch]$Force) {
 function Update-ChatPage([switch]$Force) {
     $UI.AdvRescan.ToolTip = T 'adv.rescan'
     $UI.ChatNew.ToolTip   = T 'chat.new'
+    Update-ChatAuto
     if ($script:TipRef)                  { $UI.ChatHint.Text = T 'adv.refineHint' }
     elseif (-not $UI.ChatInput.IsFocused) { $UI.ChatHint.Text = T 'chat.hint' }
     $tips = @(Get-AdvisorTips)

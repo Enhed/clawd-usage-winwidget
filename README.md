@@ -172,7 +172,9 @@ touched), with the current tips, time and reminders attached. Clawd may look
 around but can't change anything himself: no write tools, MCP servers off, only
 read-only commands allowed. A change comes as a script you see in full, with
 **Run**, **Refine** (write what to change — the script is replaced) and **Not
-now**. Reminders are kept by the widget and fire on time with a card to
+now**. **AUTO** in the panel header (`chatAutoRun`, off by default) skips the click:
+scripts run as soon as Clawd sends them, up to three in a row before one waits for
+you again; Clawd is told about it and asks in words before anything destructive. Reminders are kept by the widget and fire on time with a card to
 put them off, a bell in the header and a hop from Clawd — even with the panel
 closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
 default), `showChat` turns it off.
@@ -181,8 +183,10 @@ default), `showChat` turns it off.
 bottom-right corner, like a phone notification: put it off — +15m, +1h, +3h,
 tomorrow 9:00 or any time — or mark it done; it waits until you answer. The panel has three tabs: Chat, Reminders and Lists.
 Reminders shows what's coming (Change, +1 hour, Delete) and a form to add one:
-the "when" field understands `18:30`, `tomorrow 10`, `+20m`, `mon 9:00`,
-`19.10 14:00` and shows what it made of it. Lists keeps shopping and any other
+the "when" field understands `18:30`, `tomorrow 10`, `+20m`, `in a week`,
+`mon 9:00`, `19.10 14:00` and shows what it made of it; anything else ("next Friday
+evening", "1 November") goes on saving to a small model (`quickModel`, Haiku by
+default), and only what it can't place either is an error. Lists keeps shopping and any other
 lists with checkboxes — add several items at once with commas, tick them off,
 remove the ticked ones, start a new list with "+". Both are plain files in Clawd's
 home, so the chat ("add milk to shopping") and Clawd on your phone ("what do I need
@@ -198,6 +202,30 @@ running in that folder with Remote Control — talk to him from the Claude app o
 your phone: he reads `tips.md`, makes reminders and keeps notes in the same home.
 He is told about all this by `clawd-session-prompt.md`. While that session is
 idle Clawd can still fall asleep; when you talk to him he runs around.
+
+**Recurring tasks.** Something Clawd does by himself every so often: look at the
+mail, check a site, watch a folder. A task is a file `tasks\<name>.md` in his home:
+
+```
+---
+every: 10m
+tools: mcp__mail
+hours: 8-23
+---
+Check the inbox for mail since the last run. Tell me only about letters from
+people and anything urgent.
+```
+
+The widget runs a due one as a background `claude -p` in Clawd's home, with the
+usual context and his last report, so he says only what's new. Most runs end with
+nothing to say and you see nothing; otherwise the reply lands in the chat with a
+notification. `tools` — what it may use besides reading (an MCP server as
+`mcp__<server>`); `model` — instead of `quickModel`; `hours` — only between these
+hours; `paused: yes`. Ask in the chat ("check my mail every 10 minutes"), put
+"every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
+the phone, or write the file yourself; the Reminders tab lists them with Run now,
+Pause, Open and Delete. A script a task proposes always waits for a click. Each run
+uses your plan's limits; `showTasks` turns them off.
 
 The panel and the phone are two conversations with one Clawd: the panel shows the
 phone conversation in the same feed (marked "Remote Control"), its chat gets the
@@ -244,6 +272,9 @@ are picked up on the fly, no restart needed.
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
 | `showAdvisor` | Clawd's tips about the computer |
 | `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |
+| `chatAutoRun` | run Clawd's scripts without the Run click (the AUTO toggle in the panel) |
+| `quickModel` | model for small jobs: an unclear reminder time, recurring tasks (`haiku`) |
+| `showTasks` | run recurring tasks from `tasks\` in Clawd's home |
 | `advisorDiskGB` / `advisorJunkGB` | free space to warn below; size of temp files and caches worth mentioning, GB |
 | `advisorUnusedDays` / `advisorUptimeDays` / `advisorMemPercent` | when an app counts as unused; when to suggest a restart; memory share of one program worth a word |
 | `runAsAdmin` | run the widget itself as administrator: at start it asks UAC and restarts elevated (declined — runs as usual). Elevated, the tips also read Prefetch (the exact last start of every program, terminal ones included), Windows Temp and Windows Update downloads |
