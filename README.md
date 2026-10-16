@@ -281,7 +281,7 @@ are picked up on the fly, no restart needed.
 
 | key | meaning |
 |---|---|
-| `language` | `en` or `ru` (also in the tray menu) |
+| `language` | `en`, `ru` or `fr` (also in the tray menu) |
 | `scale` | window scale, 0.6–4.0 (default 1.35; also "Larger" / "Smaller" in the tray menu) |
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |

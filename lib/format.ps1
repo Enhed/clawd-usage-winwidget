@@ -16,8 +16,7 @@ function Format-ResetClock([datetime]$at) {
     $days = ($at.Date - (Get-Date).Date).Days
     if ($days -le 0) { return $hm }
     if ($days -eq 1) { return ((T 'clock.tmrw') -f $hm) }
-    $c = [System.Globalization.CultureInfo]::GetCultureInfo($(if ((Get-Lang) -eq 'ru') { 'ru-RU' } else { 'en-US' }))
-    return $at.ToString('ddd ', $c) + $hm
+    return $at.ToString('ddd ', (Get-LangCulture)) + $hm
 }
 
 function Get-Level([double]$pct) {
