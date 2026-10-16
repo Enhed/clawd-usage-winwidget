@@ -76,10 +76,12 @@ The ▾ in the header expands details (remembered between runs):
   computer.
 - **Version** — your Claude Code version. If a newer one is out the line turns
   yellow: hover for the official CHANGELOG between your version and the latest,
-  click to run `claude update` in a separate window.
+  click to run `claude update` in a separate window; otherwise a click opens
+  Claude Code's changelog. Next to it is the widget's own version: hover for what's
+  new in it, click for its `CHANGELOG.md` on GitHub.
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
-refresh, larger/smaller, language, open config, exit. Drag the window anywhere —
+refresh, larger/smaller, look the computer over, open config, language, Clawd's session, exit. Drag the window anywhere —
 the position is saved.
 
 ### Clawd
@@ -137,6 +139,62 @@ Location is looked up once per run by IP via [ipwho.is](https://ipwho.is) — se
 `weatherLat` / `weatherLon` to skip that. Without network the sky still follows
 the clock. Turn it off with `showSky`.
 
+### Clawd's panel: tips and chat
+
+An icon in the header opens a panel beside the widget; it stays open until you
+close it with the cross or the icon, and stays on top only if the widget does
+(`topmost`). The icon tells what's waiting: a bell — a
+reminder went off, a blue chat — Clawd answered, a lamp with a number — tips
+(yellow if urgent), a grey chat — nothing, just talk.
+
+**Tips.** Every half hour Clawd quietly looks the computer over:
+
+- drives running out of space, and how much sits in Temp, Downloads, the Recycle
+  Bin, crash dumps and npm / pip / Yarn / scoop caches;
+- new entries in autostart (what was there on the first run is taken as known);
+- apps not started for 90+ days — by Windows' own record of launches from Start,
+  the taskbar and Explorer; apps in `PATH` or run as services count as used;
+- a restart Windows Update is waiting for, a long uptime, a program eating lots of
+  memory or keeping the CPU busy two checks in a row.
+
+Each tip links to the right place and has **Do it** (Clawd answers with a script
+to approve), **Refine** (your next message goes to him with the tip, e.g. "all
+but scoop") and **Dismiss**; it comes back after a
+while if it's still true (a day; a month for unused apps). The check is local and
+read-only — no network, no tokens. "Look the computer over now" in the tray menu
+runs it right away. Turn it off with `showAdvisor`.
+
+**Chat.** Ask Clawd anything about the computer, answer a tip ("clean it all up,
+but leave Redis alone") or ask for a reminder ("on Monday at 10 remind me to call
+the client", "in 20 minutes — hang the laundry"). Each message is a headless
+`claude -p` call in a conversation of its own (your Claude Code sessions are not
+touched), with the current tips, time and reminders attached. Clawd may look
+around but can't change anything himself: no write tools, MCP servers off, only
+read-only commands allowed. A change comes as a script you see in full, with
+**Run**, **Refine** (write what to change — the script is replaced) and **Not
+now**. Reminders are kept by the widget and fire on time with a Windows
+notification, a bell in the header and a hop from Clawd — even with the panel
+closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
+default), `showChat` turns it off.
+
+**Clawd's home and his own session.** The chat works in Clawd's home folder
+(`clawdHome`). Reminders are plain files there —
+`reminders\2026-11\2026-11-16 10-00 Pay the taxes.md` with an `at:` line — so
+anyone can make one: the chat, Clawd's session, or you by hand; fired ones move to
+`reminders\done`. After each check the tips are written to `tips.md` there. With
+`clawdSession` the widget also keeps Clawd's own interactive Claude Code session
+running in that folder with Remote Control — talk to him from the Claude app on
+your phone: he reads `tips.md`, makes reminders and keeps notes in the same home.
+He is told about all this by `clawd-session-prompt.md`. While that session is
+idle Clawd can still fall asleep; when you talk to him he runs around.
+
+The panel and the phone are two conversations with one Clawd: the panel shows the
+phone conversation in the same feed (marked "Remote Control"), its chat gets the
+latest part of it as context, and the panel's conversation is written to
+`chat-log.md` in the home for the phone session to read. "+" in the panel starts
+a new conversation there and hides the phone conversation so far; on the phone
+`/clear` starts a new one in the same Remote Control entry, and the feed follows.
+
 ## Where the data comes from
 
 | what | source | how often |
@@ -173,7 +231,15 @@ are picked up on the fly, no restart needed.
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
-| `refreshSeconds`, `usageIntervalSeconds`, `versionIntervalSeconds`, `statusIntervalSeconds`, `accountIntervalSeconds`, `weatherIntervalSeconds` | polling periods, seconds |
+| `showAdvisor` | Clawd's tips about the computer |
+| `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |
+| `advisorDiskGB` / `advisorJunkGB` | free space to warn below; size of temp files and caches worth mentioning, GB |
+| `advisorUnusedDays` / `advisorUptimeDays` / `advisorMemPercent` | when an app counts as unused; when to suggest a restart; memory share of one program worth a word |
+| `runAsAdmin` | run the widget itself as administrator: at start it asks UAC and restarts elevated (declined — runs as usual). Elevated, the tips also read Prefetch (the exact last start of every program, terminal ones included), Windows Temp and Windows Update downloads |
+| `clawdHome` | Clawd's home folder: the chat works there, reminders and `tips.md` live there, and so does his own session; empty — `%USERPROFILE%\Clawd` |
+| `clawdSession` | keep Clawd's own Claude Code session running in his home with Remote Control (named after the widget, `clawdSessionName`), to talk to him from the phone or claude.ai (default off; also in the tray menu). Started with the widget and again if it's gone; starts its own conversation and comes back to it. Skipped while another session runs in that folder |
+| `clawdSessionAdmin` / `clawdSessionHidden` | run that session as administrator; without a window (default on; a folder Claude Code hasn't trusted yet still opens in a window, to answer the trust question) |
+| `refreshSeconds`, `usageIntervalSeconds`, `versionIntervalSeconds`, `statusIntervalSeconds`, `accountIntervalSeconds`, `weatherIntervalSeconds`, `advisorIntervalMinutes` | polling periods, seconds |
 | `left` / `top` | window position, written when you drag it |
 
 ## Troubleshooting

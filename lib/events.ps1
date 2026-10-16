@@ -33,12 +33,21 @@ $UI.BtnHide.add_MouseLeftButtonDown({
     $e.Handled = $true
     $win.Hide()
 })
+# Claude Code's version: with an update out - update, otherwise its changelog.
 $UI.LineVersion.add_MouseLeftButtonDown({
     param($s, $e)
-    if (-not (Test-UpdateAvailable)) { return }
     $e.Handled = $true
-    Start-ClaudeUpdate
-    Update-Widget
+    if (Test-UpdateAvailable) {
+        Start-ClaudeUpdate
+        Update-Widget
+    } else {
+        Start-Process $ChangelogPage
+    }
+})
+$UI.LineClawdVer.add_MouseLeftButtonDown({
+    param($s, $e)
+    $e.Handled = $true
+    Open-ClawdChangelog
 })
 $UI.Mascot.add_MouseLeftButtonDown({
     param($s, $e)
@@ -46,6 +55,16 @@ $UI.Mascot.add_MouseLeftButtonDown({
     $script:Mz.idleSince = Get-Date
     Start-MascotClick
 })
+# The panel opens on button up: on button down the widget itself takes focus,
+# which would hide a panel opened at that moment.
+$UI.TipBadge.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true })
+$UI.TipBadge.add_MouseLeftButtonUp({
+    param($s, $e)
+    $e.Handled = $true
+    Show-Panel
+})
+# A reminder's Windows notification clicked - straight to the chat.
+$notify.add_BalloonTipClicked({ if (-not $advWin.IsVisible) { Show-Panel } })
 $UI.StatusRow.add_MouseLeftButtonDown({
     param($s, $e)
     $e.Handled = $true

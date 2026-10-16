@@ -10,13 +10,14 @@ $win    = [Windows.Markup.XamlReader]::Load($reader)
 $UI = @{}
 foreach ($n in @('BtnToggle','BtnHide','BtnExit','PctText','PctSign','BarSession',
                  'LineReset','LineWeek','BarWeek','LineStamp',
-                 'Details','LineDay','LineDay2','LineWeek7','LineWeek72','LineVersion',
+                 'Details','LineDay','LineDay2','LineWeek7','LineWeek72','LineVersion','LineClawdVer',
                  'FableRow','FableBarBg','LineFable','BarFable',
                  'StatusRow','StatusDot','LineStatus','LineStatus2','StatsPanel',
                  'SessionsPanel','LineSessions','LineAccount',
                  'MascotArea','Mascot','MascotBody','MascotEyes','MascotFx','MascotSand','MascotSweat','MascotZ',
                  'MascotBubble','MascotTag','Hearts','MascotLove','MascotSoul','Sky','SkyFx',
-                 'LblWeek','LblFable','LblSessions','LblDay','LblWeek7')) {
+                 'LblWeek','LblFable','LblSessions','LblDay','LblWeek7',
+                 'TipBadge','TipIcon','TipCount')) {
     $UI[$n] = $win.FindName($n)
 }
 

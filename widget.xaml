@@ -14,6 +14,14 @@
         <TextBlock Text="CLAUDE USAGE" FontFamily="Segoe UI" FontSize="9.5"
                    FontWeight="SemiBold" Foreground="#FF8B8B94" VerticalAlignment="Center"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <!-- Clawd's panel: tips and chat; the icon shows what is waiting there -->
+          <StackPanel x:Name="TipBadge" Orientation="Horizontal" VerticalAlignment="Center"
+                      Margin="0,0,12,0" Cursor="Hand" Background="Transparent" Visibility="Collapsed"
+                      TextElement.Foreground="#FF8B8B94">
+            <TextBlock x:Name="TipIcon" Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"/>
+            <TextBlock x:Name="TipCount" FontFamily="Segoe UI" FontSize="9.5" FontWeight="SemiBold"
+                       Margin="2,0,0,0" VerticalAlignment="Center"/>
+          </StackPanel>
           <StackPanel x:Name="Hearts" Orientation="Horizontal" VerticalAlignment="Center"
                       Margin="0,0,12,0" Background="Transparent" Visibility="Collapsed"/>
           <TextBlock x:Name="BtnToggle" Text="&#x25BE;" FontSize="11" Foreground="#FF8B8B94"
@@ -148,9 +156,18 @@
        </StackPanel>
 
         <Border Background="#1AFFFFFF" Height="1" Margin="0,0,0,7"/>
-        <TextBlock x:Name="LineVersion" Text="" FontFamily="Segoe UI" FontSize="10"
-                   Foreground="#FF8B8B94" TextWrapping="Wrap" Background="Transparent"
-                   ToolTipService.ShowDuration="60000"/>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock x:Name="LineVersion" Text="" FontFamily="Segoe UI" FontSize="10"
+                     Foreground="#FF8B8B94" TextWrapping="Wrap" Background="Transparent"
+                     Cursor="Hand" ToolTipService.ShowDuration="60000"/>
+          <TextBlock x:Name="LineClawdVer" Grid.Column="1" Text="" FontFamily="Segoe UI" FontSize="10"
+                     Foreground="#FF6B7280" Margin="8,0,0,0" Background="Transparent"
+                     Cursor="Hand" ToolTipService.ShowDuration="60000"/>
+        </Grid>
       </StackPanel>
 
       <Grid Margin="0,7,0,0">

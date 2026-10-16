@@ -8,6 +8,7 @@ $SessionsDir = Join-Path $env:USERPROFILE '.claude\sessions'
 function Get-Sessions {
     $own = @()
     foreach ($p in @($script:UsageProc, $script:AuthProc)) { if ($p) { $own += $p.Id } }
+    if ($script:ChatProc) { $own += $script:ChatProc.proc.Id }
     $list = @()
     foreach ($f in @(Get-ChildItem $SessionsDir -Filter *.json -ErrorAction SilentlyContinue)) {
         try { $j = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8) | ConvertFrom-Json } catch { continue }
@@ -22,7 +23,8 @@ function Get-Sessions {
         if (-not $name -and $j.cwd) { $name = Split-Path -Leaf $j.cwd }
         # waiting - the session waits for the user: permission, question, dialog (see waitingFor).
         $list += @{ name = $name; cwd = [string]$j.cwd; busy = ($j.status -eq 'busy')
-                    waiting = ($j.status -eq 'waiting'); waitingFor = [string]$j.waitingFor }
+                    waiting = ($j.status -eq 'waiting'); waitingFor = [string]$j.waitingFor
+                    kind = [string]$j.kind; sessionId = [string]$j.sessionId; pid = [int]$j.pid }
     }
     return ,$list
 }

@@ -119,6 +119,37 @@ function New-ChangesTooltip {
     return $tb
 }
 
+# Both changelogs open on GitHub on a click on the version; the tooltip over the
+# widget's version reads its CHANGELOG.md next to the script.
+$ChangelogPage   = 'https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md'
+$ClawdChangelog  = Join-Path $script:Root 'CHANGELOG.md'
+$ClawdChangelogPage = 'https://github.com/Enhed/clawd-usage-winwidget/blob/main/CHANGELOG.md'
+
+function Open-ClawdChangelog { Start-Process $ClawdChangelogPage }
+
+# The current version's section of CHANGELOG.md - for the tooltip.
+function New-ClawdChangesTooltip {
+    $tb = New-Object System.Windows.Controls.TextBlock
+    $tb.MaxWidth     = 460
+    $tb.TextWrapping = 'Wrap'
+    $tb.FontFamily   = 'Segoe UI'
+    $tb.FontSize     = 11
+    $items = @()
+    try {
+        $text = [System.IO.File]::ReadAllText($ClawdChangelog, [System.Text.Encoding]::UTF8)
+        $m = [regex]::Match($text, "(?ms)^## $([regex]::Escape($WidgetVersion))\s*`$(.*?)(?=^## |\z)")
+        if ($m.Success) {
+            # Bullets may wrap over several lines - glue them back, drop markdown marks.
+            foreach ($b in ($m.Groups[1].Value -split '(?m)^- ')) {
+                $b = ($b -replace '\s+', ' ').Trim() -replace '\*\*', '' -replace '`', ''
+                if ($b) { $items += "• $b" }
+            }
+        }
+    } catch {}
+    $tb.Text = "$((T 'chg.clawdHead') -f $WidgetVersion)`n`n$($items -join "`n")`n`n$(T 'chg.clawdClick')"
+    return $tb
+}
+
 function Start-ClaudeUpdate {
     if ($script:UpdateProc -and -not $script:UpdateProc.HasExited) { return }
     # Visible window: let the user see the update progress and how it ended.

@@ -5,6 +5,11 @@ $menu = New-Object System.Windows.Forms.ContextMenuStrip
 # Item captions are set by Update-Texts using the keys from $TrayItems.
 $TrayItems = [ordered]@{}
 
+# The widget's name and version on top, not clickable.
+$miVersion = $menu.Items.Add("clawd-usage-winwidget v$WidgetVersion")
+$miVersion.Enabled = $false
+$menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator)) | Out-Null
+
 $miToggle = $menu.Items.Add('')
 $TrayItems['menu.toggle'] = $miToggle
 $miToggle.add_Click({
@@ -34,6 +39,14 @@ $miSmaller.add_Click({
     Save-Config $script:Cfg
 })
 
+$miAdvisor = $menu.Items.Add('')
+$TrayItems['menu.advisor'] = $miAdvisor
+$miAdvisor.add_Click({
+    Start-AdvisorScan
+    if (-not $advWin.IsVisible) { Show-Panel }
+    Update-PanelBusy
+})
+
 $miConfig = $menu.Items.Add('')
 $TrayItems['menu.config'] = $miConfig
 $miConfig.add_Click({
@@ -57,6 +70,21 @@ foreach ($code in $Languages.Keys) {
 }
 $miLang.add_DropDownOpening({
     foreach ($mi in $miLang.DropDownItems) { $mi.Checked = ($mi.Tag -eq (Get-Lang)) }
+})
+
+# Clawd's own session with Remote Control; the folder and flags are in config.json.
+$miClawdSession = $menu.Items.Add('')
+$TrayItems['menu.clawdSession'] = $miClawdSession
+$miClawdSession.add_Click({
+    $script:Cfg.clawdSession = -not [bool]$script:Cfg.clawdSession
+    Save-Config $script:Cfg
+})
+$miClawdRestart = $menu.Items.Add('')
+$TrayItems['menu.clawdRestart'] = $miClawdRestart
+$miClawdRestart.add_Click({ Restart-ClawdSession })
+$menu.add_Opening({
+    $miClawdSession.Checked = [bool]$script:Cfg.clawdSession
+    $miClawdRestart.Visible = [bool]$script:Cfg.clawdSession
 })
 
 $menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator)) | Out-Null

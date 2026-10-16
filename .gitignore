@@ -1,3 +1,6 @@
 config.json
 widget-error.log
+advisor-state.json
+chat-state.json
+clawd-state.json
 CLAUDE.md

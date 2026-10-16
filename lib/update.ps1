@@ -40,6 +40,8 @@ function Update-Texts {
     Update-SkyTip
     $script:VerTipKey = $null
     $script:SessTip   = $null
+    $UI.LineClawdVer.Text    = "Clawd v$WidgetVersion"
+    $UI.LineClawdVer.ToolTip = New-ClawdChangesTooltip
     Update-Widget
 }
 
@@ -169,10 +171,21 @@ function Update-Widget {
     # --- Claude Code sessions -----------------------------------------------
 
     $ss = @()
-    if ($script:Cfg.showSessions -or $script:Cfg.showMascot) { $ss = Get-Sessions }
+    if ($script:Cfg.showSessions -or $script:Cfg.showMascot -or $script:Cfg.clawdSession) { $ss = Get-Sessions }
+    Update-ClawdSession $ss
+    # Clawd's own session is always there: idle it is not "something running" -
+    # otherwise the mascot would never fall asleep. Talking to it does count.
+    $clawdHome = Get-ClawdHome
+    $ss = @($ss | Where-Object { -not ($_.name -eq (Get-ClawdSessionName) -and $_.cwd.TrimEnd('\') -eq $clawdHome -and
+                                       -not $_.busy -and -not $_.waiting) })
 
     if ($script:Cfg.showMascot) { Set-MascotMood $ss $real }
     Sync-Mascot
+    Update-Advisor
+    Update-Reminders
+    Update-RemoteFeed
+    Update-Badge
+    if ($advWin.IsVisible) { Update-Panel }
 
     if (-not $script:Cfg.showSessions) {
         $UI.SessionsPanel.Visibility = 'Collapsed'
@@ -253,13 +266,8 @@ function Update-Widget {
     }
     if ($tipKey -ne $script:VerTipKey) {
         $script:VerTipKey = $tipKey
-        if ($hasUpdate) {
-            $UI.LineVersion.ToolTip = New-ChangesTooltip
-            $UI.LineVersion.Cursor  = [System.Windows.Input.Cursors]::Hand
-        } else {
-            $UI.LineVersion.ToolTip = $null
-            $UI.LineVersion.Cursor  = $null
-        }
+        if ($hasUpdate) { $UI.LineVersion.ToolTip = New-ChangesTooltip }
+        else            { $UI.LineVersion.ToolTip = T 'chg.open' }
     }
 
     if ($script:VerLocal) {
