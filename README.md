@@ -225,8 +225,12 @@ people and anything urgent.
 The widget runs a due one as a background `claude -p` in Clawd's home, with the
 usual context and his last report, so he says only what's new. Most runs end with
 nothing to say and you see nothing; otherwise the reply lands in the chat with a
-notification. `tools` — what it may use besides reading (an MCP server as
-`mcp__<server>`); `model` — instead of `quickModel`; `hours` — only between these
+notification. `tools` — what it may use besides reading, space-separated: an MCP
+server as `mcp__<server>`, a command as a Claude Code rule like
+`PowerShell(gh issue list:*)`, a site as `WebFetch(domain:github.com)`. A task
+runs in the background and can't ask, so when a run is refused something the chat
+shows a card with the missing rules and **Allow** — it adds them to the file and
+runs the task again; `model` — instead of `quickModel`; `hours` — only between these
 hours; `paused: yes`. Ask in the chat ("check my mail every 10 minutes"), put
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
 the phone, or write the file yourself; the Reminders tab lists them with Run now,

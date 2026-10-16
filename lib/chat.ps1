@@ -49,6 +49,10 @@ function Load-Chat {
                 if ($state -eq 'running') { $state = 'done' }
                 $msg.run = @{ script = [string]$m.run.script; state = $state; code = $m.run.code }
             }
+            if ($m.grant) {
+                $msg.grant = @{ task = [string]$m.grant.task; state = [string]$m.grant.state
+                                rules = @($m.grant.rules | Where-Object { $_ } | ForEach-Object { [string]$_ }) }
+            }
             if ($m.act) {
                 $msg.act = @{ state = [string]$m.act.state
                               calls = @($m.act.calls | Where-Object { $_ } | ForEach-Object { @{ tool = [string]$_.tool; input = [string]$_.input } }) }

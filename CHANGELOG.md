@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.1
+
+- **A task refused a permission says so:** the chat shows a card with the missing
+  rules (`PowerShell(gh issue list:*)`, `WebFetch(domain:...)`, an MCP tool) and
+  **Allow** adds them to the task's `tools` and runs it again. `tools` takes such
+  rules now, not only MCP servers.
+- A run that ends without any answer is a failure shown on the task, not taken
+  for "nothing new".
+- The task gets its last run time with the time zone and in UTC, so it compares
+  correctly with GitHub's or mail's UTC times.
+
 ## 1.5.0
 
 - **Mail actions need a click** unless AUTO is on: the chat reads with your

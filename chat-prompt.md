@@ -114,8 +114,15 @@ letters from people and anything urgent; skip newsletters and notifications.
 ```
 
 `every` - 10m, 2h, 1d (not less than a few minutes: each run uses the user's
-limits). `tools` - what the task may use besides reading files, space-separated:
-an MCP server as mcp__<server> (mail is usually mcp__mail; ask if unsure).
+limits). `tools` - what the task may use besides reading files and read-only
+PowerShell, space-separated. A task runs in the background and can't ask for
+permission, so list everything it needs, as narrowly as it will do:
+- an MCP server as mcp__<server> (mail is usually mcp__mail; ask if unsure);
+- a command as a Claude Code rule by its first words, e.g.
+  PowerShell(gh issue list:*) PowerShell(gh pr list:*) PowerShell(gh run list:*)
+  for read-only GitHub checks (say in the task text to use PowerShell);
+- a site as WebFetch(domain:example.com).
+If a run is refused something anyway, the widget offers the user to allow it.
 `hours` - optional, only between these hours. `limit` - optional, wait while the
 plan's usage is at this percent or more (the default is the widget's
 tasksMaxPercent, 80). `model` - optional, the default is a small fast one. To remove tasks, a block `task-remove` with their names, one per

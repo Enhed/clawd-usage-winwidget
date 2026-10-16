@@ -58,7 +58,7 @@ function Get-Tasks {
                 $v = $kv.Groups[2].Value
                 switch ($kv.Groups[1].Value.ToLower()) {
                     'every'  { $t.everyText = $v; $t.every = Read-TaskEvery $v }
-                    'tools'  { $t.tools = @($v -split '[,\s]+' | Where-Object { $_ }) }
+                    'tools'  { $t.tools = Split-TaskTools $v }
                     'model'  { $t.model = $v }
                     'paused' { $t.paused = ($v -match '^(yes|true|1|да)$') }
                     'limit'  { $l = [regex]::Match($v, '^(\d{1,3})\s*%?$'); if ($l.Success) { $t.limit = [int]$l.Groups[1].Value } }
@@ -72,6 +72,62 @@ function Get-Tasks {
         $list += $t
     }
     return ,$list
+}
+
+# "mcp__mail, PowerShell(gh issue list:*) WebFetch(domain:github.com)" - separated by
+# spaces or commas, but a rule's parentheses may hold spaces of their own.
+function Split-TaskTools([string]$v) {
+    return ,@([regex]::Matches($v, '[^\s,()]+(?:\([^)]*\))?') | ForEach-Object { $_.Value })
+}
+
+# What a refused call would need as a permission rule in `tools`: a command by its
+# first words (up to the first option, path or quote - "gh issue list", "git log"),
+# a page by its site, anything else by the tool's name.
+function Get-DeniedRule($d) {
+    $tool = [string]$d.tool_name
+    $in = $d.tool_input
+    if ($tool -in @('PowerShell', 'Bash') -and $in.command) {
+        $words = @()
+        foreach ($w in (([string]$in.command).Trim() -split '\s+')) {
+            if ($words.Count -ge 3 -or $w -match '^-|[\/:"''$|;&<>(){}=]') { break }
+            $words += $w
+        }
+        if ($words.Count) { return "$tool($($words -join ' '):*)" }
+        return $null
+    }
+    if ($tool -eq 'WebFetch' -and $in.url) {
+        try { return "WebFetch(domain:$(([uri][string]$in.url).Host))" } catch { return 'WebFetch' }
+    }
+    if ($tool -in @('Write', 'Edit', 'NotebookEdit')) { return $null }   # tasks never write
+    return $tool
+}
+
+# "Allow" on the card: the rules go to the task's `tools`, and it runs again now.
+function Grant-TaskRules($msg) {
+    $g = $msg.grant
+    if (-not $g -or $g.state -ne 'pending') { return }
+    $t = Get-Tasks | Where-Object { $_.name -eq $g.task } | Select-Object -First 1
+    if (-not $t) { $g.state = 'gone'; Save-Chat; Update-Panel; return }
+    $all = @($t.tools) + @($g.rules | Where-Object { $t.tools -notcontains $_ })
+    try {
+        $raw = [System.IO.File]::ReadAllText($t.path, [System.Text.Encoding]::UTF8)
+        $line = "tools: $($all -join ' ')"
+        if ($raw -match '(?m)^\s*tools\s*:') { $raw = [regex]::Replace($raw, '(?m)^\s*tools\s*:.*$', $line.Replace('$', '$$')) }
+        else { $raw = [regex]::Replace($raw, '^(\s*---\s*\r?\n)', "`$1$($line.Replace('$', '$$'))`n") }
+        [System.IO.File]::WriteAllText($t.path, $raw, (New-Object System.Text.UTF8Encoding $false))
+    } catch {
+        [void](Add-ChatMessage 'note' ((T 'chat.error') -f $_.Exception.Message))
+        return
+    }
+    $g.state = 'granted'
+    Save-Chat
+    $st = Load-TaskState
+    if ($st[$t.name]) { $st[$t.name].last = [datetime]::MinValue; $st[$t.name].asked = ''; Save-TaskState $st }
+    Update-Panel
+}
+
+function Set-TaskGrantState($msg, [string]$state) {
+    if ($msg.grant -and $msg.grant.state -eq 'pending') { $msg.grant.state = $state; Save-Chat; Update-Panel }
 }
 
 function Test-TaskHours($t) {
@@ -121,7 +177,8 @@ function Load-TaskState {
     $raw = Load-JsonFile $TasksStatePath
     if ($raw) {
         foreach ($p in $raw.PSObject.Properties) {
-            $e = @{ last = [datetime]::MinValue; report = [string]$p.Value.report; error = [string]$p.Value.error; history = @() }
+            $e = @{ last = [datetime]::MinValue; report = [string]$p.Value.report; error = [string]$p.Value.error; history = @()
+                    asked = [string]$p.Value.asked }
             if ($p.Value.last) { try { $e.last = [datetime]$p.Value.last } catch {} }
             foreach ($h in @($p.Value.history)) {
                 if (-not $h) { continue }
@@ -136,7 +193,7 @@ function Load-TaskState {
 function Save-TaskState($st) {
     $o = @{}
     foreach ($k in $st.Keys) {
-        $o[$k] = @{ last = $st[$k].last.ToString('s'); report = $st[$k].report; error = $st[$k].error
+        $o[$k] = @{ last = $st[$k].last.ToString('s'); report = $st[$k].report; error = $st[$k].error; asked = $st[$k].asked
                     history = @($st[$k].history | ForEach-Object { @{ at = $_.at.ToString('s'); text = $_.text } }) }
     }
     Save-JsonFile $TasksStatePath $o
@@ -151,7 +208,12 @@ function Start-TaskRun($t) {
         $out = Join-Path $env:TEMP "cuw-task-out-$PID.json"
         $err = Join-Path $env:TEMP "cuw-task-err-$PID.txt"
         $head = @("<task name=`"$($t.name)`" every=`"$($t.everyText)`">")
-        if ($prev -and $prev.last -ne [datetime]::MinValue) { $head += "last run: $($prev.last.ToString('yyyy-MM-dd HH:mm'))" }
+        # With the zone: what the task looks at (GitHub, mail) often has times in UTC.
+        $tz = [TimeZoneInfo]::Local.GetUtcOffset((Get-Date))
+        $zone = "UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm'))"
+        if ($prev -and $prev.last -ne [datetime]::MinValue) {
+            $head += "last run: $($prev.last.ToString('yyyy-MM-dd HH:mm')) local time ($zone) = $($prev.last.ToUniversalTime().ToString('yyyy-MM-ddTHH:mmZ'))"
+        }
         else { $head += 'last run: never - this is the first one' }
         if ($prev -and $prev.report) { $head += "your last report to the user:`n$($prev.report)" }
         $head += '</task>'
@@ -176,10 +238,11 @@ function Start-TaskRun($t) {
 }
 
 # What came of a run: $report - the reply ($null on failure), $why - what went wrong.
-function Set-TaskResult($t, $report, [string]$why) {
+# $need - permission rules the run was refused (the task cannot ask in the background).
+function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @()) {
     $st = Load-TaskState
     $e = $st[$t.name]
-    if (-not $e) { $e = @{ last = [datetime]::MinValue; report = ''; error = ''; history = @() }; $st[$t.name] = $e }
+    if (-not $e) { $e = @{ last = [datetime]::MinValue; report = ''; error = ''; history = @(); asked = '' }; $st[$t.name] = $e }
     $e.last = Get-Date
     if ($null -eq $report) {
         # The same failure every ten minutes is said once.
@@ -191,6 +254,24 @@ function Set-TaskResult($t, $report, [string]$why) {
     }
     $e.error = ''
     $said = ([string]$report).Trim()
+    # Refused permissions: a card to allow them, asked once for the same set.
+    $need = @($need | Where-Object { $_ -and $t.tools -notcontains $_ } | Sort-Object -Unique)
+    $askKey = $need -join ' '
+    if ($need.Count -and $askKey -ne $e.asked) {
+        $e.asked = $askKey
+        Save-TaskState $st
+        $msg = Add-ChatMessage 'clawd' ("[$($t.name)] " + $(if ($said -and $said -notmatch '^\W*NOTHING\W*$') { $said } else { T 'task.needs' }))
+        $msg.task = $t.name
+        $msg.grant = @{ task = $t.name; rules = $need; state = 'pending' }
+        Save-Chat
+        if (-not $advWin.IsVisible) {
+            $script:ChatUnread = $true
+            $notify.ShowBalloonTip(15000, "Clawd $([char]0x00B7) $($t.name)", (T 'task.needs'), [System.Windows.Forms.ToolTipIcon]::Warning)
+        }
+        Update-Panel
+        Update-Badge
+        return
+    }
     if (-not $said -or $said -match '^\W*NOTHING\W*$') { Save-TaskState $st; return }
     try { $r = Read-ChatReply $said } catch { $r = @{ text = $said; run = $null; notes = @() } }
     $e.report = $(if ($r.text.Length -gt 1500) { $r.text.Substring(0, 1500) + '…' } else { $r.text })
@@ -226,7 +307,11 @@ function Collect-TaskRun {
     $j = $null
     try { $j = [System.IO.File]::ReadAllText($c.out, [System.Text.Encoding]::UTF8) | ConvertFrom-Json } catch {}
     if ($j -and -not $j.is_error -and $null -ne $j.result) {
-        Set-TaskResult $c.task ([string]$j.result) ''
+        $need = @($j.permission_denials | Where-Object { $_ } | ForEach-Object { Get-DeniedRule $_ })
+        # No words at all is not "nothing to say" (that is NOTHING): the model stopped
+        # without an answer - a failure, so it shows on the task and is not mistaken for quiet.
+        if (-not ([string]$j.result).Trim() -and -not $need.Count) { Set-TaskResult $c.task $null (T 'task.empty') }
+        else { Set-TaskResult $c.task ([string]$j.result) '' $need }
     } else {
         $why = ''
         if ($j -and $j.result) { $why = [string]$j.result }

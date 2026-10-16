@@ -60,8 +60,10 @@ The widget works alongside you:
   ---
   Check the inbox for mail that came since the last run. Tell me only about ...
 
-  every - 10m, 2h, 1d; tools - what it may use besides reading files (an MCP
-  server as mcp__<server>); hours, model, limit (wait while the plan's usage is at
+  every - 10m, 2h, 1d; tools - what it may use besides reading files, space-
+  separated: an MCP server as mcp__<server>, a command as a rule by its first
+  words like PowerShell(gh issue list:*), a site as WebFetch(domain:github.com) -
+  it runs in the background and can't ask, so list everything it needs; hours, model, limit (wait while the plan's usage is at
   this percent or more) and "paused: yes" are optional. Write the
   text as an instruction to yourself. To stop one, delete its file or pause it.
 
