@@ -5,7 +5,7 @@
 - **The last 7 days in details:** a chart of the 5-hour and weekly percentages;
   hover for the time, both values and the project busiest in that hour. The
   first run fills it from what earlier `/usage` checks left behind, so it is not
-  empty for a week. `"showHistory": false` hides it.
+  empty for a week. Off by default: `"showHistory": true` in `config.json`.
 - **Top projects of the week:** which folders spent the most, estimated from
   Claude Code's transcripts by tokens and model prices.
 - The `/usage` check no longer leaves a session transcript every minute in

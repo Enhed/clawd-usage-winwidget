@@ -74,7 +74,7 @@ The ▾ in the header expands details (remembered between runs):
   context, always-on context, subagent-heavy sessions, top MCP servers, skills
   and subagents. Claude Code itself calls this approximate and counts only this
   computer.
-- **LIMITS · 7 DAYS** — the 5-hour (green) and weekly (blue) percentages over the
+- **LIMITS · 7 DAYS** (off by default, `showHistory`) — the 5-hour (green) and weekly (blue) percentages over the
   last week, one line each. Hover for the moment under the cursor: the time, both
   percentages and the project that spent the most in that hour. On the first run
   the chart is filled from the transcripts that `/usage` checks of earlier
@@ -299,7 +299,7 @@ are picked up on the fly, no restart needed.
 | `warnPercent` / `critPercent` | yellow and red thresholds |
 | `expanded` | details expanded |
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |
-| `showHistory` | the 7-day chart and top projects in details |
+| `showHistory` | the 7-day chart and top projects in details (off by default) |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
 | `showAdvisor` | Clawd's tips about the computer |
