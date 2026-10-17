@@ -4,7 +4,9 @@
   all passed. Checks:
     - "Run now" while another task runs queues it, and it runs next;
     - an empty answer is retried once on the chat model; empty twice is a failure;
-    - finding and removing a task by name touches only that task.
+    - finding and removing a task by name touches only that task;
+    - fields (tell / message / summary): a quiet run says nothing but leaves its
+      summary in the history, which the next run gets.
 #>
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -31,17 +33,23 @@ function Add-ChatMessage($role, $text) { $script:Said += "$role|$text"; @{} }
 
 . (Join-Path $Repo 'lib\tasks.ps1')
 
-# The fake claude: notes the model and the task, answers the next line of $Answers.
+# The fake claude: notes the model and the task, answers the next line of $Answers
+# (a hashtable - as the fields of --json-schema).
 $script:Started = @()
+$script:TaskInput = ''
 $script:Answers = New-Object System.Collections.Queue
 function Start-Process {
     param($FilePath, $WorkingDirectory, $ArgumentList, $RedirectStandardInput, $RedirectStandardOutput,
           $RedirectStandardError, $WindowStyle, [switch]$PassThru)
     $model = $ArgumentList[[array]::IndexOf($ArgumentList, '--model') + 1]
+    $script:Argv = $ArgumentList
     $task  = [regex]::Match([System.IO.File]::ReadAllText($RedirectStandardInput), '<task name="([^"]+)"').Groups[1].Value
     $script:Started += "$model $task"
-    @{ result = $script:Answers.Dequeue(); is_error = $false; permission_denials = @() } |
-        ConvertTo-Json | Out-File $RedirectStandardOutput -Encoding utf8
+    $script:TaskInput = [System.IO.File]::ReadAllText($RedirectStandardInput)
+    $a = $script:Answers.Dequeue()
+    $o = @{ result = $a; is_error = $false; permission_denials = @() }
+    if ($a -is [hashtable]) { $o.result = ConvertTo-Json $a -Compress; $o.structured_output = $a }
+    $o | ConvertTo-Json -Depth 4 | Out-File $RedirectStandardOutput -Encoding utf8
     [pscustomobject]@{ HasExited = $true; Handle = 1; Id = 0; ExitCode = 0 }
 }
 
@@ -75,6 +83,22 @@ try {
     Request-TaskRun (Find-Task 'A'); Update-Tasks; Update-Tasks
     Check 'one retry, then stop' ($script:Started -join '; ') 'haiku A; sonnet A'
     Check 'a failure on the task' (Load-TaskState)['A'].error 'task.empty'
+
+    Write-Host 'fields'
+    Reset
+    $script:Answers.Enqueue(@{ tell = $false; message = ''; summary = 'nothing new, 2 newsletters' })
+    $script:Answers.Enqueue(@{ tell = $true; message = 'Bob wrote'; summary = 'mail from Bob' })
+    $script:Answers.Enqueue(@{ tell = $false; message = 'ignored'; summary = 'quiet' })
+    Request-TaskRun (Find-Task 'B'); Update-Tasks; Update-Tasks
+    Check 'a quiet run says nothing' ($script:Said -join '; ') ''
+    Request-TaskRun (Find-Task 'B'); Update-Tasks; Update-Tasks
+    Check 'the summary goes to the next run' ($script:TaskInput -match 'nothing new, 2 newsletters') $true
+    Check 'tell says the message' ($script:Said -join '; ') 'clawd|[B] Bob wrote'
+    Request-TaskRun (Find-Task 'B'); Update-Tasks; Update-Tasks
+    Check 'the message of a quiet run is dropped' ($script:Said -join '; ') 'clawd|[B] Bob wrote'
+    $h = @((Load-TaskState)['B'].history)
+    Check 'history: a line per run' (@($h | ForEach-Object { "$($_.text)=$($_.told)" }) -join '; ') 'nothing new, 2 newsletters=False; mail from Bob=True; quiet=False'
+    Check 'the schema is passed' ([bool]($script:Argv -contains '--json-schema')) $true
 
     Write-Host 'remove one'
     [void](Remove-TaskFile 'A')

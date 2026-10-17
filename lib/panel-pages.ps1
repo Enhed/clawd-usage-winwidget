@@ -260,10 +260,15 @@ function New-TaskRow($t, $st) {
             $none.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
             [void]$box.Children.Add($none)
         }
-        # Newest first.
+        # Newest first, a line per run; what the user was told is brighter. The whole
+        # line is in the tooltip.
         foreach ($h in @($hist | Sort-Object { $_.at } -Descending)) {
-            $r = New-PanelText "$(Format-RemindTime $h.at)  $([char]0x00B7)  $($h.text)" 9.5 $(if ($h.bad) { $Palette.warn.Wpf } else { '#FF8B8B94' })
-            $r.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
+            $color = $(if ($h.bad) { $Palette.warn.Wpf } elseif ($h.told) { '#FFA1A1AA' } else { '#FF6B7280' })
+            $r = New-PanelText "$(Format-RemindTime $h.at)  $([char]0x00B7)  $($h.text)" 9.5 $color
+            $r.TextWrapping = 'NoWrap'
+            $r.TextTrimming = 'CharacterEllipsis'
+            $r.ToolTip = $h.text
+            $r.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
             [void]$box.Children.Add($r)
         }
     }

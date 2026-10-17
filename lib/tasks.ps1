@@ -10,9 +10,10 @@
 #   ---
 #   Check the inbox for new mail since the last run. Tell me only about ...
 # The widget runs a due one as a headless `claude -p` in Clawd's home with the
-# usual context plus its previous report (tasks-prompt.md has the rules). The
-# reply NOTHING means nothing to say; anything else lands in the chat with a
-# notification. A `run` script from a task always waits for a click.
+# usual context plus its recent runs (tasks-prompt.md has the rules). It answers
+# in fields (--json-schema): tell - whether the user hears about it now, message -
+# what lands in the chat with a notification, summary - one line kept for the
+# task's history and the next run. A `run` script from a task always waits for a click.
 # `tools` - what it may use besides reading (an MCP server as mcp__<name>);
 # `model` - instead of quickModel; `hours` - only between these hours;
 # `limit` - wait while the plan's usage is at this percent or more (instead of
@@ -20,6 +21,8 @@
 
 $TasksStatePath  = Join-Path $script:Root 'tasks-state.json'
 $TasksPromptPath = Join-Path $script:Root 'tasks-prompt.md'
+# Silence is a field, not a word: small models used to say "nothing new" in a sentence.
+$TaskSchema = '{"type":"object","properties":{"tell":{"type":"boolean"},"message":{"type":"string"},"summary":{"type":"string"}},"required":["tell","message","summary"]}'
 $script:TaskProc = $null   # @{ proc; out; err; at; task }
 
 function Get-TasksDir { return Join-Path (Get-ClawdHome) 'tasks' }
@@ -178,8 +181,8 @@ function Set-TaskPaused($t, [bool]$paused) {
 }
 
 # name -> @{ last = when it ran; report = its last report worth telling; error;
-#           history = @(@{ at; text }) - the latest reports, newest last }
-$TaskHistoryKeep = 10
+#           history = @(@{ at; text; told }) - one line per run, newest last }
+$TaskHistoryKeep = 20
 function Load-TaskState {
     $st = @{}
     $raw = Load-JsonFile $TasksStatePath
@@ -190,7 +193,9 @@ function Load-TaskState {
             if ($p.Value.last) { try { $e.last = [datetime]$p.Value.last } catch {} }
             foreach ($h in @($p.Value.history)) {
                 if (-not $h) { continue }
-                try { $e.history += @{ at = [datetime]$h.at; text = [string]$h.text } } catch {}
+                # Before 1.8.2 only told reports were kept, whole.
+                $told = $(if ($null -ne $h.told) { [bool]$h.told } else { $true })
+                try { $e.history += @{ at = [datetime]$h.at; text = [string]$h.text; told = $told } } catch {}
             }
             $st[$p.Name] = $e
         }
@@ -202,7 +207,7 @@ function Save-TaskState($st) {
     $o = @{}
     foreach ($k in $st.Keys) {
         $o[$k] = @{ last = $st[$k].last.ToString('s'); report = $st[$k].report; error = $st[$k].error; asked = $st[$k].asked
-                    history = @($st[$k].history | ForEach-Object { @{ at = $_.at.ToString('s'); text = $_.text } }) }
+                    history = @($st[$k].history | ForEach-Object { @{ at = $_.at.ToString('s'); text = $_.text; told = [bool]$_.told } }) }
     }
     Save-JsonFile $TasksStatePath $o
 }
@@ -235,17 +240,24 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
             $head += "last run: $($prev.last.ToString('yyyy-MM-dd HH:mm')) local time ($zone) = $($prev.last.ToUniversalTime().ToString('yyyy-MM-ddTHH:mmZ'))"
         }
         else { $head += 'last run: never - this is the first one' }
-        if ($prev -and $prev.report) { $head += "your last report to the user:`n$($prev.report)" }
+        # What the last runs found, a line each - not whole reports, so this stays small.
+        $runs = @($(if ($prev) { $prev.history }) | Where-Object { $_ } | Select-Object -Last 5)
+        if ($runs.Count) {
+            $head += 'recent runs, oldest first ("told" - the user was told):'
+            foreach ($h in $runs) { $head += "- $($h.at.ToString('MM-dd HH:mm'))$(if ($h.told) { ' told' }): $($h.text)" }
+        }
+        if ($prev -and $prev.report) { $head += "your last message to the user:`n$($prev.report)" }
         $head += '</task>'
-        # The rule once more after the task's own words: small models tend to report
-        # "nothing new" in a sentence, which would land in the chat every run.
+        # The rule once more after the task's own words ("stay silent" made small
+        # models say so in a sentence).
         $text = (Get-ChatContext) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt + "`n`n" +
-                '(If there is nothing the user needs to know or do now, reply with exactly NOTHING - ' +
-                'not a sentence saying so, and not the routine things the task told you to do.)'
+                '(Answer in the fields: tell = false unless the user needs to know or do something now; ' +
+                'message - only when tell is true; summary - always, one short line.)'
         [System.IO.File]::WriteAllText($in, $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
         if (-not $model) { $model = $(if ($t.model) { $t.model } else { [string]$script:Cfg.quickModel }) }
         $argv = @('-p', '--output-format', 'json', '--model', $model,
+                  '--json-schema', (& $q $TaskSchema.Replace('"', '\"')),
                   '--permission-mode', 'default', '--no-session-persistence',
                   '--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
                   '--append-system-prompt-file', (& $q $TasksPromptPath),
@@ -261,9 +273,10 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
     }
 }
 
-# What came of a run: $report - the reply ($null on failure), $why - what went wrong.
+# What came of a run: $report - the message for the user ('' - nothing to tell,
+# $null on failure), $why - what went wrong, $summary - the line for the history.
 # $need - permission rules the run was refused (the task cannot ask in the background).
-function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @()) {
+function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @(), [string]$summary = '') {
     $st = Load-TaskState
     $e = $st[$t.name]
     if (-not $e) { $e = @{ last = [datetime]::MinValue; report = ''; error = ''; history = @(); asked = '' }; $st[$t.name] = $e }
@@ -278,6 +291,14 @@ function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @()) {
     }
     $e.error = ''
     $said = ([string]$report).Trim()
+    $summary = ($summary -replace '\s+', ' ').Trim()
+    if ($summary.Length -gt 200) { $summary = $summary.Substring(0, 200) + '…' }
+    $told = [bool]($said -and $said -notmatch '^\W*NOTHING\W*$')
+    if ($summary -or $told) {
+        $line = $(if ($summary) { $summary } else { ($said -replace '\s+', ' ') })
+        if ($line.Length -gt 200) { $line = $line.Substring(0, 200) + '…' }
+        $e.history = @(@($e.history) + @{ at = Get-Date; text = $line; told = $told } | Select-Object -Last $TaskHistoryKeep)
+    }
     # Refused permissions: a card to allow them, asked once for the same set.
     $need = @($need | Where-Object { $_ -and $t.tools -notcontains $_ } | Sort-Object -Unique)
     $askKey = $need -join ' '
@@ -301,7 +322,6 @@ function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @()) {
         ($said -match '(?:^|\n)\W*NOTHING\W*$' -and $said -notmatch '```')) { Save-TaskState $st; return }
     try { $r = Read-ChatReply $said } catch { $r = @{ text = $said; run = $null; notes = @() } }
     $e.report = $(if ($r.text.Length -gt 1500) { $r.text.Substring(0, 1500) + '…' } else { $r.text })
-    $e.history = @(@($e.history) + @{ at = Get-Date; text = $e.report } | Select-Object -Last $TaskHistoryKeep)
     Save-TaskState $st
     $text = "[$($t.name)] $($r.text)"
     $msg = Add-ChatMessage 'clawd' $text $r.run
@@ -334,6 +354,12 @@ function Collect-TaskRun {
     try { $j = [System.IO.File]::ReadAllText($c.out, [System.Text.Encoding]::UTF8) | ConvertFrom-Json } catch {}
     if ($j -and -not $j.is_error -and $null -ne $j.result) {
         $need = @($j.permission_denials | Where-Object { $_ } | ForEach-Object { Get-DeniedRule $_ })
+        $so = $j.structured_output
+        if ($so) {
+            $said = $(if ($so.tell) { [string]$so.message } else { '' })
+            Set-TaskResult $c.task $said '' $need ([string]$so.summary)
+            return
+        }
         # No words at all is not "nothing to say" (that is NOTHING): the model stopped
         # without an answer - a failure, so it shows on the task and is not mistaken for quiet.
         # A small model now and then stops after its tool calls without a word: one

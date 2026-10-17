@@ -134,7 +134,10 @@
         <TextBlock x:Name="RemParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
                    Margin="2,3,0,0"/>
         <WrapPanel x:Name="RemChips" Margin="0,4,0,0"/>
-        <StackPanel x:Name="RemTasks" Margin="0,8,0,0"/>
+        <!-- an opened task's runs can be long: scrolled, the panel does not grow off the screen -->
+        <ScrollViewer MaxHeight="260" Margin="0,8,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="RemTasks"/>
+        </ScrollViewer>
         <StackPanel x:Name="RemDone" Margin="0,8,0,0"/>
       </StackPanel>
 

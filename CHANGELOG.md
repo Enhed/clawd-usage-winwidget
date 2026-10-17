@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.2
+
+- **Recurring tasks answer in fields:** whether to tell you, the message, and a
+  one-line summary of the run. Staying quiet is now a flag, not a word the
+  model had to remember, so "nothing new" no longer reaches the chat.
+- **A task's history is short:** a click on a task shows one line per run
+  (brighter - what you were told), scrolled instead of stretching the panel
+  off the screen. The next run gets those lines instead of the whole last
+  report.
+
 ## 1.8.1
 
 - **Quieter recurring tasks:** a run with nothing to tell sometimes said so in

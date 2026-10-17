@@ -261,7 +261,9 @@ runs the task again; `model` — instead of `quickModel`; `hours` — only betwe
 hours; `paused: yes`. Ask in the chat ("check my mail every 10 minutes"), put
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
 the phone, or write the file yourself; the Reminders tab lists them with Run now,
-Pause, Open and Delete; a click on a task shows its latest reports. A script a
+Pause, Open and Delete; a click on a task shows a line on each of its latest runs
+(brighter - what you were told), and those lines are what the next run is given
+about the past. A script a
 task proposes always waits for a click. Each run uses your plan's limits, so tasks
 wait while the five-hour session or the week is at `tasksMaxPercent` (80%) or
 more — the Reminders tab says so; `limit: 60` in a task file sets its own
