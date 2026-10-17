@@ -98,3 +98,18 @@ function Get-ClawdHome {
     if (-not [System.IO.Directory]::Exists($d)) { try { [void][System.IO.Directory]::CreateDirectory($d) } catch {} }
     return $d
 }
+
+# Claude Code's own folder (sessions, projects, settings.json): CLAUDE_CONFIG_DIR
+# if it is set, ~\.claude otherwise. Every path into it goes through here.
+function Get-ClaudeConfigDir {
+    $d = ([string]$env:CLAUDE_CONFIG_DIR).Trim()
+    if ($d) { return [Environment]::ExpandEnvironmentVariables($d).TrimEnd('\', '/') }
+    return Join-Path $env:USERPROFILE '.claude'
+}
+
+# Claude Code's global config (trusted folders...): .claude.json inside that folder
+# when CLAUDE_CONFIG_DIR is set, next to ~\.claude otherwise.
+function Get-ClaudeGlobalConfigPath {
+    if (([string]$env:CLAUDE_CONFIG_DIR).Trim()) { return Join-Path (Get-ClaudeConfigDir) '.claude.json' }
+    return Join-Path $env:USERPROFILE '.claude.json'
+}

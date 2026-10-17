@@ -156,7 +156,7 @@ $ProjScan = {
     # Transcripts that fell out of the week are forgotten.
     foreach ($k in @($cache.Keys)) { if (-not $seen[$k]) { $cache.Remove($k) } }
 
-    # A project is a folder in ~/.claude/projects, shown by the last part of its path.
+    # A project is a folder in Claude Code's projects folder, shown by the last part of its path.
     $cwds = @{}
     foreach ($c in $cache.Values) { if ($c.cwd -and -not $cwds[$c.dir]) { $cwds[$c.dir] = $c.cwd } }
     $userHome = $env:USERPROFILE.TrimEnd('\')
@@ -181,7 +181,7 @@ function Start-HistoryJob([string]$kind) {
     if ($script:HistJob) { return }
     $ps = [powershell]::Create()
     $since = Get-UnixMinute ((Get-Date).AddDays(-7))
-    $projects = Join-Path $env:USERPROFILE '.claude\projects'
+    $projects = Join-Path (Get-ClaudeConfigDir) 'projects'
     if ($kind -eq 'backfill') {
         $dir = Join-Path $projects ($script:Root -replace '[^A-Za-z0-9]', '-')
         [void]$ps.AddScript($HistBackfill.ToString()).AddArgument($dir).AddArgument($since)

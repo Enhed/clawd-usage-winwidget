@@ -31,7 +31,7 @@ function Set-ClawdSessionId([string]$id) {
 # a hidden window would wait for that answer forever.
 function Test-FolderTrusted([string]$dir) {
     try {
-        $j = [System.IO.File]::ReadAllText((Join-Path $env:USERPROFILE '.claude.json')) | ConvertFrom-Json
+        $j = [System.IO.File]::ReadAllText((Get-ClaudeGlobalConfigPath)) | ConvertFrom-Json
         $p = $j.projects.PSObject.Properties | Where-Object { $_.Name.Replace('/', '\').TrimEnd('\') -eq $dir } | Select-Object -First 1
         return [bool]($p -and $p.Value.hasTrustDialogAccepted)
     } catch { return $false }
@@ -43,10 +43,10 @@ function Start-ClawdSession {
     $name = & $q (Get-ClawdSessionName)
     $cli = @('-n', $name)
     # Its own conversation if there is one (conversations live in
-    # ~/.claude/projects/<path with every non-alphanumeric as ->), a new one otherwise.
+    # projects\<path with every non-alphanumeric as -> in Claude Code's folder), a new one otherwise.
     $id = Get-ClawdSessionId
     $key = [regex]::Replace($dir, '[^A-Za-z0-9]', '-')
-    if ($id -and (Test-Path (Join-Path $env:USERPROFILE ".claude\projects\$key\$id.jsonl"))) {
+    if ($id -and (Test-Path (Join-Path (Get-ClaudeConfigDir) "projects\$key\$id.jsonl"))) {
         $cli += @('--resume', $id)
     }
     $cli += @('--remote-control', $name, '--append-system-prompt-file', (& $q $SessionPromptPath))

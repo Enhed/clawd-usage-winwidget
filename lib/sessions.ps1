@@ -1,9 +1,10 @@
 ﻿# ----------------------------------------------------------- sessions ----
-# Claude Code keeps its own registry of running sessions: ~/.claude/sessions/<pid>.json,
-# with name, folder and busy/idle status. A file can outlive its process, so
-# check the process is alive and is the same process (procStart - start FILETIME).
+# Claude Code keeps its own registry of running sessions: sessions\<pid>.json in its
+# folder (Get-ClaudeConfigDir, ~/.claude by default), with name, folder and busy/idle
+# status. A file can outlive its process, so check the process is alive and is the
+# same process (procStart - start FILETIME).
 
-$SessionsDir = Join-Path $env:USERPROFILE '.claude\sessions'
+$SessionsDir = Join-Path (Get-ClaudeConfigDir) 'sessions'
 
 function Get-Sessions {
     $own = @()

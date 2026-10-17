@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **`CLAUDE_CONFIG_DIR` is respected:** with Claude Code's folder moved away
+  from `~/.claude`, the widget kept reading the old one - sessions, the 7-day
+  projects, the phone conversation, the update channel and the trusted-folder
+  check went stale. Every path into that folder now goes through one helper
+  (`Get-ClaudeConfigDir` in `lib/config.ps1`).
+
 ## 1.9.1
 
 - **New skins:** Santa hat, Cat ears and Bow.

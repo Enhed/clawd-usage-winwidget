@@ -1,7 +1,7 @@
 ﻿# --------------------------------------------------- version and update ----
 # The latest release number comes from the same place the official installer uses
 # (https://claude.ai/install.ps1): downloads.claude.ai/claude-code-releases/<channel>.
-# Channel - autoUpdatesChannel from ~/.claude/settings.json, latest by default.
+# Channel - autoUpdatesChannel from Claude Code's settings.json, latest by default.
 
 [System.Net.ServicePointManager]::SecurityProtocol =
     [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -13,7 +13,7 @@ $script:VerAt     = [datetime]::MinValue
 
 function Get-UpdateChannel {
     try {
-        $s = Get-Content (Join-Path $env:USERPROFILE '.claude\settings.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $s = Get-Content (Join-Path (Get-ClaudeConfigDir) 'settings.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($s.autoUpdatesChannel -in @('stable','latest')) { return $s.autoUpdatesChannel }
     } catch {}
     return 'latest'
