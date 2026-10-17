@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1
+
+- The "Clawd X is out" tooltip leaves out the pictures of a release's notes
+  instead of showing their links.
+
 ## 1.9.0
 
 - **Themes:** Halloween, Classic, Midnight, Mocha, OLED black and Forest, in the

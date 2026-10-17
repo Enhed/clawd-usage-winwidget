@@ -200,9 +200,11 @@ function Collect-ReleaseProbe {
     try { $j = [string]$t.Result | ConvertFrom-Json } catch { return }
     $m = [regex]::Match([string]$j.tag_name, '(\d+\.\d+\.\d+)')
     if (-not $m.Success) { return }
-    # Bullets may wrap over several lines - glue them back, drop markdown marks.
+    # Bullets may wrap over several lines - glue them back, drop markdown marks
+    # and pictures (a release may show screenshots under its list).
     $notes = @()
-    foreach ($b in ([string]$j.body -split '(?m)^- ')) {
+    $body = [string]$j.body -replace '!\[[^\]]*\]\([^)]*\)', '' -replace '<img[^>]*>', ''
+    foreach ($b in ($body -split '(?m)^- ')) {
         $b = ($b -replace '\s+', ' ').Trim() -replace '\*\*', '' -replace '`', ''
         if ($b -and $b -notmatch '^To install:') { $notes += "• $b" }
     }
