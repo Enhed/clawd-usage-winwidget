@@ -1,0 +1,11 @@
+---
+name: Bow
+top: -3
+b: #EF4444
+k: #B91C1C
+---
+..........bb...bb.
+.........bbbb.bbbb
+.........bbbbkbbbb
+.........bbbb.bbbb
+..........bb...bb.

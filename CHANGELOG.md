@@ -2,6 +2,7 @@
 
 ## 1.9.1
 
+- **New skins:** Santa hat, Cat ears and Bow.
 - The "Clawd X is out" tooltip leaves out the pictures of a release's notes
   instead of showing their links.
 
