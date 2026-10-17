@@ -1,0 +1,52 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Clawd" WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight" ResizeMode="NoResize">
+  <Window.Resources>
+    <Style x:Key="Tab" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="10.5"/>
+      <Setter Property="Margin" Value="0,0,14,0"/>
+      <Setter Property="Padding" Value="0,0,0,4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+  </Window.Resources>
+
+  <!-- the margin leaves room for the shadow -->
+  <Border CornerRadius="10" Background="#FF1A1A1E" BorderBrush="#33FFFFFF"
+          BorderThickness="1" Padding="12,10,12,10" Width="320" Margin="8">
+    <Border.Effect>
+      <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.55" Color="Black"/>
+    </Border.Effect>
+    <StackPanel>
+      <Grid Margin="0,0,0,8">
+        <TextBlock x:Name="SetTitle" FontFamily="Segoe UI" FontSize="9.5" FontWeight="SemiBold"
+                   Foreground="#FF8B8B94" VerticalAlignment="Center"/>
+        <TextBlock x:Name="SetClose" Text="&#x2715;" FontSize="11" Foreground="#FF8B8B94"
+                   HorizontalAlignment="Right" Cursor="Hand" Background="Transparent" VerticalAlignment="Center"/>
+      </Grid>
+
+      <!-- tabs: the active one is white and underlined, as in the panel -->
+      <Grid Margin="0,0,0,8">
+        <Border Background="#1AFFFFFF" Height="1" VerticalAlignment="Bottom"/>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock x:Name="SetTabLook" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="SetTabWindow" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="SetTabClawd" Style="{StaticResource Tab}"/>
+        </StackPanel>
+      </Grid>
+
+      <!-- the page is built in code (lib/settings.ps1); the wheel scrolls it -->
+      <ScrollViewer x:Name="SetScroll" MaxHeight="460" VerticalScrollBarVisibility="Hidden"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="SetPage"/>
+      </ScrollViewer>
+
+      <Border Background="#1AFFFFFF" Height="1" Margin="0,8,0,6"/>
+      <TextBlock x:Name="SetMore" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF6B7280"
+                 TextWrapping="Wrap" Cursor="Hand" Background="Transparent"/>
+    </StackPanel>
+  </Border>
+</Window>

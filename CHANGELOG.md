@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.10.0
+
+- **Settings window:** the gear in the window's header (or Settings in the tray
+  menu) opens Clawd-styled settings with three tabs. Look: language, theme
+  chips with a swatch of each, and Clawd's skins as cards with a live preview -
+  he raises his arms under the mouse, a click puts the skin on. Window: size,
+  opacity, always on top, which blocks the window shows, the tray tooltip's
+  clock, run as administrator. Clawd: tips, chat and its auto-run, recurring
+  tasks, his Remote Control session. Everything applies at once; the rest of
+  `config.json` is one link away at the bottom.
+- The tray menu is down to show/hide, refresh, settings and exit.
+
 ## 1.9.3
 
 - **`CLAUDE_CONFIG_DIR` is respected:** with Claude Code's folder moved away

@@ -24,6 +24,9 @@
           </StackPanel>
           <StackPanel x:Name="Hearts" Orientation="Horizontal" VerticalAlignment="Center"
                       Margin="0,0,12,0" Background="Transparent" Visibility="Collapsed"/>
+          <TextBlock x:Name="BtnSettings" Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                     Foreground="#FF8B8B94" Margin="0,0,10,0" VerticalAlignment="Center" Cursor="Hand"
+                     Background="Transparent"/>
           <TextBlock x:Name="BtnToggle" Text="&#x25BE;" FontSize="11" Foreground="#FF8B8B94"
                      Margin="0,0,9,0" Cursor="Hand" ToolTip="Details"/>
           <TextBlock x:Name="BtnHide" Text="&#x2013;" FontSize="13" Foreground="#FF8B8B94"

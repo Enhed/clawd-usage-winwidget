@@ -158,9 +158,11 @@ function Set-ThemePattern {
 }
 
 # "auto" (the default) follows the season: Halloween in autumn, classic otherwise.
+function Get-SeasonThemeId { if ((Get-Date).Month -in 9..11) { 'halloween' } else { 'classic' } }
+
 function Get-ThemeId {
     $id = ([string]$script:Cfg.theme).ToLower()
-    if ($id -eq 'auto') { $id = $(if ((Get-Date).Month -in 9..11) { 'halloween' } else { 'classic' }) }
+    if ($id -eq 'auto') { $id = Get-SeasonThemeId }
     if (-not $Themes.Contains($id)) { $id = 'classic' }
     return $id
 }

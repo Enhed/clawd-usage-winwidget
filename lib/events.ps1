@@ -28,6 +28,13 @@ $UI.BtnToggle.add_MouseLeftButtonDown({
     $e.Handled = $true
     Set-Details ($UI.Details.Visibility -ne 'Visible')
 })
+# Opened on button up, as the panel: on button down the widget itself takes focus.
+$UI.BtnSettings.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true })
+$UI.BtnSettings.add_MouseLeftButtonUp({
+    param($s, $e)
+    $e.Handled = $true
+    if ($setWin.IsVisible) { $setWin.Hide() } else { Show-Settings }
+})
 $UI.BtnHide.add_MouseLeftButtonDown({
     param($s, $e)
     $e.Handled = $true

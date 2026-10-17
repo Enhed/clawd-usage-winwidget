@@ -26,6 +26,7 @@ function Sync-Config {
 # Texts that are not recomputed every tick: XAML captions, menus,
 # cached tooltips. Called at startup and on language change.
 function Update-Texts {
+    $UI.BtnSettings.ToolTip = T 'set.tip'
     $UI.BtnToggle.ToolTip   = T 'ui.details'
     $UI.BtnHide.ToolTip     = T 'ui.hide'
     $UI.BtnExit.ToolTip     = T 'ui.exit'
@@ -42,6 +43,8 @@ function Update-Texts {
     foreach ($k in $TrayItems.Keys) { $TrayItems[$k].Text = T $k }
     $UI.Mascot.ContextMenu  = New-MascotMenu
     $UI.Sky.ContextMenu     = $UI.Mascot.ContextMenu
+    $script:SetKey = $null
+    Update-Settings
     Update-SkyTip
     $script:VerTipKey = $null
     $script:SessTip   = $null
@@ -214,6 +217,7 @@ function Update-Widget {
     Update-RemoteFeed
     Update-Badge
     if ($advWin.IsVisible) { Update-Panel }
+    Update-Settings
 
     if (-not $script:Cfg.showSessions) {
         $UI.SessionsPanel.Visibility = 'Collapsed'

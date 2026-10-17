@@ -112,7 +112,13 @@ The ▾ in the header expands details (remembered between runs):
   the widget says so (and won't offer that version again).
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
-refresh, larger/smaller, look the computer over, open config, language, Clawd's session, exit. Drag the window anywhere —
+show/hide, refresh, settings, exit.
+
+**Settings** — the gear in the window's header (or the tray menu): language,
+theme, Clawd's skin picked from cards with a live preview (he raises his arms
+under the mouse), size, opacity, always on top, which blocks the window shows,
+the tips, the chat, recurring tasks and Clawd's session. Everything applies at
+once; the rest of the keys are in `config.json`, linked at the bottom. Drag the window anywhere —
 the position is saved.
 
 ### Clawd
@@ -174,7 +180,7 @@ the clock. Turn it off with `showSky`.
 
 ![Themes](docs/themes.png)
 
-**Themes** — tray menu → Theme: Halloween, Classic, Midnight, Mocha, OLED black,
+**Themes** — Settings → Look: Halloween, Classic, Midnight, Mocha, OLED black,
 Forest; they switch at once. Halloween has a wallpaper of tiny pumpkins, bats and
 ghosts. The default, By season, is Halloween in September–November and Classic
 the rest of the year. `accent` in `config.json` (`"#F472B6"`) puts your own colour on
@@ -183,11 +189,11 @@ and Clawd stay as they are.
 
 ![Skins](docs/skins.png)
 
-**Clawd's skins** — tray menu → Clawd's skin. A skin is his colours plus pixel
+**Clawd's skins** — Settings → Look, with a preview of each. A skin is his colours plus pixel
 accessories that move with him: a hat shows while his head is in the frame, and
-lying on his back he loses it. Your own: tray menu → Clawd's skin → Your skins
-folder, put a `.txt` there (the file name is its id; the same name as a built in
-one replaces it) and pick it from the menu. Edits show within seconds:
+lying on his back he loses it. Your own: the last card, Your own, opens the
+folder; put a `.txt` there (the file name is its id; the same name as a built in
+one replaces it) and pick its card. Edits show within seconds:
 
 ```
 ---
@@ -247,7 +253,7 @@ Each tip links to the right place and has **Do it** (Clawd answers with a script
 to approve), **Refine** (your next message goes to him with the tip, e.g. "all
 but scoop") and **Dismiss**; it comes back after a
 while if it's still true (a day; a month for unused apps). The check is local and
-read-only — no network, no tokens. "Look the computer over now" in the tray menu
+read-only — no network, no tokens. "Look the computer over now" in Settings → Clawd
 runs it right away. Turn it off with `showAdvisor`.
 
 **Chat.** Ask Clawd anything about the computer, answer a tip ("clean it all up,
@@ -366,13 +372,13 @@ there instead, the same as Claude Code does.
 
 ## config.json
 
-Created next to the script on first save; open it from the tray menu. Changes
+Created next to the script on first save; open it from the link at the bottom of Settings. Changes
 are picked up on the fly, no restart needed.
 
 | key | meaning |
 |---|---|
-| `language` | `en`, `ru` or `fr` (also in the tray menu) |
-| `scale` | window scale, 0.6–4.0 (default 1.35; also "Larger" / "Smaller" in the tray menu) |
+| `language` | `en`, `ru` or `fr` (also in Settings) |
+| `scale` | window scale, 0.6–4.0 (default 1.35; also in Settings) |
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |
 | `trayResetClock` | tray tooltip shows resets as clock times (`5h: 36% (resets 03:20)`, `7d: 81% (resets tmrw 01:00)`) instead of a countdown |
@@ -382,9 +388,9 @@ are picked up on the fly, no restart needed.
 | `remoteSessions` | sessions running on other machines: a list of URLs or file paths, see below |
 | `showHistory` | the 7-day chart and top projects in details (off by default) |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
-| `theme` | `auto` (by season: `halloween` in autumn, `classic` otherwise), `classic`, `midnight`, `mocha`, `oled`, `forest`, `halloween` (also in the tray menu) |
+| `theme` | `auto` (by season: `halloween` in autumn, `classic` otherwise), `classic`, `midnight`, `mocha`, `oled`, `forest`, `halloween` (also in Settings) |
 | `accent` | your own accent colour, `#RRGGBB`, over the theme's |
-| `skin` | Clawd's skin: a built in one or yours from `<clawdHome>\skins` (also in the tray menu) |
+| `skin` | Clawd's skin: a built in one or yours from `<clawdHome>\skins` (also in Settings) |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
 | `showAdvisor` | Clawd's tips about the computer |
 | `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |
@@ -396,7 +402,7 @@ are picked up on the fly, no restart needed.
 | `advisorUnusedDays` / `advisorUptimeDays` / `advisorMemPercent` | when an app counts as unused; when to suggest a restart; memory share of one program worth a word |
 | `runAsAdmin` | run the widget itself as administrator: at start it asks UAC and restarts elevated (declined — runs as usual). Elevated, the tips also read Prefetch (the exact last start of every program, terminal ones included), Windows Temp and Windows Update downloads |
 | `clawdHome` | Clawd's home folder: the chat works there, reminders and `tips.md` live there, and so does his own session; empty — `%USERPROFILE%\Clawd` |
-| `clawdSession` | keep Clawd's own Claude Code session running in his home with Remote Control (named after the widget, `clawdSessionName`), to talk to him from the phone or claude.ai (default off; also in the tray menu). Started with the widget and again if it's gone; starts its own conversation and comes back to it. Skipped while another session runs in that folder |
+| `clawdSession` | keep Clawd's own Claude Code session running in his home with Remote Control (named after the widget, `clawdSessionName`), to talk to him from the phone or claude.ai (default off; also in Settings). Started with the widget and again if it's gone; starts its own conversation and comes back to it. Skipped while another session runs in that folder |
 | `clawdSessionAdmin` / `clawdSessionHidden` | run that session as administrator; without a window (default on; a folder Claude Code hasn't trusted yet still opens in a window, to answer the trust question) |
 | `refreshSeconds`, `usageIntervalSeconds`, `versionIntervalSeconds`, `statusIntervalSeconds`, `accountIntervalSeconds`, `weatherIntervalSeconds`, `advisorIntervalMinutes` | polling periods, seconds |
 | `left` / `top` | window position, written when you drag it |

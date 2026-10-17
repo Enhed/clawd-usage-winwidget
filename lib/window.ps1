@@ -9,7 +9,7 @@ $win    = [Windows.Markup.XamlReader]::Load($reader)
 Add-ThemeTo $win -Pattern
 
 $UI = @{}
-foreach ($n in @('BtnToggle','BtnHide','BtnExit','PctText','PctSign','BarSession',
+foreach ($n in @('BtnSettings','BtnToggle','BtnHide','BtnExit','PctText','PctSign','BarSession',
                  'LineReset','LineWeek','BarWeek','LineStamp',
                  'Details','LineDay','LineDay2','LineWeek7','LineWeek72','LineVersion','LineClawdVer',
                  'FableRow','FableBarBg','LineFable','BarFable',
