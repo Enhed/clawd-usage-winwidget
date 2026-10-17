@@ -134,6 +134,8 @@ Only the changed key is rewritten, the rest of the file stays as it was; the
 file as it was before the first change is kept as `settings.json.clawd-bak`.
 Changes take effect in new sessions, and Clawd's chat uses them too.
 
+<img src="docs/claude-settings.png" alt="Settings: the Claude Code tab" width="680">
+
 <img src="docs/settings.png" alt="Settings: Look, Window and Clawd tabs" width="680">
 
 ### Clawd

@@ -3,17 +3,20 @@
   Screenshots for the README: boots the widget modules in a temporary copy with
   fake data and renders the expanded window to PNG via RenderTargetBitmap.
     preview - the /usage stats, sessions and the Claude Code version;
-    history - the 7-day chart (hovered) and made-up projects, the widget itself on top.
+    history - the 7-day chart (hovered) and made-up projects, the widget itself on top;
+    claude  - the Claude Code tab of Settings over a made-up settings.json, its top
+              and its bottom side by side.
   Run from Windows PowerShell (not Git Bash):
 
     .\tools\screenshot.ps1 preview                    # -> docs\preview.png
     .\tools\screenshot.ps1 history                    # -> docs\history.png
+    .\tools\screenshot.ps1 claude                     # -> docs\claude-settings.png
     .\tools\screenshot.ps1 history -Out $env:TEMP\h.png -Lang ru
 #>
-param([Parameter(Mandatory)][ValidateSet('preview', 'history')][string]$Kind,
+param([Parameter(Mandatory)][ValidateSet('preview', 'history', 'claude')][string]$Kind,
       [string]$Out, [string]$Lang = 'en')
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not $Out) { $Out = Join-Path $repo "docs\$Kind.png" }
+if (-not $Out) { $Out = Join-Path $repo "docs\$(if ($Kind -eq 'claude') { 'claude-settings' } else { $Kind }).png" }
 $isHist = $Kind -eq 'history'
 
 Add-Type -AssemblyName PresentationFramework
@@ -74,6 +77,28 @@ while ($t -le $now) {
         [void]$rows.Add(('[{0},{1},{2}]' -f $m, [int]$sess, [int]$week))
     }
     $t = $t.AddMinutes(5)
+}
+# The Claude Code tab reads ~\.claude\settings.json: a made-up one, in a home of its own,
+# so that the tab shows ~\.claude and not the temporary folder.
+if ($Kind -eq 'claude') {
+    $env:USERPROFILE = $Root
+    Remove-Item Env:\CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory (Join-Path $Root '.claude') | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $Root '.claude\settings.json'), (@'
+{
+  "model": "opus",
+  "permissions": {
+    "defaultMode": "acceptEdits"
+  },
+  "outputStyle": "Explanatory",
+  "cleanupPeriodDays": 60,
+  "theme": "dark",
+  "tui": "fullscreen",
+  "awaySummaryEnabled": false,
+  "remoteControlAtStartup": true,
+  "inputNeededNotifEnabled": true
+}
+'@).Replace("`r`n", "`n"))
 }
 [System.IO.File]::WriteAllText((Join-Path $Root 'usage-history.json'), '{"backfilled":true,"samples":[' + ($rows -join ',') + ']}')
 
@@ -156,6 +181,53 @@ Set-Details $true
 Update-Widget
 
 $k  = 2.0
+
+function Get-Frame($w) {
+    $w.UpdateLayout()
+    $bw = [int][math]::Ceiling($w.ActualWidth * $k); $bh = [int][math]::Ceiling($w.ActualHeight * $k)
+    $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $bw, $bh, (96 * $k), (96 * $k), ([System.Windows.Media.PixelFormats]::Pbgra32)
+    $rtb.Render($w)
+    return $rtb
+}
+
+function Save-Png($bmp) {
+    $enc = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+    $enc.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+    $fs = [System.IO.File]::Create($Out); $enc.Save($fs); $fs.Close()
+}
+
+# Two frames of the settings window - the tab from the top and scrolled to the end -
+# side by side on the README's dark background, as in docs\settings.png.
+if ($Kind -eq 'claude') {
+    [void](Show-Settings)
+    Set-SettingsTab 'claude'
+    # Cut at the Terminal header: the first frame up to it, the second from it on.
+    $setWin.UpdateLayout()
+    $head = (T 'cc.hTerminal').ToUpper()
+    $cut = @($UI.SetPage.Children | Where-Object { $_ -is [System.Windows.Controls.TextBlock] -and $_.Text -eq $head })[0]
+    $y = $cut.TranslatePoint((New-Object System.Windows.Point 0, 0), $UI.SetPage).Y - $cut.Margin.Top
+    $all = $UI.SetPage.ActualHeight
+    $UI.SetScroll.MaxHeight = $y
+    $top = Get-Frame $setWin
+    $UI.SetScroll.MaxHeight = $all - $y
+    $setWin.UpdateLayout()
+    $UI.SetScroll.ScrollToVerticalOffset($y)
+    $end = Get-Frame $setWin
+    $gap = 16 * $k
+    $W = $top.PixelWidth + $gap + $end.PixelWidth; $H = [math]::Max($top.PixelHeight, $end.PixelHeight)
+    $dv = New-Object System.Windows.Media.DrawingVisual
+    $dc = $dv.RenderOpen()
+    $dc.DrawRectangle((New-Brush '#FF0D1117'), $null, (New-Object System.Windows.Rect 0, 0, ($W / $k), ($H / $k)))
+    $dc.DrawImage($top, (New-Object System.Windows.Rect 0, 0, ($top.PixelWidth / $k), ($top.PixelHeight / $k)))
+    $dc.DrawImage($end, (New-Object System.Windows.Rect (($top.PixelWidth + $gap) / $k), 0, ($end.PixelWidth / $k), ($end.PixelHeight / $k)))
+    $dc.Close()
+    $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $W, $H, (96 * $k), (96 * $k), ([System.Windows.Media.PixelFormats]::Pbgra32)
+    $rtb.Render($dv)
+    Save-Png $rtb
+    Stop-Widget
+    Remove-Item $Root -Recurse -Force -ErrorAction SilentlyContinue
+    return
+}
 $sw = [Diagnostics.Stopwatch]::StartNew()
 $shot = New-Object System.Windows.Threading.DispatcherTimer
 $shot.Interval = [TimeSpan]::FromMilliseconds(250)
@@ -167,13 +239,7 @@ $shot.add_Tick({
     Update-Widget
     $win.UpdateLayout()
     if ($isHist) { Show-HistPoint ($BarWidth * $hoverAt) }
-    $win.UpdateLayout()
-    $w = [int][math]::Ceiling($win.ActualWidth * $k); $h = [int][math]::Ceiling($win.ActualHeight * $k)
-    $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $w, $h, (96 * $k), (96 * $k), ([System.Windows.Media.PixelFormats]::Pbgra32)
-    $rtb.Render($win)
-    $enc = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-    $enc.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($rtb))
-    $fs = [System.IO.File]::Create($Out); $enc.Save($fs); $fs.Close()
+    Save-Png (Get-Frame $win)
     Stop-Widget
 })
 $shot.Start()

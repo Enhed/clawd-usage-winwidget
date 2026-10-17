@@ -214,6 +214,8 @@ Clawd на карточках с живым предпросмотром (под
 `settings.json.clawd-bak`. Изменения действуют в новых сессиях, в том числе
 в чате Clawd.
 
+<img src="docs/claude-settings.png" alt="Настройки: вкладка Claude Code" width="680">
+
 <img src="docs/settings.png" alt="Настройки: вкладки «Вид», «Окно» и «Clawd»" width="680">
 
 Размер задаётся ключом `scale` (по умолчанию 1.35) или в настройках

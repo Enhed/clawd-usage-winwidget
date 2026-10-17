@@ -207,7 +207,8 @@ function Add-SetClaudePage($p) {
     $c = Get-ClaudeSettings
     $path = Get-ClaudeSettingsPath
     if ($path.StartsWith($env:USERPROFILE + '', [System.StringComparison]::OrdinalIgnoreCase)) { $path = '~' + $path.Substring($env:USERPROFILE.Length) }
-    $note = New-PanelText ((T 'cc.note') -f $path) 9.5 '#FF8B8B94'
+    # A word joiner after the slash: WPF would wrap /config as "/" and "config".
+    $note = New-PanelText (((T 'cc.note') -f $path) -replace '/(?=\w)', "/$([char]0x2060)") 9.5 '#FF8B8B94'
     $note.Margin = New-Object System.Windows.Thickness 0, 0, 0, 4
     [void]$p.Children.Add($note)
     if ($c.err) {
