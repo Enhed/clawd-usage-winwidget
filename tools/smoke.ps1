@@ -62,7 +62,8 @@ function New-SandboxTemp([string]$dir) {
 function Stop-Sandbox([string]$root) {
     foreach ($p in @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
                      Where-Object { $_.CommandLine -and $_.CommandLine -like "*$root*" -and $_.ProcessId -ne $PID })) {
-        & taskkill.exe /PID $p.ProcessId /T /F 2>&1 | Out-Null
+        # A child may exit while the tree is being killed - that is not a failure.
+        try { & taskkill.exe /PID $p.ProcessId /T /F 2>&1 | Out-Null } catch {}
     }
 }
 
