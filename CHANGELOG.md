@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.2
+
+- **New skin:** Nerd - square glasses with tape on the bridge.
+
 ## 1.9.1
 
 - **New skins:** Santa hat, Cat ears and Bow.

@@ -1,0 +1,11 @@
+---
+name: Nerd
+top: 1
+f: #1F2937
+w: #F8FAFC
+g: #A0FFFFFF
+---
+...fffff...fffff..
+...fg..ffwffg..f..
+...f...f...f...f..
+...fffff...fffff..
