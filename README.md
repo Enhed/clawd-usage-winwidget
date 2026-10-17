@@ -124,6 +124,16 @@ under the mouse), size, opacity, always on top, which blocks the window shows,
 the tips, the chat, recurring tasks and Clawd's session. Everything applies at
 once; the rest of the keys are in `config.json`, linked at the bottom.
 
+The **Claude Code** tab is Claude Code's own `~/.claude/settings.json`, a picked
+set of what is otherwise easy to miss: the model of new sessions, fast mode,
+language of answers, the permission mode at start, auto-compact, auto memory,
+checkpoints for `/rewind`, the byline in commits, how long sessions are kept,
+the update channel, the terminal theme and renderer, the answer style, the
+transcript view, tips, pushes to the phone and more — each with a hint on hover.
+Only the changed key is rewritten, the rest of the file stays as it was; the
+file as it was before the first change is kept as `settings.json.clawd-bak`.
+Changes take effect in new sessions, and Clawd's chat uses them too.
+
 <img src="docs/settings.png" alt="Settings: Look, Window and Clawd tabs" width="680">
 
 ### Clawd
@@ -369,7 +379,7 @@ stale.
 
 `~/.claude` above means Claude Code's own folder: if `CLAUDE_CONFIG_DIR` is set,
 the widget reads sessions, transcripts, `settings.json` and `.claude.json` from
-there instead, the same as Claude Code does.
+there instead (and the Claude Code tab of Settings writes that `settings.json`), the same as Claude Code does.
 
 > Don't run `claude -p "/usage"` by hand from Git Bash: MSYS rewrites `/usage`
 > into a path (`C:/Program Files/Git/usage`) and the prompt goes to the model,

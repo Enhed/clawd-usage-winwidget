@@ -79,7 +79,7 @@ while ($t -le $now) {
 
 foreach ($m in @(
     'config', 'i18n', 'usage', 'version', 'account', 'sessions', 'clawd-session', 'status', 'format', 'theme', 'window',
-    'mascot', 'skins', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'history','reminders', 'lists', 'chat', 'tasks', 'panel', 'panel-pages', 'remind-popup', 'settings', 'mascot-menu', 'tray',
+    'mascot', 'skins', 'hearts', 'mascot-step', 'weather', 'sky', 'advisor', 'history','reminders', 'lists', 'chat', 'tasks', 'panel', 'panel-pages', 'remind-popup', 'settings', 'claude-settings', 'mascot-menu', 'tray',
     'update', 'tray-menu', 'events'
   )) {
     . (Join-Path $script:Root "lib\$m.ps1")

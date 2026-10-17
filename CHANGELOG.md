@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.11.0
+
+- **Claude Code tab in Settings:** Claude Code's own `~/.claude/settings.json`,
+  a picked set of keys with a hint for each: the model of new sessions, fast
+  mode, language of answers, the permission mode at start, auto-compact, auto
+  memory, checkpoints for `/rewind`, the byline in commits and PRs, how long
+  sessions are kept, the update channel, the terminal theme, renderer, answer
+  style and transcript view, tips, turn duration, thinking summaries, Remote
+  Control in every session and pushes to the phone. Only the changed key is
+  rewritten, in Claude Code's own format; the file as it was before the first
+  change is kept as `settings.json.clawd-bak`. `CLAUDE_CONFIG_DIR` is honoured.
+
 ## 1.10.1
 
 - Clawd no longer trudges into the wall once a session finishes: the edge he

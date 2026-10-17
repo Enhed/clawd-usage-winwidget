@@ -7,7 +7,7 @@
 $setXaml = [xml](Convert-ThemeXaml (Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'settings.xaml')))
 $setWin  = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $setXaml))
 Add-ThemeTo $setWin -Pattern
-foreach ($n in @('SetTitle', 'SetClose', 'SetTabLook', 'SetTabWindow', 'SetTabClawd', 'SetScroll', 'SetPage', 'SetMore')) {
+foreach ($n in @('SetTitle', 'SetClose', 'SetTabLook', 'SetTabWindow', 'SetTabClawd', 'SetTabClaude', 'SetScroll', 'SetPage', 'SetMore')) {
     $UI[$n] = $setWin.FindName($n)
 }
 $script:SetTab = 'look'
@@ -19,9 +19,11 @@ $UI.SetClose.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; $setWin
 $UI.SetTabLook.add_MouseLeftButtonDown({   param($s, $e) $e.Handled = $true; Set-SettingsTab 'look' })
 $UI.SetTabWindow.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-SettingsTab 'window' })
 $UI.SetTabClawd.add_MouseLeftButtonDown({  param($s, $e) $e.Handled = $true; Set-SettingsTab 'clawd' })
+$UI.SetTabClaude.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-SettingsTab 'claude' })
 $UI.SetMore.add_MouseLeftButtonDown({
     param($s, $e)
     $e.Handled = $true
+    if ($script:SetTab -eq 'claude') { Start-Process notepad.exe "`"$(Get-ClaudeSettingsPath)`""; return }
     if (-not (Test-Path $script:ConfigPath)) { Save-Config $script:Cfg }
     Start-Process notepad.exe $script:ConfigPath
 })
@@ -58,12 +60,11 @@ function New-SetRow {
     return $row
 }
 
-# A switch for a yes/no key of config.json; the whole row is clickable.
-function New-SetToggle([string]$key, [string]$label, [string]$tip = '') {
-    $on = [bool]$script:Cfg[$key]
+# A switch; the whole row is clickable, $tag goes to $onClick as $s.Tag.
+function New-SetSwitch([string]$label, [bool]$on, [string]$tip, $tag, $onClick) {
     $row = New-SetRow
     $row.Cursor = [System.Windows.Input.Cursors]::Hand
-    $row.Tag = $key
+    $row.Tag = $tag
     if ($tip) { $row.ToolTip = $tip }
     $t = New-PanelText $label 10.5 $(if ($on) { '#FFE4E4E7' } else { '#FFA1A1AA' })
     $t.VerticalAlignment = 'Center'
@@ -82,12 +83,17 @@ function New-SetToggle([string]$key, [string]$label, [string]$tip = '') {
     $sw.Child = $knob
     [System.Windows.Controls.Grid]::SetColumn($sw, 1)
     [void]$row.Children.Add($sw)
-    $row.add_MouseLeftButtonDown({
+    $row.add_MouseLeftButtonDown($onClick)
+    return $row
+}
+
+# A switch for a yes/no key of config.json.
+function New-SetToggle([string]$key, [string]$label, [string]$tip = '') {
+    return New-SetSwitch $label ([bool]$script:Cfg[$key]) $tip $key {
         param($s, $e)
         $e.Handled = $true
         Set-Setting $s.Tag (-not [bool]$script:Cfg[$s.Tag])
-    })
-    return $row
+    }
 }
 
 # "Size   -  135%  +": the value between two buttons.
@@ -342,20 +348,20 @@ function Add-SetClawdPage($p) {
 }
 
 # Built anew only when something it shows has changed: the tab, the language,
-# config.json (also edited by hand) or the skin files.
+# config.json (also edited by hand), the skin files or Claude Code's settings.json.
 function Update-Settings {
     if (-not $setWin.IsVisible) { return }
     $files = @(foreach ($d in (Get-SkinDirs)) {
         Get-ChildItem $d -File -Filter *.txt -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Name):$($_.LastWriteTimeUtc.Ticks)" }
     }) -join ','
-    $key = "$script:SetTab|$(Get-Lang)|$files|$(ConvertTo-Json $script:Cfg -Compress -Depth 3)"
+    $key = "$script:SetTab|$(Get-Lang)|$files|$((Get-ClaudeSettings).stamp)|$(ConvertTo-Json $script:Cfg -Compress -Depth 3)"
     if ($key -eq $script:SetKey) { return }
     $script:SetKey = $key
 
     $UI.SetTitle.Text = "$(T 'set.title')  $([char]0x00B7)  v$WidgetVersion"
-    $UI.SetMore.Text  = T 'set.more'
+    $UI.SetMore.Text  = $(if ($script:SetTab -eq 'claude') { T 'cc.more' } else { T 'set.more' })
     foreach ($t in @(@($UI.SetTabLook, 'look', 'set.tabLook'), @($UI.SetTabWindow, 'window', 'set.tabWindow'),
-                     @($UI.SetTabClawd, 'clawd', 'set.tabClawd'))) {
+                     @($UI.SetTabClawd, 'clawd', 'set.tabClawd'), @($UI.SetTabClaude, 'claude', 'set.tabClaude'))) {
         $on = ($t[1] -eq $script:SetTab)
         $t[0].Text = T $t[2]
         $t[0].Foreground = New-Brush $(if ($on) { '#FFF4F4F5' } else { '#FF6B7280' })
@@ -369,6 +375,7 @@ function Update-Settings {
         'look'   { Add-SetLookPage $p }
         'window' { Add-SetWindowPage $p }
         'clawd'  { Add-SetClawdPage $p }
+        'claude' { Add-SetClaudePage $p }
     }
 }
 

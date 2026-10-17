@@ -35,6 +35,7 @@
           <TextBlock x:Name="SetTabLook" Style="{StaticResource Tab}"/>
           <TextBlock x:Name="SetTabWindow" Style="{StaticResource Tab}"/>
           <TextBlock x:Name="SetTabClawd" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="SetTabClaude" Style="{StaticResource Tab}"/>
         </StackPanel>
       </Grid>
 
