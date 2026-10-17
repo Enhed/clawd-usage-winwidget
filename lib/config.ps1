@@ -101,6 +101,9 @@ function Get-ClawdHome {
 
 # Claude Code's own folder (sessions, projects, settings.json): CLAUDE_CONFIG_DIR
 # if it is set, ~\.claude otherwise. Every path into it goes through here.
+# Paths inside it are made with [IO.Path]::Combine, not Join-Path: in PowerShell 5.1
+# Join-Path fails on a drive that is not there (a mapped network drive is not seen
+# from an elevated widget), and at start that would stop the widget.
 function Get-ClaudeConfigDir {
     $d = ([string]$env:CLAUDE_CONFIG_DIR).Trim()
     if ($d) { return [Environment]::ExpandEnvironmentVariables($d).TrimEnd('\', '/') }
@@ -110,6 +113,6 @@ function Get-ClaudeConfigDir {
 # Claude Code's global config (trusted folders...): .claude.json inside that folder
 # when CLAUDE_CONFIG_DIR is set, next to ~\.claude otherwise.
 function Get-ClaudeGlobalConfigPath {
-    if (([string]$env:CLAUDE_CONFIG_DIR).Trim()) { return Join-Path (Get-ClaudeConfigDir) '.claude.json' }
+    if (([string]$env:CLAUDE_CONFIG_DIR).Trim()) { return [System.IO.Path]::Combine((Get-ClaudeConfigDir), '.claude.json') }
     return Join-Path $env:USERPROFILE '.claude.json'
 }

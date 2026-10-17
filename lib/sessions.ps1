@@ -4,7 +4,7 @@
 # status. A file can outlive its process, so check the process is alive and is the
 # same process (procStart - start FILETIME).
 
-$SessionsDir = Join-Path (Get-ClaudeConfigDir) 'sessions'
+$SessionsDir = [System.IO.Path]::Combine((Get-ClaudeConfigDir), 'sessions')
 
 function Get-Sessions {
     $own = @()

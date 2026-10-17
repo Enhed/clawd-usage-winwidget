@@ -46,7 +46,7 @@ function Start-ClawdSession {
     # projects\<path with every non-alphanumeric as -> in Claude Code's folder), a new one otherwise.
     $id = Get-ClawdSessionId
     $key = [regex]::Replace($dir, '[^A-Za-z0-9]', '-')
-    if ($id -and (Test-Path (Join-Path (Get-ClaudeConfigDir) "projects\$key\$id.jsonl"))) {
+    if ($id -and (Test-Path -LiteralPath ([System.IO.Path]::Combine((Get-ClaudeConfigDir), "projects\$key\$id.jsonl")))) {
         $cli += @('--resume', $id)
     }
     $cli += @('--remote-control', $name, '--append-system-prompt-file', (& $q $SessionPromptPath))

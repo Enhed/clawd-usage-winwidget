@@ -119,7 +119,7 @@ function Update-RemoteFeed {
     $id = Get-ClawdSessionId
     if (-not $id) { return }
     $key  = [regex]::Replace((Get-ClawdHome), '[^A-Za-z0-9]', '-')
-    $path = Join-Path (Get-ClaudeConfigDir) "projects\$key\$id.jsonl"
+    $path = [System.IO.Path]::Combine((Get-ClaudeConfigDir), "projects\$key\$id.jsonl")
     $r = $script:Remote
     if ($path -ne $r.path) { $r.path = $path; $r.offset = 0; $r.items.Clear() }
     if (-not [System.IO.File]::Exists($path)) { return }

@@ -13,7 +13,7 @@ $script:VerAt     = [datetime]::MinValue
 
 function Get-UpdateChannel {
     try {
-        $s = Get-Content (Join-Path (Get-ClaudeConfigDir) 'settings.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $s = Get-Content -LiteralPath ([System.IO.Path]::Combine((Get-ClaudeConfigDir), 'settings.json')) -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($s.autoUpdatesChannel -in @('stable','latest')) { return $s.autoUpdatesChannel }
     } catch {}
     return 'latest'

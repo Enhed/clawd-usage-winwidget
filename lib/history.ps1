@@ -181,9 +181,9 @@ function Start-HistoryJob([string]$kind) {
     if ($script:HistJob) { return }
     $ps = [powershell]::Create()
     $since = Get-UnixMinute ((Get-Date).AddDays(-7))
-    $projects = Join-Path (Get-ClaudeConfigDir) 'projects'
+    $projects = [System.IO.Path]::Combine((Get-ClaudeConfigDir), 'projects')
     if ($kind -eq 'backfill') {
-        $dir = Join-Path $projects ($script:Root -replace '[^A-Za-z0-9]', '-')
+        $dir = [System.IO.Path]::Combine($projects, ($script:Root -replace '[^A-Za-z0-9]', '-'))
         [void]$ps.AddScript($HistBackfill.ToString()).AddArgument($dir).AddArgument($since)
     } else {
         $script:ProjTry = Get-Date
