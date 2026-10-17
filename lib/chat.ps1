@@ -274,7 +274,7 @@ function Test-ChatTimedOut($c) {
             ([datetime]::Now - $c.at).TotalSeconds -gt [double]$script:Cfg.chatTimeoutSeconds)
 }
 
-# A click on "Clawd is thinking..." stops the reply, with the tools it started.
+# The stop button in place of Send stops the reply, with the tools it started.
 function Stop-ChatReply {
     $c = $script:ChatProc
     if (-not $c) { return }
@@ -313,7 +313,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()
         }
         [System.IO.File]::WriteAllText($in, $ctx + "`n`n" + $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
-        $argv = @('-p', '--output-format', 'json', '--model', [string]$script:Cfg.chatModel,
+        $argv = @('-p', '--output-format', 'stream-json', '--verbose', '--model', [string]$script:Cfg.chatModel,
                   '--permission-mode', $(if ($script:Cfg.chatBypass) { 'bypassPermissions' } else { 'default' }))
         if (-not $tools.Count) { $argv += '--strict-mcp-config' }
         $argv += @('--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
@@ -326,7 +326,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()
                  -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err `
                  -WindowStyle Hidden -PassThru
         [void]$p.Handle
-        $script:ChatProc = @{ proc = $p; out = $out; err = $err; at = Get-Date }
+        $script:ChatProc = @{ proc = $p; out = $out; err = $err; at = Get-Date; offset = [int64]0; doing = '' }
         $chatTimer.Start()
     } catch {
         [void](Add-ChatMessage 'note' ((T 'chat.error') -f $_.Exception.Message))
@@ -417,6 +417,69 @@ function ConvertTo-PlainText([string]$text) {
     return ($text -replace '(\r?\n){3,}', "`n`n").Trim()
 }
 
+# What Clawd is busy with, from one content block of the stream: "Reading win.ini",
+# "Running: Get-ChildItem..."; $null - nothing to show.
+function Get-ChatDoing($b) {
+    $cut = { param($s) $s = ([string]$s -split "`r?`n")[0].Trim(); if ($s.Length -gt 44) { $s.Substring(0, 44) + '…' } else { $s } }
+    switch ([string]$b.type) {
+        'thinking' { return T 'chat.doing.think' }
+        'text'     { return T 'chat.doing.write' }
+        'tool_use' { }
+        default    { return $null }
+    }
+    $in = $b.input
+    $name = [string]$b.name
+    switch -regex ($name) {
+        '^Read$'              { return (T 'chat.doing.read') -f (& $cut ([System.IO.Path]::GetFileName([string]$in.file_path))) }
+        '^(Glob|Grep)$'       { return (T 'chat.doing.search') -f (& $cut $in.pattern) }
+        '^(PowerShell|Bash)$' { return (T 'chat.doing.run') -f (& $cut $in.command) }
+        '^WebFetch$'          { try { return (T 'chat.doing.fetch') -f ([uri][string]$in.url).Host } catch { return T 'chat.doing.web' } }
+        '^WebSearch$'         { return (T 'chat.doing.websearch') -f (& $cut $in.query) }
+        '^(Task|Agent)$'      { return T 'chat.doing.agent' }
+        '^mcp__([^_]+(?:_[^_]+)*)__(.+)$' { return (T 'chat.doing.tool') -f "$($Matches[1]): $($Matches[2])" }
+        default               { return (T 'chat.doing.tool') -f $name }
+    }
+}
+
+# Reads what the stream added since the last look (whole lines only) and keeps the
+# latest action in $ChatProc.doing. A tool's result means he is thinking again.
+function Update-ChatActivity {
+    $c = $script:ChatProc
+    if (-not $c) { return }
+    $buf = $null; $n = 0
+    try {
+        $fs = New-Object System.IO.FileStream($c.out, 'Open', 'Read', 'ReadWrite, Delete')
+        try {
+            if ($fs.Length -le $c.offset) { return }
+            $fs.Position = $c.offset
+            $buf = New-Object byte[] ([int]($fs.Length - $c.offset))
+            $n = $fs.Read($buf, 0, $buf.Length)
+        } finally { $fs.Close() }
+    } catch { return }
+    if ($n -le 0) { return }
+    $end = [array]::LastIndexOf($buf, [byte]10, $n - 1)
+    if ($end -lt 0) { return }
+    $c.offset += $end + 1
+    foreach ($line in ([System.Text.Encoding]::UTF8.GetString($buf, 0, $end) -split "`n")) {
+        if ($line.StartsWith('{"type":"user"')) { $c.doing = ''; continue }
+        if (-not $line.StartsWith('{"type":"assistant"')) { continue }
+        try { $j = $line | ConvertFrom-Json } catch { continue }
+        foreach ($b in @($j.message.content)) {
+            $d = Get-ChatDoing $b
+            if ($d) { $c.doing = $d }
+        }
+    }
+}
+
+# The stream's last word: the `result` line, the same object `--output-format json` gives.
+function Read-ChatResult([string]$path) {
+    $lines = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8) -split "`n"
+    for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+        if ($lines[$i] -match '"type":"result"') { return $lines[$i] | ConvertFrom-Json }
+    }
+    return $null
+}
+
 function Collect-ChatReply {
     $c = $script:ChatProc
     if (-not $c) { return }
@@ -431,7 +494,7 @@ function Collect-ChatReply {
     if (-not $c.proc.HasExited) { return }
     $script:ChatProc = $null
     $j = $null
-    try { $j = [System.IO.File]::ReadAllText($c.out, [System.Text.Encoding]::UTF8) | ConvertFrom-Json } catch {}
+    try { $j = Read-ChatResult $c.out } catch {}
     if ($j -and -not $j.is_error -and $null -ne $j.result) {
         $script:Chat.started = $true
         # A block that failed to parse must not swallow the reply itself.
@@ -552,6 +615,7 @@ $chatTimer.Interval = [TimeSpan]::FromMilliseconds(500)
 $chatTimer.add_Tick({
     try {
         Collect-ChatRun
+        Update-ChatActivity
         Collect-ChatReply
         if (-not $script:ChatProc -and -not $script:RunProc) { $chatTimer.Stop() }
         Update-PanelBusy

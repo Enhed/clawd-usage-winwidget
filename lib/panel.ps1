@@ -23,11 +23,7 @@ $UI.AdvRescan.add_MouseLeftButtonDown({
     Start-AdvisorScan
     Update-PanelBusy
 })
-$UI.ChatNew.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Reset-Chat })
-$UI.ChatBusy.Cursor     = [System.Windows.Input.Cursors]::Hand
-$UI.ChatBusy.Background = [System.Windows.Media.Brushes]::Transparent
-$UI.ChatBusy.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; if (-not $script:RunProc) { Stop-ChatReply } })
-# "Auto": Clawd's scripts run without the "Run" click.
+$UI.ChatNew.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Reset-Chat })# "Auto": Clawd's scripts run without the "Run" click.
 $UI.ChatAuto.add_MouseLeftButtonDown({
     param($s, $e)
     $e.Handled = $true
@@ -57,7 +53,13 @@ function Submit-ChatInput {
     }
     Send-ChatMessage $t
 }
-$UI.ChatSend.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Submit-ChatInput })
+# While Clawd answers, Send is a stop button.
+$UI.ChatSend.add_MouseLeftButtonDown({
+    param($s, $e)
+    $e.Handled = $true
+    if ($script:ChatProc) { Stop-ChatReply } else { Submit-ChatInput }
+})
+$UI.ChatBusy.TextTrimming = 'CharacterEllipsis'
 # Enter sends, Shift+Enter - a new line.
 $UI.ChatInput.add_PreviewKeyDown({
     param($s, $e)
@@ -338,10 +340,17 @@ function Update-PanelBusy {
         $UI.ChatBusy.Text = (T 'chat.running') + $dots
     } elseif ($script:ChatProc) {
         $sec = [int]([datetime]::Now - $script:ChatProc.at).TotalSeconds
-        $UI.ChatBusy.Text = (T 'chat.thinking') + $dots + $(if ($sec -ge 10) { "  $((T 'chat.sec') -f $sec)" } else { '' })
+        $doing = $(if ($script:ChatProc.doing) { $script:ChatProc.doing } else { T 'chat.thinking' })
+        $UI.ChatBusy.Text = $doing + $dots + $(if ($sec -ge 10) { "  $((T 'chat.sec') -f $sec)" } else { '' })
     }
     $UI.ChatBusy.Visibility = $(if ($script:RunProc -or $script:ChatProc) { 'Visible' } else { 'Collapsed' })
-    $UI.ChatSend.Opacity = $(if ($script:ChatProc) { 0.35 } else { 1.0 })
+    $stop = [bool]$script:ChatProc
+    if ($stop -ne $script:SendIsStop) {
+        $script:SendIsStop = $stop
+        $UI.ChatSend.Text       = $(if ($stop) { [string][char]0xE71A } else { [string][char]0xE724 })
+        $UI.ChatSend.Foreground = New-Brush $(if ($stop) { $Palette.crit.Wpf } else { '#FF60A5FA' })
+        $UI.ChatSend.ToolTip    = $(if ($stop) { T 'chat.stop' } else { $null })
+    }
     $UI.AdvStamp.Text = $(if ($script:AdvJob) { T 'adv.checking' }
                           elseif ($script:AdvAt) { (T 'adv.checked') -f $script:AdvAt.ToString('HH:mm') }
                           else { '' })
@@ -362,7 +371,6 @@ function Update-Panel([switch]$Force) {
 function Update-ChatPage([switch]$Force) {
     $UI.AdvRescan.ToolTip = T 'adv.rescan'
     $UI.ChatNew.ToolTip   = T 'chat.new'
-    $UI.ChatBusy.ToolTip  = T 'chat.stop'
     Update-ChatAuto
     if ($script:TipRef)                  { $UI.ChatHint.Text = T 'adv.refineHint' }
     elseif (-not $UI.ChatInput.IsFocused) { $UI.ChatHint.Text = T 'chat.hint' }
