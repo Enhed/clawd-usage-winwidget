@@ -196,7 +196,7 @@ function Update-Widget {
     if ($script:Cfg.showSessions -or $script:Cfg.showMascot -or $script:Cfg.clawdSession) { $ss = Get-Sessions }
     Update-ClawdSession $ss
     # Other machines' sessions count for the line and Clawd, but never for his own session above.
-    if (@($script:Cfg.remoteSessions).Count -or $script:RemoteSess.Count) { $ss = @($ss) + @(Get-RemoteSessions $ss) }
+    if (@($script:Cfg.remoteSessions).Count -or $script:RemoteSess.Count) { $ss = @($ss) + (Get-RemoteSessions $ss) }
     # Clawd's own session is always there: idle it is not "something running" -
     # otherwise the mascot would never fall asleep. Talking to it does count.
     $clawdHome = Get-ClawdHome
