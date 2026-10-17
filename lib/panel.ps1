@@ -276,7 +276,25 @@ function New-RemoteBox($msg, [string]$color) {
     return $box
 }
 
+# Right-click on a message: Copy, the text as it is.
+function Add-CopyMenu($el, [string]$text) {
+    if (-not $text) { return $el }
+    $mi = New-Object System.Windows.Controls.MenuItem
+    $mi.Header = T 'chat.copy'
+    $mi.Tag    = $text
+    $mi.add_Click({ param($s, $e); try { [System.Windows.Clipboard]::SetText($s.Tag) } catch {} })
+    $cm = New-Object System.Windows.Controls.ContextMenu
+    [void]$cm.Items.Add($mi)
+    $el.ContextMenu = $cm
+    return $el
+}
+
 function New-ChatItem($msg) {
+    $text = @(@($msg.text) + $(if ($msg.run) { $msg.run.script }) | Where-Object { $_ }) -join "`n`n"
+    return Add-CopyMenu (New-ChatCard $msg) $text
+}
+
+function New-ChatCard($msg) {
     switch ($msg.role) {
         'user' {
             $card = New-PanelCard '#FF2B3245'

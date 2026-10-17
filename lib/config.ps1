@@ -35,6 +35,7 @@ $DefaultConfig = [ordered]@{
     chatModel              = 'sonnet' # model for the chat
     chatTimeoutSeconds     = 300    # a reply taking longer is cancelled
     chatAutoRun            = $false # run Clawd's scripts at once, without the "Run" click (toggle in the panel)
+    chatBypass             = $false # chat in bypassPermissions: reads anywhere, no tool call is refused
     quickModel             = 'haiku' # model for small jobs: an unclear reminder time, recurring tasks by default
     showTasks              = $true  # recurring tasks from the tasks folder in Clawd's home
     tasksMaxPercent        = 80     # tasks wait while the session or the week is at this percent or more (100 - never)

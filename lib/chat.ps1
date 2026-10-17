@@ -176,7 +176,8 @@ function Get-ChatContext {
     $lines = @('<context>',
                "now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm')))",
                "widget elevated: $(if ($script:IsAdmin) { 'yes' } else { 'no' })",
-               "auto-run: $(if ($script:Cfg.chatAutoRun) { 'on - your run scripts start at once, without the user''s click' } else { 'off' })")
+               "auto-run: $(if ($script:Cfg.chatAutoRun) { 'on - your run scripts start at once, without the user''s click' } else { 'off' })",
+               "full access: $(if ($script:Cfg.chatBypass) { 'on - nothing is refused, read files anywhere on the computer' } else { 'off' })")
     $tips = @(Get-AdvisorTips)
     if ($tips.Count) {
         $lines += 'tips:'
@@ -286,7 +287,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()
         [System.IO.File]::WriteAllText($in, $ctx + "`n`n" + $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
         $argv = @('-p', '--output-format', 'json', '--model', [string]$script:Cfg.chatModel,
-                  '--permission-mode', 'default')
+                  '--permission-mode', $(if ($script:Cfg.chatBypass) { 'bypassPermissions' } else { 'default' }))
         if (-not $tools.Count) { $argv += '--strict-mcp-config' }
         $argv += @('--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
                    '--append-system-prompt-file', (& $q $ChatPromptPath),

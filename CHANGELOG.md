@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.12.0
+
+- **Copy from the chat:** right-click a message for Copy; for a script it
+  copies the text together with the code.
+- **Full access for the chat** (Settings → Clawd, `chatBypass`, off by
+  default): the chat runs in Claude Code's `bypassPermissions` mode, so Clawd
+  reads files anywhere on the computer, not only in his folder, and no call is
+  refused. Changes still come as `run` scripts.
+
 ## 1.11.0
 
 - **Claude Code tab in Settings:** Claude Code's own `~/.claude/settings.json`,

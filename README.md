@@ -283,7 +283,11 @@ read-only commands allowed. A change comes as a script you see in full, with
 **Run**, **Refine** (write what to change — the script is replaced) and **Not
 now**. **AUTO** in the panel header (`chatAutoRun`, off by default) skips the click:
 scripts run as soon as Clawd sends them, up to three in a row before one waits for
-you again; Clawd is told about it and asks in words before anything destructive. Reminders are kept by the widget and fire on time with a card to
+you again; Clawd is told about it and asks in words before anything destructive.
+**Full access** in Settings → Clawd (`chatBypass`, off by default) runs the chat in
+Claude Code's `bypassPermissions` mode: Clawd reads files anywhere on the computer,
+not only in his folder, and no call is refused; changes still come as scripts.
+Right-click a message to copy it. Reminders are kept by the widget and fire on time with a card to
 put them off, a bell in the header and a hop from Clawd — even with the panel
 closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
 default), `showChat` turns it off.
@@ -412,6 +416,7 @@ are picked up on the fly, no restart needed.
 | `showAdvisor` | Clawd's tips about the computer |
 | `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |
 | `chatAutoRun` | run Clawd's scripts without the Run click (the AUTO toggle in the panel) |
+| `chatBypass` | the chat in `bypassPermissions`: reads anywhere, nothing is refused (Settings → Clawd) |
 | `quickModel` | model for small jobs: an unclear reminder time, recurring tasks (`haiku`) |
 | `showTasks` | run recurring tasks from `tasks\` in Clawd's home |
 | `tasksMaxPercent` | tasks wait while the session or the week is at this percent or more (80; 100 — never wait) |

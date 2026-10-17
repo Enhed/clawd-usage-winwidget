@@ -330,7 +330,10 @@ function Add-SetClawdPage($p) {
         }))
     }
     [void]$p.Children.Add((New-SetToggle 'showChat' (T 'set.showChat')))
-    if ($script:Cfg.showChat) { [void]$p.Children.Add((New-SetToggle 'chatAutoRun' (T 'set.chatAutoRun'))) }
+    if ($script:Cfg.showChat) {
+        [void]$p.Children.Add((New-SetToggle 'chatAutoRun' (T 'set.chatAutoRun')))
+        [void]$p.Children.Add((New-SetToggle 'chatBypass' (T 'set.chatBypass') (T 'set.chatBypassTip')))
+    }
     [void]$p.Children.Add((New-SetToggle 'showTasks' (T 'set.showTasks')))
 
     [void]$p.Children.Add((New-SetHeader 'Remote Control'))
