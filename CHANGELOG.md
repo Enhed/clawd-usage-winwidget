@@ -8,6 +8,11 @@
   default): the chat runs in Claude Code's `bypassPermissions` mode, so Clawd
   reads files anywhere on the computer, not only in his folder, and no call is
   refused. Changes still come as `run` scripts.
+- **Clawd as a full agent** (Settings → Clawd, "Short replies and quick
+  checks", `chatCompact`, on by default): turned off, the chat's prompt drops
+  the tiny-chat rules - no short replies, no quick-check limits, no
+  `chatTimeoutSeconds`; Clawd helps with anything, as fully as needed.
+- **Stop a reply:** click "Clawd is thinking..." under the conversation.
 
 ## 1.11.0
 

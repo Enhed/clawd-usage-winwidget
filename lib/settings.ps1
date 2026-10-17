@@ -333,6 +333,7 @@ function Add-SetClawdPage($p) {
     if ($script:Cfg.showChat) {
         [void]$p.Children.Add((New-SetToggle 'chatAutoRun' (T 'set.chatAutoRun')))
         [void]$p.Children.Add((New-SetToggle 'chatBypass' (T 'set.chatBypass') (T 'set.chatBypassTip')))
+        [void]$p.Children.Add((New-SetToggle 'chatCompact' (T 'set.chatCompact') (T 'set.chatCompactTip')))
     }
     [void]$p.Children.Add((New-SetToggle 'showTasks' (T 'set.showTasks')))
 

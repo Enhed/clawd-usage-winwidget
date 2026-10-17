@@ -287,7 +287,10 @@ you again; Clawd is told about it and asks in words before anything destructive.
 **Full access** in Settings → Clawd (`chatBypass`, off by default) runs the chat in
 Claude Code's `bypassPermissions` mode: Clawd reads files anywhere on the computer,
 not only in his folder, and no call is refused; changes still come as scripts.
-Right-click a message to copy it. Reminders are kept by the widget and fire on time with a card to
+**Short replies and quick checks** there (`chatCompact`, on by default) keep Clawd
+brief and within `chatTimeoutSeconds`; turned off, he is a full agent: replies as
+long as needed, deep checks, no time limit. Click "Clawd is thinking..." to stop
+a reply. Right-click a message to copy it. Reminders are kept by the widget and fire on time with a card to
 put them off, a bell in the header and a hop from Clawd — even with the panel
 closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
 default), `showChat` turns it off.
@@ -417,6 +420,7 @@ are picked up on the fly, no restart needed.
 | `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |
 | `chatAutoRun` | run Clawd's scripts without the Run click (the AUTO toggle in the panel) |
 | `chatBypass` | the chat in `bypassPermissions`: reads anywhere, nothing is refused (Settings → Clawd) |
+| `chatCompact` | short replies and quick checks within `chatTimeoutSeconds`; off - a full agent, no time limit |
 | `quickModel` | model for small jobs: an unclear reminder time, recurring tasks (`haiku`) |
 | `showTasks` | run recurring tasks from `tasks\` in Clawd's home |
 | `tasksMaxPercent` | tasks wait while the session or the week is at this percent or more (80; 100 — never wait) |

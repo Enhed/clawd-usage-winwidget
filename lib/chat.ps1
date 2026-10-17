@@ -257,6 +257,33 @@ function Get-ChatToolRules([string[]]$tools) {
     return ,$rules
 }
 
+# chat-prompt.md for the current mode: `compact` parts (short replies, quick checks)
+# or `full` ones (a full agent, no time limit), the other kind cut out.
+function Get-ChatPromptFile {
+    $drop = $(if ($script:Cfg.chatCompact) { 'full' } else { 'compact' })
+    $text = [System.IO.File]::ReadAllText($ChatPromptPath)
+    $text = $text -replace "(?s)<!-- $drop -->.*?<!-- /$drop -->\r?\n", '' -replace '<!-- /?(compact|full) -->\r?\n', ''
+    $path = Join-Path $env:TEMP "cuw-chat-prompt-$PID.md"
+    [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+    return $path
+}
+
+# The chat's own time limit: none for the full agent - the user stops it from the panel.
+function Test-ChatTimedOut($c) {
+    return ($script:Cfg.chatCompact -and
+            ([datetime]::Now - $c.at).TotalSeconds -gt [double]$script:Cfg.chatTimeoutSeconds)
+}
+
+# A click on "Clawd is thinking..." stops the reply, with the tools it started.
+function Stop-ChatReply {
+    $c = $script:ChatProc
+    if (-not $c) { return }
+    try { & taskkill.exe /PID $c.proc.Id /T /F 2>&1 | Out-Null } catch {}
+    $script:ChatProc = $null
+    [void](Add-ChatMessage 'note' (T 'chat.stopped'))
+    Update-Panel
+}
+
 # $hidden - a message from the widget itself (a script's output), not shown as the user's.
 # $allow - tools allowed for this one call only (actions the user just approved).
 function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()) {
@@ -290,7 +317,7 @@ function Send-ChatMessage([string]$text, [switch]$Hidden, [string[]]$Allow = @()
                   '--permission-mode', $(if ($script:Cfg.chatBypass) { 'bypassPermissions' } else { 'default' }))
         if (-not $tools.Count) { $argv += '--strict-mcp-config' }
         $argv += @('--disallowedTools', 'Write', 'Edit', 'NotebookEdit',
-                   '--append-system-prompt-file', (& $q $ChatPromptPath),
+                   '--append-system-prompt-file', (& $q (Get-ChatPromptFile)),
                    '--allowedTools') + @($ChatReadOnly | ForEach-Object { & $q "PowerShell($_`:*)" }) +
                  @((Get-ChatToolRules $tools) + $Allow | ForEach-Object { & $q $_ })
         if ($script:Chat.started) { $argv += @('--resume', $script:Chat.sessionId) }
@@ -394,8 +421,7 @@ function Collect-ChatReply {
     $c = $script:ChatProc
     if (-not $c) { return }
     # Stuck (a tool scanning a whole drive, a hung command) - stop it with its children.
-    if (-not $c.proc.HasExited -and
-        ([datetime]::Now - $c.at).TotalSeconds -gt [double]$script:Cfg.chatTimeoutSeconds) {
+    if (-not $c.proc.HasExited -and (Test-ChatTimedOut $c)) {
         try { & taskkill.exe /PID $c.proc.Id /T /F 2>&1 | Out-Null } catch {}
         $script:ChatProc = $null
         [void](Add-ChatMessage 'note' ((T 'chat.timeout') -f [int]$script:Cfg.chatTimeoutSeconds))

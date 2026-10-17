@@ -24,6 +24,9 @@ $UI.AdvRescan.add_MouseLeftButtonDown({
     Update-PanelBusy
 })
 $UI.ChatNew.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Reset-Chat })
+$UI.ChatBusy.Cursor     = [System.Windows.Input.Cursors]::Hand
+$UI.ChatBusy.Background = [System.Windows.Media.Brushes]::Transparent
+$UI.ChatBusy.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; if (-not $script:RunProc) { Stop-ChatReply } })
 # "Auto": Clawd's scripts run without the "Run" click.
 $UI.ChatAuto.add_MouseLeftButtonDown({
     param($s, $e)
@@ -359,6 +362,7 @@ function Update-Panel([switch]$Force) {
 function Update-ChatPage([switch]$Force) {
     $UI.AdvRescan.ToolTip = T 'adv.rescan'
     $UI.ChatNew.ToolTip   = T 'chat.new'
+    $UI.ChatBusy.ToolTip  = T 'chat.stop'
     Update-ChatAuto
     if ($script:TipRef)                  { $UI.ChatHint.Text = T 'adv.refineHint' }
     elseif (-not $UI.ChatInput.IsFocused) { $UI.ChatHint.Text = T 'chat.hint' }
