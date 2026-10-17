@@ -216,5 +216,7 @@ function Update-SkyTip {
     $st = Get-SunTimes
     $fmt = { param($m) [timespan]::FromMinutes($m).ToString('hh\:mm') }
     $parts += (T 'sky.sun') -f (& $fmt $st.sr), (& $fmt $st.ss)
+    $moon = Get-MoonInfo
+    $parts += (T 'sky.moon') -f @(T 'sky.moonNames')[$moon.name], $moon.lit
     $UI.Sky.ToolTip = $parts -join "`n"
 }

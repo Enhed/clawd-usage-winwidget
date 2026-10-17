@@ -128,11 +128,35 @@ $GroundBrush = New-Object System.Windows.Media.SolidColorBrush $SkyCol.snowNight
 $Ground = New-SkyShape Rectangle 10 1.5 $GroundBrush
 $Flash  = New-SkyShape Rectangle 10 10 '#FFF8FAFC'
 
-# Moon phase from the mean synodic month since the new moon of January 6, 2000.
+# Moon phase from how far the Moon is from the Sun along the ecliptic, with the
+# main periodic terms (low-precision formulas, good to about an hour). The mean
+# synodic month alone is off by up to a day - fine for the picture, not for "% lit".
+$MoonMonth = 29.530588853
+function Get-MoonAge {
+    $d   = ([datetime]::UtcNow - [datetime]::new(2000, 1, 1, 12, 0, 0, [System.DateTimeKind]::Utc)).TotalDays
+    $rad = [math]::PI / 180
+    $g   = (357.528 + 0.9856003 * $d) * $rad                       # Sun's mean anomaly
+    $sun = 280.460 + 0.9856474 * $d + 1.915 * [math]::Sin($g) + 0.020 * [math]::Sin(2 * $g)
+    $Lm  = 218.316 + 13.176396 * $d                                # Moon's mean longitude
+    $Mm  = (134.963 + 13.064993 * $d) * $rad                       # and mean anomaly
+    $D   = ($Lm - (280.460 + 0.9856474 * $d)) * $rad               # mean elongation
+    $moon = $Lm + 6.289 * [math]::Sin($Mm) - 1.274 * [math]::Sin(2 * $D - $Mm) + 0.658 * [math]::Sin(2 * $D) -
+            0.186 * [math]::Sin($g) - 0.059 * [math]::Sin(2 * $D - 2 * $Mm) - 0.057 * [math]::Sin(2 * $D - $Mm - $g)
+    $e = ((($moon - $sun) % 360) + 360) % 360
+    return $e / 360 * $MoonMonth
+}
+
+# For the sky's tooltip: @{ name = 0..7 from new moon round to waning crescent; lit = percent }.
+function Get-MoonInfo {
+    $f = (Get-MoonAge) / $MoonMonth
+    return @{ name = [int][math]::Floor($f * 8 + 0.5) % 8
+              lit  = [int][math]::Round((1 - [math]::Cos(2 * [math]::PI * $f)) / 2 * 100) }
+}
+
 # A pixel is lit if it is on the bright side of the terminator u = cos(θ)·√(1-v²).
 function Set-MoonPhase([double]$lat) {
-    $P   = 29.530588853
-    $age = ((([datetime]::UtcNow - [datetime]::new(2000, 1, 6, 18, 14, 0, [System.DateTimeKind]::Utc)).TotalDays % $P) + $P) % $P
+    $P   = $MoonMonth
+    $age = Get-MoonAge
     $key = "$([math]::Round($age * 2))|$($lat -lt 0)"
     if ($key -eq $script:Sky.moonKey) { return }
     $script:Sky.moonKey = $key

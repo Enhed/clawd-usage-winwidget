@@ -162,7 +162,7 @@ follows real sunrise and sunset for your location: the sun moves along an arc,
 at night there's the moon in its actual phase and twinkling stars. Weather adds
 clouds drifting with the wind, drizzle, rain, showers, snow (that settles under
 Clawd's feet), fog and thunderstorms. Hover for city, temperature, weather, wind,
-sunrise and sunset.
+sunrise and sunset, and the moon's phase ("first quarter, 42% lit").
 
 Weather comes from [Open-Meteo](https://open-meteo.com), falling back to
 [met.no](https://api.met.no) where Open-Meteo is blocked; both need no key.

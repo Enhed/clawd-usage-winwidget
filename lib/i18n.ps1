@@ -317,6 +317,8 @@ $Strings = @{
     'sky.wind'       = 'wind {0} m/s'
     'sky.noData'     = 'weather: no data'
     'sky.sun'        = 'sunrise {0} · sunset {1}'
+    'sky.moon'       = 'moon: {0}, {1}% lit'
+    'sky.moonNames'  = @('new moon', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full moon', 'waning gibbous', 'last quarter', 'waning crescent')
   }
 
   ru = @{
@@ -630,6 +632,8 @@ $Strings = @{
     'sky.wind'       = 'ветер {0} м/с'
     'sky.noData'     = 'погода: нет данных'
     'sky.sun'        = 'восход {0} · закат {1}'
+    'sky.moon'       = 'луна: {0}, освещена на {1}%'
+    'sky.moonNames'  = @('новолуние', 'растущий серп', 'первая четверть', 'растущая луна', 'полнолуние', 'убывающая луна', 'последняя четверть', 'убывающий серп')
   }
 
   fr = @{
@@ -943,6 +947,8 @@ $Strings = @{
     'sky.wind'       = 'vent {0} m/s'
     'sky.noData'     = 'météo : pas de données'
     'sky.sun'        = 'lever {0} · coucher {1}'
+    'sky.moon'       = 'lune : {0}, éclairée à {1} %'
+    'sky.moonNames'  = @('nouvelle lune', 'premier croissant', 'premier quartier', 'gibbeuse croissante', 'pleine lune', 'gibbeuse décroissante', 'dernier quartier', 'dernier croissant')
   }
 }
 

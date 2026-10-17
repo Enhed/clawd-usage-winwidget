@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.3
+
+- **Moon phase in the sky's tooltip:** "first quarter, 42% lit". The phase is
+  now worked out from where the Sun and the Moon are, not from the average
+  lunar month - good to a few hours instead of up to a day, so the moon drawn
+  at night is more exact too.
+
 ## 1.8.2
 
 - **Recurring tasks answer in fields:** whether to tell you, the message, and a
