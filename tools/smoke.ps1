@@ -11,13 +11,17 @@
               the new version comes up;
     rollback  self-update.ps1 installs a version that hangs at start, and the
               old one comes back with the failed version in update-state.json;
+    locked    a file of the widget is locked, so the new files cannot be put in
+              place (#6): the old version comes back, the failed version is in
+              update-state.json, and the widget's own mark of the attempt is
+              taken up - no loop of the same update;
     tasks     tools/tasks-test.ps1: the task queue, the retry after an empty
               answer, finding and removing one task (no Claude calls).
 
   powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 [-Cases start,update]
   Exit code 0 - all passed.
 #>
-param([string[]]$Cases = @('start', 'update', 'rollback', 'tasks'))
+param([string[]]$Cases = @('start', 'update', 'rollback', 'locked', 'tasks'))
 
 $ErrorActionPreference = 'Stop'
 $Repo  = Split-Path -Parent $PSScriptRoot
@@ -113,7 +117,7 @@ foreach ($case in $Cases) {
                 elseif ($log)     { Report $case $false "errors in widget-error.log: $log" }
                 else              { Report $case $true '' }
             }
-            { $_ -in @('update', 'rollback') } {
+            { $_ -in @('update', 'rollback', 'locked') } {
                 # The old copy: the working tree with a lower version.
                 Copy-Tree $root
                 Set-SmokeConfig $root
@@ -126,13 +130,20 @@ foreach ($case in $Cases) {
                     $s = [System.IO.File]::ReadAllText($w) -replace '(?m)^\$script:Root\s*=', "Start-Sleep -Seconds 3600`r`n`$script:Root ="
                     [System.IO.File]::WriteAllText($w, $s, (New-Object System.Text.UTF8Encoding $true))
                 }
-                $ver = $(if ($case -eq 'rollback') { '9.9.9' } else { 'new' })
+                $ver = $(switch ($case) { 'rollback' { '9.9.9' } 'locked' { '8.8.8' } default { 'new' } })
+                $lock = $null
+                if ($case -eq 'locked') {
+                    # As the widget leaves it on a click; the lock - as a folder the update cannot write to.
+                    ConvertTo-Json @{ ver = $ver } | Out-File (Join-Path $tmp 'clawd-update-attempt.json') -Encoding utf8
+                    $lock = [System.IO.File]::Open((Join-Path $root 'README.md'), 'Open', 'Read', 'None')
+                }
                 $p = Start-Process $Shell -PassThru -WindowStyle Hidden -ArgumentList '-NoProfile', '-NonInteractive',
                          '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $root 'self-update.ps1')`"",
                          '-WaitPid', '0', '-Source', "`"$src`"", '-Root', "`"$root`"", '-Version', $ver,
                          '-Zip', "`"$(Join-Path $tmp 'none.zip')`"", '-Dir', "`"$(Join-Path $tmp 'none')`"",
                          '-WaitMinutes', $(if ($case -eq 'rollback') { '1' } else { '2' })
                 $p.WaitForExit()
+                if ($lock) { $lock.Dispose() }
                 $current = [regex]::Match([System.IO.File]::ReadAllText((Join-Path $root 'widget.ps1')), "\`$WidgetVersion = '([^']*)'").Groups[1].Value
                 $up = Wait-For { Get-ChildItem $tmp -Filter 'cuw-usage-*.txt' | Where-Object { $_.Name -ne 'cuw-usage-1.txt' } } 60
                 if ($case -eq 'update') {
@@ -144,9 +155,12 @@ foreach ($case in $Cases) {
                 } else {
                     $st = $null
                     try { $st = [System.IO.File]::ReadAllText((Join-Path $root 'update-state.json')) | ConvertFrom-Json } catch {}
-                    if ($current -ne '0.0.1')          { Report $case $false "version after rollback is $current, expected 0.0.1" }
-                    elseif (-not $st -or $st.failed -ne '9.9.9') { Report $case $false 'update-state.json does not name the failed version' }
+                    if ($current -ne '0.0.1')          { Report $case $false "version after $case is $current, expected 0.0.1" }
+                    elseif (-not $st -or $st.failed -ne $ver) { Report $case $false 'update-state.json does not name the failed version' }
                     elseif (-not $up)                  { Report $case $false 'the old widget did not come back' }
+                    elseif ($case -eq 'locked' -and (Test-Path (Join-Path $tmp 'clawd-update-attempt.json'))) {
+                        Report $case $false 'the widget did not take up its mark of the attempt'
+                    }
                     else                               { Report $case $true '' }
                 }
             }

@@ -81,8 +81,8 @@ $Strings = @{
     'clawd.notifyTitle' = 'Clawd {0} is out'
     'clawd.notifyText' = 'Click "Clawd {0} is out" in the widget''s corner to update.'
     'clawd.failed'   = 'Could not update: {0}'
-    'clawd.rolledBack' = 'Clawd {0} did not start - the widget went back to {1}. Details in widget-error.log.'
-    'clawd.clickFailed' = 'This version did not start here last time - click to open the release'
+    'clawd.rolledBack' = 'Clawd {0} did not install or start - the widget stays on {1}. Click the version to download it by hand; details in widget-error.log.'
+    'clawd.clickFailed' = 'This version did not install or start here last time - click to open the release'
 
     'acc.out'        = 'not logged in: claude /login'
 
@@ -408,8 +408,8 @@ $Strings = @{
     'clawd.notifyTitle' = 'Вышел Clawd {0}'
     'clawd.notifyText' = 'Клик по «есть Clawd {0}» в углу виджета — обновится.'
     'clawd.failed'   = 'Не удалось обновиться: {0}'
-    'clawd.rolledBack' = 'Clawd {0} не запустился — виджет вернулся на {1}. Подробности в widget-error.log.'
-    'clawd.clickFailed' = 'Эта версия здесь уже не запустилась — клик откроет релиз'
+    'clawd.rolledBack' = 'Clawd {0} не установился или не запустился — виджет остался на {1}. Клик по версии — скачать вручную; подробности в widget-error.log.'
+    'clawd.clickFailed' = 'Эта версия здесь уже не установилась или не запустилась — клик откроет релиз'
 
     'acc.out'        = 'не залогинен: claude /login'
 
@@ -742,8 +742,8 @@ $Strings = @{
     'clawd.notifyTitle' = 'Clawd {0} est sorti'
     'clawd.notifyText' = 'Cliquez sur « Clawd {0} est sorti » dans le coin du widget pour mettre à jour.'
     'clawd.failed'   = 'Mise à jour impossible : {0}'
-    'clawd.rolledBack' = 'Clawd {0} n''a pas démarré - le widget est revenu à {1}. Détails dans widget-error.log.'
-    'clawd.clickFailed' = 'Cette version n''a pas démarré ici la dernière fois - cliquez pour ouvrir la release'
+    'clawd.rolledBack' = 'Clawd {0} ne s''est pas installé ou n''a pas démarré - le widget reste en {1}. Cliquez sur la version pour le télécharger à la main ; détails dans widget-error.log.'
+    'clawd.clickFailed' = 'Cette version ne s''est pas installée ou n''a pas démarré ici - cliquez pour ouvrir la release'
 
     'acc.out'        = 'non connecté : claude /login'
 

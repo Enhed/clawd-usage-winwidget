@@ -159,6 +159,22 @@ function New-ClawdChangesTooltip {
 $ReleaseApi = 'https://api.github.com/repos/Enhed/clawd-usage-winwidget/releases/latest'
 $UpdateStatePath = Join-Path $script:Root 'update-state.json'
 
+# A click on the update leaves a mark in TEMP, outside the widget's folder - that
+# folder may turn out not writable (Program Files, Windows' controlled folder access),
+# and then the update cannot put its files there either. Back with the version the
+# mark names still ahead: the update did not happen. That is remembered (in memory
+# too, when update-state.json cannot be written), so the next click opens the release
+# page instead of going round in the same loop.
+$UpdateMarkPath = Join-Path ([System.IO.Path]::GetTempPath()) 'clawd-update-attempt.json'
+$script:UpdateMem = @{}
+try {
+    $mark = [System.IO.File]::ReadAllText($UpdateMarkPath) | ConvertFrom-Json
+    Remove-Item -LiteralPath $UpdateMarkPath -Force -ErrorAction SilentlyContinue
+    if ([version][string]$mark.ver -gt [version]$WidgetVersion) {
+        $script:UpdateMem = @{ failed = [string]$mark.ver; failedTold = $false }
+    }
+} catch {}
+
 $script:ClawdRel     = $null   # @{ ver; url; zip; notes = @() }
 $script:ClawdRelTask = $null
 $script:ClawdDl      = $null   # @{ task; zip; dir } - an update being downloaded
@@ -207,11 +223,14 @@ function Get-UpdateState {
         $j = [System.IO.File]::ReadAllText($UpdateStatePath) | ConvertFrom-Json
         foreach ($p in $j.PSObject.Properties) { $st[$p.Name] = $p.Value }
     } catch {}
+    foreach ($k in $script:UpdateMem.Keys) { $st[$k] = $script:UpdateMem[$k] }
     return $st
 }
 
+# Not writable - kept in memory for this run, so a notice is still said once.
 function Save-UpdateState($st) {
-    try { ConvertTo-Json $st | Out-File $UpdateStatePath -Encoding utf8 } catch {}
+    try { ConvertTo-Json $st | Out-File $UpdateStatePath -Encoding utf8; $script:UpdateMem = @{} }
+    catch { $script:UpdateMem = @{} + $st }
 }
 
 # A Windows notification once per new version, even across restarts; and once
@@ -290,6 +309,7 @@ function Collect-ClawdUpdate {
     }
     # The rest - waiting for this process to end, the copy, the start and a rollback
     # if the new version does not come up - is self-update.ps1's job.
+    try { ConvertTo-Json @{ ver = $script:ClawdRel.ver } | Out-File $UpdateMarkPath -Encoding utf8 } catch {}
     $q = { param($s) '"' + $s + '"' }
     $argv = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
               '-File', (& $q (Join-Path $script:Root 'self-update.ps1')),

@@ -14,6 +14,11 @@
   and falls off when he lies on his back). Make your own: a small text file with
   the colours and the pixel art in `<clawdHome>\skins`, picked from the tray
   menu; the format and Clawd's pixel map are in the README.
+- **No update loop (#6):** when the update could not put its files in place (a
+  folder the widget may not write to - Program Files, Windows' controlled
+  folder access), the old version came back without a word and offered the
+  same update again and again. Now it says so once, and a click on the
+  version opens the release page to update by hand.
 
 ## 1.8.3
 

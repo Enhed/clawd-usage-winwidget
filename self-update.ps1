@@ -37,6 +37,17 @@ function Test-WidgetUp([datetime]$since) {
                   Where-Object { $_.CreationTime -gt $since } | Select-Object -First 1)
 }
 
+# The widget then neither offers this version again nor says it is out on every start.
+function Set-Failed {
+    try {
+        $st = @{}
+        try { $j = [System.IO.File]::ReadAllText($StatePath) | ConvertFrom-Json; foreach ($p in $j.PSObject.Properties) { $st[$p.Name] = $p.Value } } catch {}
+        $st.failed = $Version
+        $st.failedTold = $false
+        ConvertTo-Json $st | Out-File $StatePath -Encoding utf8
+    } catch {}
+}
+
 function Stop-NewWidget {
     $me = Join-Path $Root 'widget.ps1'
     foreach ($p in @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
@@ -48,7 +59,7 @@ function Stop-NewWidget {
 try { Wait-Process -Id $WaitPid -Timeout 60 -ErrorAction SilentlyContinue } catch {}
 
 # What the release brings, relative to its folder.
-$files = @(Get-ChildItem $Source -Recurse -File | ForEach-Object { $_.FullName.Substring($Source.Length).TrimStart('\') })
+$files = @(Get-ChildItem -LiteralPath $Source -Recurse -File | ForEach-Object { $_.FullName.Substring($Source.Length).TrimStart('\') })
 $bak   = Join-Path ([System.IO.Path]::GetTempPath()) "clawd-backup-$WaitPid"
 $added = @()
 
@@ -83,6 +94,7 @@ try {
 } catch {
     Write-Log "could not put $Version in place, keeping the old version: $($_.Exception.Message)"
     Restore-Old
+    Set-Failed
     Start-Widget
     exit 1
 }
@@ -103,11 +115,5 @@ if (Test-WidgetUp $since) {
 Write-Log "$Version did not start in $WaitMinutes min - rolled back to the old version"
 Stop-NewWidget
 Restore-Old
-try {
-    $st = @{}
-    try { $j = [System.IO.File]::ReadAllText($StatePath) | ConvertFrom-Json; foreach ($p in $j.PSObject.Properties) { $st[$p.Name] = $p.Value } } catch {}
-    $st.failed = $Version
-    $st.failedTold = $false
-    ConvertTo-Json $st | Out-File $StatePath -Encoding utf8
-} catch {}
+Set-Failed
 Start-Widget
