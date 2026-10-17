@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1
+
+- **Details on a quiet day:** "Last 24h" and "Last 7 days" stayed empty when
+  `/usage` said "1 session" or "1 request" - only the plural was recognised.
+  The counts are now worded properly too: "1 request · 1 session".
+
 ## 1.7.0
 
 - **Sessions from other machines:** `"remoteSessions"` in `config.json` takes

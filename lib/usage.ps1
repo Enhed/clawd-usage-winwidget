@@ -72,7 +72,8 @@ function Format-StatLine([string]$line) {
 
 function Parse-Period([string]$text, [string]$label) {
     # The "Last 24h · 298 requests · 12 sessions" block and the indented lines below it.
-    $m = [regex]::Match($text, "(?m)^$label[^\r\n]*?(\d+)\s+requests[^\r\n]*?(\d+)\s+sessions[^\r\n]*\r?\n((?:[ \t]+[^\r\n]*\r?\n?)*)")
+    # Singular on a quiet day: "1 request", "1 session".
+    $m = [regex]::Match($text, "(?m)^$label[^\r\n]*?(\d+)\s+requests?\b[^\r\n]*?(\d+)\s+sessions?\b[^\r\n]*\r?\n((?:[ \t]+[^\r\n]*\r?\n?)*)")
     if (-not $m.Success) { return $null }
     $lines = @()
     foreach ($raw in ($m.Groups[3].Value -split '\r?\n')) {

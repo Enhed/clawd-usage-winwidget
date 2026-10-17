@@ -56,7 +56,7 @@ Parsing (regexes as used in [`lib/usage.ps1`](../lib/usage.ps1)):
 | week % and reset | `Current week \(all models\):\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?` |
 | Fable week % and reset | `Current week \(Fable\):\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?` |
 | reset stamp | `([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m)` |
-| 24h / 7d block | `^Last 24h[^\n]*?(\d+)\s+requests[^\n]*?(\d+)\s+sessions` + the indented lines below |
+| 24h / 7d block | `^Last 24h[^\n]*?(\d+)\s+requests?\b[^\n]*?(\d+)\s+sessions?\b` (singular when it is 1) + the indented lines below |
 
 Things that bite:
 

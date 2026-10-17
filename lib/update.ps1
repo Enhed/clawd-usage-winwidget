@@ -50,7 +50,7 @@ function Update-Texts {
 
 function Set-Period($p, $main, $extra) {
     if ($p) {
-        $main.Text  = (T 'period') -f $p.requests, $p.sessions
+        $main.Text  = "$(Format-Count $p.requests 'request')  ·  $(Format-Count $p.sessions 'session')"
         $extra.Text = @($p.lines | ForEach-Object { Format-StatLine $_ }) -join '  ·  '
     } else {
         $main.Text  = T 'noData'

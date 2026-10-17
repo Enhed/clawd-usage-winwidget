@@ -36,7 +36,6 @@ $Strings = @{
     'stale'          = 'stale'
     'reset.in'       = 'resets in {0}'
     'reset.closed'   = 'window closed'
-    'period'         = '{0} requests  ·  {1} sessions'
 
     'tray.noData'    = 'clawd-usage-winwidget: no data'
     'tray.session'   = '{0}% of session'
@@ -51,6 +50,7 @@ $Strings = @{
     'sess.busy'      = '{0} working'
     'sess.wait'      = '{0} waiting'
     'plural.session' = @('session', 'sessions')
+    'plural.request' = @('request', 'requests')
 
     'st.loading'     = 'status: loading...'
     'st.offline'     = 'status: no connection'
@@ -345,7 +345,6 @@ $Strings = @{
     'stale'          = 'устарело'
     'reset.in'       = 'сброс через {0}'
     'reset.closed'   = 'окно закрыто'
-    'period'         = '{0} запросов  ·  {1} сессий'
 
     'tray.noData'    = 'clawd-usage-winwidget: нет данных'
     'tray.session'   = '{0}% сессии'
@@ -360,6 +359,7 @@ $Strings = @{
     'sess.busy'      = '{0} в работе'
     'sess.wait'      = '{0} ждут'
     'plural.session' = @('сессия', 'сессии', 'сессий')
+    'plural.request' = @('запрос', 'запроса', 'запросов')
 
     'st.loading'     = 'статус: загрузка...'
     'st.offline'     = 'статус: нет связи'
@@ -654,7 +654,6 @@ $Strings = @{
     'stale'          = 'périmé'
     'reset.in'       = 'réinit. dans {0}'
     'reset.closed'   = 'fenêtre close'
-    'period'         = '{0} requêtes  ·  {1} sessions'
 
     'tray.noData'    = 'clawd-usage-winwidget : pas de données'
     'tray.session'   = '{0} % de la session'
@@ -669,6 +668,7 @@ $Strings = @{
     'sess.busy'      = '{0} au travail'
     'sess.wait'      = '{0} en attente'
     'plural.session' = @('session', 'sessions')
+    'plural.request' = @('requête', 'requêtes')
 
     'st.loading'     = 'statut : chargement...'
     'st.offline'     = 'statut : pas de connexion'
