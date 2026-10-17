@@ -1,0 +1,9 @@
+---
+name: Tired
+body: #BD7F6B
+top: 3
+d: #3F2A36
+p: #7A5156
+---
+....p.p.....p.p...
+....ddd.....ddd...
