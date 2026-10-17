@@ -2,14 +2,16 @@
 
 ## 1.6.0
 
-- **The last 7 days in details:** a chart of the 5-hour and weekly percentages;
-  hover for the time, both values and the project busiest in that hour. The
-  first run fills it from what earlier `/usage` checks left behind, so it is not
-  empty for a week. Off by default: `"showHistory": true` in `config.json`.
-- **Top projects of the week:** which folders spent the most, estimated from
-  Claude Code's transcripts by tokens and model prices.
-- The `/usage` check no longer leaves a session transcript every minute in
-  `~/.claude/projects` (`--no-session-persistence`). Old ones are not removed.
+- **No more transcripts from the `/usage` check:** it used to leave a session
+  file in `~/.claude/projects` every minute - thousands of them, all showing up
+  in `claude --resume` for the widget's folder. Now it runs with
+  `--no-session-persistence`. The old files are not removed.
+- **The last 7 days in details** (off by default, `"showHistory": true` in
+  `config.json`): a chart of the 5-hour and weekly percentages - hover for the
+  time, both values and the project busiest in that hour; the first run fills it
+  from what earlier `/usage` checks left behind, so it is not empty for a week.
+  Below it, the week's top projects: which folders spent the most, estimated
+  from Claude Code's transcripts by tokens and model prices.
 
 ## 1.5.4
 
