@@ -294,9 +294,55 @@ function Add-CopyMenu($el, [string]$text) {
     return $el
 }
 
+# A copy icon in the card's top-right corner, shown on hover; a tick for a moment after the click.
+function Add-CopyIcon($card, [string]$text) {
+    if (-not $text -or $card -isnot [System.Windows.Controls.Border]) { return }
+    $icon = New-PanelText ([string][char]0xE8C8) 10 '#FF8B8B94'
+    $icon.FontFamily          = 'Segoe MDL2 Assets'
+    $icon.TextWrapping        = 'NoWrap'
+    $icon.HorizontalAlignment = 'Right'
+    $icon.VerticalAlignment   = 'Top'
+    $icon.Margin              = New-Object System.Windows.Thickness 0, -2, -5, 0
+    $icon.Padding             = New-Object System.Windows.Thickness 3, 2, 1, 2
+    $icon.Background          = $card.Background
+    $icon.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $icon.ToolTip             = T 'chat.copy'
+    $icon.Visibility          = 'Hidden'
+    $icon.Tag                 = $text
+    $icon.add_MouseLeftButtonDown({
+        param($s, $e)
+        $e.Handled = $true
+        try { [System.Windows.Clipboard]::SetText($s.Tag) } catch { return }
+        $s.Text       = [string][char]0xE73E
+        $s.Foreground = New-Brush $Palette.ok.Wpf
+        $back = New-Object System.Windows.Threading.DispatcherTimer
+        $back.Interval = [TimeSpan]::FromSeconds(1.5)
+        $back.Tag = $s
+        $back.add_Tick({
+            param($t, $a)
+            $t.Stop()
+            $t.Tag.Text       = [string][char]0xE8C8
+            $t.Tag.Foreground = New-Brush '#FF8B8B94'
+        })
+        $back.Start()
+    })
+    $grid = New-Object System.Windows.Controls.Grid
+    $inner = $card.Child
+    $card.Child = $null
+    $inner.Margin = New-Object System.Windows.Thickness 0, 0, 12, 0
+    [void]$grid.Children.Add($inner)
+    [void]$grid.Children.Add($icon)
+    $card.Child = $grid
+    $card.Tag = $icon
+    $card.add_MouseEnter({ param($s, $e) $s.Tag.Visibility = 'Visible' })
+    $card.add_MouseLeave({ param($s, $e) $s.Tag.Visibility = 'Hidden' })
+}
+
 function New-ChatItem($msg) {
     $text = @(@($msg.text) + $(if ($msg.run) { $msg.run.script }) | Where-Object { $_ }) -join "`n`n"
-    return Add-CopyMenu (New-ChatCard $msg) $text
+    $item = New-ChatCard $msg
+    Add-CopyIcon $item $text
+    return Add-CopyMenu $item $text
 }
 
 function New-ChatCard($msg) {

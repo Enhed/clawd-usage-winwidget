@@ -420,7 +420,7 @@ function ConvertTo-PlainText([string]$text) {
 # What Clawd is busy with, from one content block of the stream: "Reading win.ini",
 # "Running: Get-ChildItem..."; $null - nothing to show.
 function Get-ChatDoing($b) {
-    $cut = { param($s) $s = ([string]$s -split "`r?`n")[0].Trim(); if ($s.Length -gt 44) { $s.Substring(0, 44) + '…' } else { $s } }
+    $cut = { param($s) $s = ([string]$s -split "`r?`n")[0].Trim(); if ($s.Length -gt 44) { $s.Substring(0, 44).TrimEnd() } else { $s } }
     switch ([string]$b.type) {
         'thinking' { return T 'chat.doing.think' }
         'text'     { return T 'chat.doing.write' }
