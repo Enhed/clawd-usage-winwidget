@@ -107,7 +107,7 @@ The ▾ in the header expands details (remembered between runs):
   widget is out it turns into a yellow "Clawd X is out" (with a Windows
   notification once per version): hover for what's new, click to download it,
   replace the files and restart — `config.json` and the other local files stay. In a
-  git clone the click opens the release page instead. If the new version does not
+  git clone the click opens the changelog instead. If the new version does not
   come up within five minutes, the old one is put back and started again, and
   the widget says so (and won't offer that version again).
 

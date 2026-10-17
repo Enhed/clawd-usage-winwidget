@@ -11,6 +11,8 @@
   tasks, his Remote Control session. Everything applies at once; the rest of
   `config.json` is one link away at the bottom.
 - The tray menu is down to show/hide, refresh, settings and exit.
+- In a git clone, a click on "Clawd X is out" opens the changelog instead of
+  the release page.
 
 ## 1.9.3
 

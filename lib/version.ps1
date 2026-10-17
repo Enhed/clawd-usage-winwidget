@@ -281,7 +281,9 @@ function Test-ClawdGitCopy { return (Test-Path (Join-Path $script:Root '.git')) 
 # widget again. Local files (config.json, chat-state.json...) are not in the release.
 function Start-ClawdUpdate {
     if (-not (Test-ClawdUpdate) -or $script:ClawdDl) { return }
-    if ((Test-ClawdGitCopy) -or (Test-ClawdUpdateFailed)) { Start-Process $script:ClawdRel.url; return }
+    # A git clone is updated with git: the click shows what changed.
+    if (Test-ClawdGitCopy) { Open-ClawdChangelog; return }
+    if (Test-ClawdUpdateFailed) { Start-Process $script:ClawdRel.url; return }
     try {
         $zip = Join-Path $env:TEMP "cuw-update-$PID.zip"
         $wc = New-Object System.Net.WebClient
