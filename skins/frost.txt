@@ -1,0 +1,10 @@
+---
+name: Frost
+body: #93C5FD
+eyes: #0C4A6E
+w: #F8FAFC
+b: #2563EB
+---
+.........w........
+......bbbbbbb.....
+....wwwwwwwwwww...

@@ -190,6 +190,7 @@ function Step-Mascot {
         $UI.MascotEyes.Data = $geo.eyes
         $UI.MascotFx.Data   = $geo.fx
         $UI.MascotSand.Data = $geo.sand
+        for ($i = 0; $i -lt $script:SkinPaths.Count; $i++) { $script:SkinPaths[$i].Data = $geo.acc[$i] }
     }
     # Claude Code animations run at its pace - 60 ms per frame, everything else 90 ms.
     $ms = $(if ($m.act -and $ClawdSeqs.Contains($m.act)) { $ClawdFrameMs } else { 90 })

@@ -170,6 +170,61 @@ Location is looked up once per run by IP via [ipwho.is](https://ipwho.is) — se
 `weatherLat` / `weatherLon` to skip that. Without network the sky still follows
 the clock. Turn it off with `showSky`.
 
+### Themes and skins
+
+![Themes](docs/themes.png)
+
+**Themes** — tray menu → Theme: Halloween, Classic, Midnight, Mocha, OLED black,
+Forest; they switch at once. Halloween has a wallpaper of tiny pumpkins, bats and
+ghosts. The default, By season, is Halloween in September–November and Classic
+the rest of the year. `accent` in `config.json` (`"#F472B6"`) puts your own colour on
+links and the weekly bar over the theme's. The level colours of the bars, the sky
+and Clawd stay as they are.
+
+![Skins](docs/skins.png)
+
+**Clawd's skins** — tray menu → Clawd's skin. A skin is his colours plus pixel
+accessories that move with him: a hat shows while his head is in the frame, and
+lying on his back he loses it. Your own: tray menu → Clawd's skin → Your skins
+folder, put a `.txt` there (the file name is its id; the same name as a built in
+one replaces it) and pick it from the menu. Edits show within seconds:
+
+```
+---
+name: Top hat
+body: #D77757
+eyes: #141416
+k: #4B5563
+r: #DC2626
+---
+......kkkkkkk.....
+......kkkkkkk.....
+......kkkkkkk.....
+......rrrrrrr.....
+...kkkkkkkkkkkkk..
+```
+
+`body` and `eyes` are optional. Every one-letter key is a colour for that letter
+in the art below; `.` is empty. The art is 18 pixels wide, as Clawd, and sits
+right on his head; `top: 1` (any row number) puts its first row elsewhere,
+counted from his top row. Clawd himself, `#` — body, `o` — eyes:
+
+```
+  0 ...#############..
+  1 ...#############..
+  2 ...##o#######o##..
+  3 ...##o#######o##..
+  4 .#################
+  5 .#################
+  6 ...#############..
+  7 ...#############..
+  8 ...#.#.......#.#..
+  9 ...#.#.......#.#..
+```
+
+The built in ones are in the [`skins`](skins) folder — `shades.txt` shows an
+accessory on the face (`top: 1`).
+
 ### Clawd's panel: tips and chat
 
 An icon in the header opens a panel beside the widget; it stays open until you
@@ -323,6 +378,9 @@ are picked up on the fly, no restart needed.
 | `remoteSessions` | sessions running on other machines: a list of URLs or file paths, see below |
 | `showHistory` | the 7-day chart and top projects in details (off by default) |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
+| `theme` | `auto` (by season: `halloween` in autumn, `classic` otherwise), `classic`, `midnight`, `mocha`, `oled`, `forest`, `halloween` (also in the tray menu) |
+| `accent` | your own accent colour, `#RRGGBB`, over the theme's |
+| `skin` | Clawd's skin: a built in one or yours from `<clawdHome>\skins` (also in the tray menu) |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
 | `showAdvisor` | Clawd's tips about the computer |
 | `showChat` / `chatModel` / `chatTimeoutSeconds` | the chat with Clawd; its model; a reply taking longer is cancelled (300 s) |

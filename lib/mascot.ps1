@@ -195,7 +195,7 @@ $BurrowDig = 4
 
 # Frame $f: eyes, arms, feet, look, flip, off, x, facing, poof, shadow, dig, spray.
 function Get-MascotGeo($f) {
-    $key = "$($f.eyes)|$($f.arms)|$($f.feet)|$($f.look)|$($f.flip)|$($f.off)|$($f.x)|$($f.facing)|$($f.poof)|$($f.shadow)|$($f.dig)|$($f.spray)"
+    $key = "$($script:Skin.id)|$($f.eyes)|$($f.arms)|$($f.feet)|$($f.look)|$($f.flip)|$($f.off)|$($f.x)|$($f.facing)|$($f.poof)|$($f.shadow)|$($f.dig)|$($f.spray)"
     if ($script:MascotGeo.ContainsKey($key)) { return $script:MascotGeo[$key] }
 
     $W = 2 * $ClawdCols; $H = 4 * $ClawdRows
@@ -286,6 +286,26 @@ function Get-MascotGeo($f) {
             if ($c -eq 2) { $eyeG.Children.Add($rg) } else { $body.Children.Add($rg) }
         }
     }
+    # Skin accessories (skins.ps1), in Clawd's pixels: rows above his head are negative.
+    # Above the head - while the head is in the frame; on the body - like the body.
+    # Turning, only what is above the head stays; on his back he loses them all.
+    $acc = @()
+    foreach ($l in @($script:Skin.layers)) {
+        $gg = New-Object System.Windows.Media.GeometryGroup
+        if (-not $f.flip) {
+            foreach ($pt in $l.px) {
+                $x = [int]$pt[0] + $ox; $y = [int]$pt[1]
+                if ($y -ge 0 -and $f.facing) { continue }
+                $yy = $y + $oy
+                if ($x -lt 0 -or $x -ge $W -or $yy -ge $lim) { continue }
+                if ($(if ($y -lt 0) { $oy -lt 0 } else { $yy -lt 0 })) { continue }
+                $gg.Children.Add([System.Windows.Media.RectangleGeometry]::new(
+                    [System.Windows.Rect]::new($x * $MascotPx, $yy * $MascotPy, $MascotPx, $MascotPy)))
+            }
+        }
+        $gg.Freeze()
+        $acc += $gg
+    }
     # Dust "·" and "~" at the edges of the bottom row while crouched.
     if ($f.poof -and $f.off -gt 0) {
         foreach ($cx in @(0, ($W - 2))) {
@@ -324,7 +344,7 @@ function Get-MascotGeo($f) {
         }
     }
     $body.Freeze(); $eyeG.Freeze(); $fx.Freeze(); $sand.Freeze()
-    $geo = @{ body = $body; eyes = $eyeG; fx = $fx; sand = $sand }
+    $geo = @{ body = $body; eyes = $eyeG; fx = $fx; sand = $sand; acc = $acc }
     $script:MascotGeo[$key] = $geo
     return $geo
 }

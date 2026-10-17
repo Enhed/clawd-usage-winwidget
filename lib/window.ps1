@@ -1,11 +1,12 @@
 ﻿# ------------------------------------------------------------------ XAML ----
 
 # The window markup lives next door in widget.xaml.
-$xamlText = Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'widget.xaml')
+$xamlText = Convert-ThemeXaml (Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'widget.xaml'))
 
 [xml]$xaml = $xamlText
 $reader = New-Object System.Xml.XmlNodeReader $xaml
 $win    = [Windows.Markup.XamlReader]::Load($reader)
+Add-ThemeTo $win -Pattern
 
 $UI = @{}
 foreach ($n in @('BtnToggle','BtnHide','BtnExit','PctText','PctSign','BarSession',

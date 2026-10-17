@@ -1,0 +1,9 @@
+---
+name: Shades
+top: 1
+s: #111827
+w: #9CA3AF
+---
+...sssssssssssss..
+...swsss...swsss..
+....sss.....sss...

@@ -33,6 +33,8 @@ $Palette = @{
 }
 
 function New-Brush([string]$hex) {
+    # A theme colour is the theme's shared brush, recoloured in place (theme.ps1).
+    if ($script:ThemeBrush) { $b = $script:ThemeBrush[$hex.ToUpper()]; if ($b) { return $b } }
     return New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString($hex))
 }

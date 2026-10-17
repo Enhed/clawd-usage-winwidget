@@ -5,8 +5,9 @@
 # is waiting: a bell - a reminder went off, a blue chat - Clawd answered, a lamp
 # with a number - tips, a grey chat - nothing, just talk.
 
-$panelXaml = [xml](Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'panel.xaml'))
+$panelXaml = [xml](Convert-ThemeXaml (Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'panel.xaml')))
 $advWin    = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $panelXaml))
+Add-ThemeTo $advWin -Pattern
 foreach ($n in @('PanelTitle', 'AdvStamp', 'AdvRescan', 'ChatAuto', 'ChatNew', 'AdvClose', 'PanelScroll', 'LblTips', 'AdvList',
                  'ChatList', 'ChatBusy', 'ChatInput', 'ChatHint', 'ChatSend')) {
     $UI[$n] = $advWin.FindName($n)

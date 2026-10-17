@@ -16,6 +16,7 @@ function Sync-Config {
     $lang = Get-Lang
     $script:Cfg = $fresh
     if ((Get-Lang) -ne $lang) { Update-Texts }
+    Set-Theme
     $timer.Interval = [TimeSpan]::FromSeconds([double]$script:Cfg.refreshSeconds)
     $win.Opacity    = [double]$script:Cfg.opacity
     $win.Topmost    = [bool]$script:Cfg.topmost
@@ -204,6 +205,8 @@ function Update-Widget {
                                        -not $_.busy -and -not $_.waiting) })
 
     if ($script:Cfg.showMascot) { Set-MascotMood $ss $real }
+    Set-Skin
+    Set-Theme
     Sync-Mascot
     Update-Advisor
     Update-Reminders

@@ -4,7 +4,7 @@
 # any time in the Reminders tab) or mark it done. It stays until answered - the
 # user may be away; several stack up. Putting off makes the file a reminder again.
 
-$PopupXaml = Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'remind-popup.xaml')
+$PopupXaml = Convert-ThemeXaml (Get-Content -Raw -Encoding UTF8 (Join-Path $script:Root 'remind-popup.xaml'))
 $script:Popups = New-Object System.Collections.ArrayList
 
 # Stacked from the bottom of the work area up, newest at the bottom.
@@ -40,6 +40,7 @@ function Set-PopupLater($p, [string]$when) {
 
 function Show-RemindPopup($r, [string]$donePath, [string]$text) {
     $w = [Windows.Markup.XamlReader]::Parse($PopupXaml)
+    Add-ThemeTo $w
     $p = @{ win = $w; r = $r; done = $donePath }
     $w.Content.LayoutTransform = $win.Content.LayoutTransform
     $w.FindName('PopTitle').Text = T 'chat.remindTitle'

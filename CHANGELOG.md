@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.9.0
+
+- **Themes:** Halloween, Classic, Midnight, Mocha, OLED black and Forest, in the
+  tray menu or `"theme"` in `config.json`; they switch at once. Halloween comes
+  with a wallpaper of tiny pumpkins, bats and ghosts, and is the default this
+  autumn: the default theme follows the season (Halloween in September-November,
+  Classic otherwise). `"accent": "#F472B6"` puts your own colour on links and
+  the weekly bar.
+- **Clawd's skins:** Witch hat, Crown, Top hat, Party, Shades and Frost - his colours plus
+  pixel accessories that move with him (a hat stays on while he runs and hops,
+  and falls off when he lies on his back). Make your own: a small text file with
+  the colours and the pixel art in `<clawdHome>\skins`, picked from the tray
+  menu; the format and Clawd's pixel map are in the README.
+
 ## 1.8.3
 
 - **Tasks at set times:** `at: 09:00, 18:00` in a task file instead of
