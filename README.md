@@ -360,6 +360,10 @@ for the limits and `~/.claude/sessions` for live sessions.
 Clawd's moods and the hearts — enough to build it for macOS, Linux, a phone or a
 status bar. Made a port? Open an issue with a link and it'll be listed here.
 
+- [Clawd for Preen](https://gist.github.com/0x213F/03a22ed4307031dfcb4f1cc298b4ad64)
+  by [@0x213F](https://github.com/0x213F) — Clawd and the usage numbers as an
+  HTML widget on an iPhone (via [Preen](https://preendisplay.com)), fed by your Mac.
+
 ## License
 
 [MIT](LICENSE)

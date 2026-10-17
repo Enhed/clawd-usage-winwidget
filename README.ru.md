@@ -424,6 +424,10 @@ Pillow; самому виджету — нет.
 macOS, Linux, телефона или строки состояния. Сделали порт? Откройте issue со
 ссылкой, и он появится здесь.
 
+- [Clawd for Preen](https://gist.github.com/0x213F/03a22ed4307031dfcb4f1cc298b4ad64)
+  от [@0x213F](https://github.com/0x213F) — Clawd и цифры расхода в HTML-виджете
+  на iPhone (через [Preen](https://preendisplay.com)), данные отдаёт Mac.
+
 ## Лицензия
 
 [MIT](LICENSE)
