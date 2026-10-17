@@ -227,7 +227,9 @@ to buy?") work with the same ones.
 (`clawdHome`). Reminders are plain files there (lists too, in `lists\`) —
 `reminders\2026-11\2026-11-16 10-00 Pay the taxes.md` with an `at:` line — so
 anyone can make one: the chat, Clawd's session, or you by hand; fired ones move to
-`reminders\done`. After each check the tips are written to `tips.md` there. With
+`reminders\done`. A `repeat:` line (`daily`, `weekly`, `monthly`, `yearly`) makes
+one repeat: when it goes off, the widget writes the file for the next time — so
+"remind me every 17th" is one file, marked ↻ in the Reminders tab. After each check the tips are written to `tips.md` there. With
 `clawdSession` the widget also keeps Clawd's own interactive Claude Code session
 running in that folder with Remote Control — talk to him from the Claude app on
 your phone: he reads `tips.md`, makes reminders and keeps notes in the same home.

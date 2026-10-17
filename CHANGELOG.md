@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.0
+
+- **Repeating reminders:** a `repeat:` line in a reminder file - `daily`,
+  `weekly`, `monthly` or `yearly` - and when it goes off the widget writes the
+  file for the next time (catching up if it was off). "Remind me every 17th" is
+  now one reminder, marked ↻ in the Reminders tab, instead of a file per date.
+  The chat and Clawd's session on the phone know how to make them; a plain
+  repeating reminder no longer turns into a recurring task that spends limits.
+
 ## 1.7.1
 
 - **Details on a quiet day:** "Last 24h" and "Last 7 days" stayed empty when

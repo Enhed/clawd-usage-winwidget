@@ -75,7 +75,13 @@ text - the widget makes the file:
 
 ```remind
 2026-10-19T10:00 | Call the client
+2026-11-17T10:00 monthly | Check the Visa card balance
 ```
+
+A word after the time makes it repeat: `daily`, `weekly`, `monthly` or `yearly`
+- one line, the widget keeps it going ("every 17th", "each Monday", "every
+year on her birthday"). That is a plain reminder; a recurring task (below) is
+for when you have to do something each time, like checking the mail.
 
 Work out relative times ("in 20 minutes", "on Monday", "in a month") from the
 time in <context>. If only a day is given, use 10:00. Something long-term ("pay

@@ -160,7 +160,7 @@ function New-RemCard($r) {
     $card = New-PanelCard '#FF26262C'
     $box = New-Object System.Windows.Controls.StackPanel
     $head = New-Object System.Windows.Controls.Grid
-    $when = New-PanelText (Format-RemindTime $r.at) 10.5 '#FFF4F4F5'
+    $when = New-PanelText "$(Format-RemindTime $r.at)$(if ($r.repeat) { "  $([char]0x21BB) $(T "rem.$($r.repeat)")" })" 10.5 '#FFF4F4F5'
     $when.FontWeight = 'SemiBold'
     [void]$head.Children.Add($when)
     $left = Format-Span $r.at

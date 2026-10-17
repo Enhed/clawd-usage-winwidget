@@ -190,7 +190,10 @@ function Get-ChatContext {
     $rem = Get-Reminders
     if ($rem.Count) {
         $lines += 'reminders (file in the reminders folder - time - text):'
-        foreach ($r in $rem) { $lines += "- $($r.rel) - $($r.at.ToString('yyyy-MM-dd HH:mm')) - $($r.text)" }
+        foreach ($r in $rem) {
+            $rep = $(if ($r.repeat) { " (repeats $($r.repeat))" } else { '' })
+            $lines += "- $($r.rel) - $($r.at.ToString('yyyy-MM-dd HH:mm'))$rep - $($r.text)"
+        }
     } else {
         $lines += 'reminders: none'
     }
@@ -315,10 +318,15 @@ function Read-ChatReply([string]$reply) {
                 foreach ($line in $body -split '\r?\n') {
                     $parts = $line -split '\|', 2
                     if ($parts.Count -lt 2) { continue }
-                    try { $at = [datetime]::Parse($parts[0].Trim(), [System.Globalization.CultureInfo]::InvariantCulture) } catch { continue }
+                    # "2026-11-17T10:00 monthly | text": a repeat word may follow the time.
+                    $when = @($parts[0].Trim() -split '\s+')
+                    try { $at = [datetime]::Parse($when[0], [System.Globalization.CultureInfo]::InvariantCulture) } catch { continue }
+                    $repeat = $(if ($when.Count -gt 1 -and $RemindRepeats -contains $when[1].ToLower()) { $when[1].ToLower() } else { '' })
                     $what = $parts[1].Trim()
-                    [void](New-ReminderFile $at $what)
-                    $notes += (T 'chat.remindSet') -f (Format-RemindTime $at), $what
+                    [void](New-ReminderFile $at $what $repeat)
+                    $set = Format-RemindTime $at
+                    if ($repeat) { $set += ", $(T "rem.$repeat")" }
+                    $notes += (T 'chat.remindSet') -f $set, $what
                 }
             }
             { $_ -like 'list-*' } {

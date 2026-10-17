@@ -31,6 +31,10 @@ The widget works alongside you:
   ---
   Pay the taxes
 
+  To make it repeat, add a line "repeat: daily" (or weekly, monthly, yearly)
+  under "at" - one file, the widget makes the next one each time it goes off.
+  "Every 17th", "each Monday" is that, not a file per date.
+
   Local time of this PC; for relative times ("in 20 minutes", "in a month") get the
   current time first (Get-Date). If only a day is given, use 10:00. To list
   reminders, look at the files; to cancel one, delete its file; to move one,

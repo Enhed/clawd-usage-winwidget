@@ -5,11 +5,14 @@
 #   reminders\2026-11\2026-11-16 10-00 Pay the taxes.md
 #   ---
 #   at: 2026-11-16T10:00
+#   repeat: monthly         (optional: daily, weekly, monthly, yearly)
 #   ---
 #   Pay the taxes
 # The widget looks at the folder every tick and fires what is due: a card to put
 # it off or mark done (remind-popup.ps1), a bell in the header, Clawd hops.
-# Fired ones go to reminders\done.
+# Fired ones go to reminders\done; a repeating one leaves a file for its next time.
+
+$RemindRepeats = @('daily', 'weekly', 'monthly', 'yearly')
 
 $script:RemindDue   = @()     # fired reminders not seen yet
 $script:RemindFired = @{}     # paths fired in this run - in case moving the file failed
@@ -22,7 +25,23 @@ function Format-RemindTime([datetime]$at) {
     return $at.ToString('ddd d MMM HH:mm', $c)
 }
 
-# Active reminders, soonest first: @{ path; rel; at; text }.
+# The first time after $after: the series goes on from $at, the widget may have been off.
+function Get-NextRemindTime([datetime]$at, [string]$repeat, [datetime]$after) {
+    # Steps from $at, so the time of day stays. A monthly one on the 29th-31st
+    # goes on from the shorter month's last day.
+    for ($k = 1; $k -lt 100000; $k++) {
+        $next = switch ($repeat) {
+            'daily'   { $at.AddDays($k) }
+            'weekly'  { $at.AddDays(7 * $k) }
+            'monthly' { $at.AddMonths($k) }
+            'yearly'  { $at.AddYears($k) }
+        }
+        if ($next -gt $after) { return $next }
+    }
+    return $null
+}
+
+# Active reminders, soonest first: @{ path; rel; at; text; repeat }.
 function Get-Reminders {
     $root = Get-RemindersDir
     $list = @()
@@ -30,13 +49,15 @@ function Get-Reminders {
     foreach ($f in @(Get-ChildItem $root -Recurse -File -Filter *.md -ErrorAction SilentlyContinue)) {
         $rel = $f.FullName.Substring($root.Length + 1)
         if ($rel -like 'done\*' -or $script:RemindFired[$f.FullName]) { continue }
-        $at = $null; $text = ''
+        $at = $null; $text = ''; $repeat = ''
         try {
             $raw = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
             $m = [regex]::Match($raw, '(?s)^\s*---\s*\r?\n(.*?)\r?\n---\s*\r?\n?(.*)$')
             if ($m.Success) {
                 $a = [regex]::Match($m.Groups[1].Value, '(?m)^\s*at:\s*(\S+)')
                 if ($a.Success) { try { $at = [datetime]::Parse($a.Groups[1].Value, [System.Globalization.CultureInfo]::InvariantCulture) } catch {} }
+                $rp = [regex]::Match($m.Groups[1].Value, '(?m)^\s*repeat:\s*(\w+)')
+                if ($rp.Success -and $RemindRepeats -contains $rp.Groups[1].Value.ToLower()) { $repeat = $rp.Groups[1].Value.ToLower() }
                 $text = $m.Groups[2].Value.Trim()
             } else {
                 $text = $raw.Trim()
@@ -49,13 +70,13 @@ function Get-Reminders {
         }
         if (-not $at) { continue }
         if (-not $text) { $text = $(if ($n.Success) { $n.Groups[4].Value } else { $f.BaseName }) }
-        $list += @{ path = $f.FullName; rel = $rel; at = $at; text = $text }
+        $list += @{ path = $f.FullName; rel = $rel; at = $at; text = $text; repeat = $repeat }
     }
     $list = @($list | Sort-Object { $_.at })
     return ,$list
 }
 
-function New-ReminderFile([datetime]$at, [string]$text) {
+function New-ReminderFile([datetime]$at, [string]$text, [string]$repeat = '') {
     $dir = Join-Path (Get-RemindersDir) $at.ToString('yyyy-MM')
     [void][System.IO.Directory]::CreateDirectory($dir)
     $title = ($text -replace '[\\/:*?"<>|\r\n]', ' ' -replace '\s+', ' ').Trim()
@@ -64,7 +85,8 @@ function New-ReminderFile([datetime]$at, [string]$text) {
     $path = Join-Path $dir "$base.md"
     $i = 2
     while (Test-Path $path) { $path = Join-Path $dir "$base ($i).md"; $i++ }
-    $body = "---`nat: $($at.ToString('yyyy-MM-ddTHH:mm'))`n---`n$text`n"
+    $rep = $(if ($RemindRepeats -contains $repeat) { "repeat: $repeat`n" } else { '' })
+    $body = "---`nat: $($at.ToString('yyyy-MM-ddTHH:mm'))`n$rep---`n$text`n"
     [System.IO.File]::WriteAllText($path, $body, (New-Object System.Text.UTF8Encoding $false))
     return $path
 }
@@ -94,6 +116,10 @@ function Update-Reminders {
             if (Test-Path $to) { Remove-Item -LiteralPath $to -Force }
             Move-Item -LiteralPath $r.path -Destination $to
         } catch {}
+        if ($r.repeat) {
+            $next = Get-NextRemindTime $r.at $r.repeat $now
+            if ($next) { try { [void](New-ReminderFile $next $r.text $r.repeat) } catch {} }
+        }
         $text = $r.text
         # The widget was off at the time - say when it was due.
         if (($now - $r.at).TotalMinutes -gt 5) { $text = (T 'chat.remindLate') -f $text, (Format-RemindTime $r.at) }
@@ -110,10 +136,11 @@ function Update-Reminders {
 }
 
 # Moving one is a new file for the new time: the time is in the file name too.
+# A repeating one keeps repeating, from the new time.
 function Move-Reminder($r, [datetime]$at, [string]$text = $null) {
     if (-not $text) { $text = $r.text }
     try { Remove-Item -LiteralPath $r.path -Force } catch {}
-    return New-ReminderFile $at $text
+    return New-ReminderFile $at $text $r.repeat
 }
 
 # Recently fired ones, newest first.
