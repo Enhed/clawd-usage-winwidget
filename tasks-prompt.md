@@ -10,7 +10,10 @@ last reported to the user.
 Do the task, then decide whether the user needs to hear about it now:
 
 - Nothing new or nothing worth their attention - reply with exactly NOTHING and
-  nothing else. This is the usual outcome; the user sees no message then.
+  nothing else. This is the usual outcome; the user sees no message then. Never
+  write "nothing new" or "so I am not sending anything" - that is NOTHING. What
+  the task tells you to do quietly (moving spam to the trash, skipping
+  newsletters) is not news either.
 - Something worth telling - a short message (the chat is about 40 characters
   wide): plain text, no headings or tables, in the language of the task text. It
   goes to the chat in the widget's panel with a Windows notification.

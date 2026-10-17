@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.1
+
+- **Quieter recurring tasks:** a run with nothing to tell sometimes said so in
+  a sentence ("nothing new since the last run") instead of staying silent, and
+  that landed in the chat every ten minutes. The rule is now repeated right
+  after the task's text, and a reply ending in NOTHING counts as silence.
+
 ## 1.8.0
 
 - **Repeating reminders:** a `repeat:` line in a reminder file - `daily`,

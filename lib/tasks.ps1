@@ -237,7 +237,11 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
         else { $head += 'last run: never - this is the first one' }
         if ($prev -and $prev.report) { $head += "your last report to the user:`n$($prev.report)" }
         $head += '</task>'
-        $text = (Get-ChatContext) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt
+        # The rule once more after the task's own words: small models tend to report
+        # "nothing new" in a sentence, which would land in the chat every run.
+        $text = (Get-ChatContext) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt + "`n`n" +
+                '(If there is nothing the user needs to know or do now, reply with exactly NOTHING - ' +
+                'not a sentence saying so, and not the routine things the task told you to do.)'
         [System.IO.File]::WriteAllText($in, $text, (New-Object System.Text.UTF8Encoding $false))
         $q = { param($s) '"' + $s + '"' }
         if (-not $model) { $model = $(if ($t.model) { $t.model } else { [string]$script:Cfg.quickModel }) }
@@ -292,7 +296,9 @@ function Set-TaskResult($t, $report, [string]$why, [string[]]$need = @()) {
         Update-Badge
         return
     }
-    if (-not $said -or $said -match '^\W*NOTHING\W*$') { Save-TaskState $st; return }
+    # A sentence and then NOTHING on its own line is quiet too, unless it carries blocks.
+    if (-not $said -or $said -match '^\W*NOTHING\W*$' -or
+        ($said -match '(?:^|\n)\W*NOTHING\W*$' -and $said -notmatch '```')) { Save-TaskState $st; return }
     try { $r = Read-ChatReply $said } catch { $r = @{ text = $said; run = $null; notes = @() } }
     $e.report = $(if ($r.text.Length -gt 1500) { $r.text.Substring(0, 1500) + '…' } else { $r.text })
     $e.history = @(@($e.history) + @{ at = Get-Date; text = $e.report } | Select-Object -Last $TaskHistoryKeep)
