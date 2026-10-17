@@ -427,6 +427,15 @@ macOS, Linux, телефона или строки состояния. Сдел�
 - [Clawd for Preen](https://gist.github.com/0x213F/03a22ed4307031dfcb4f1cc298b4ad64)
   от [@0x213F](https://github.com/0x213F) — Clawd и цифры расхода в HTML-виджете
   на iPhone (через [Preen](https://preendisplay.com)), данные отдаёт Mac.
+- [plasma-clawd-usage](https://github.com/david-x3d/plasma-clawd-usage)
+  от [@david-x3d](https://github.com/david-x3d) — виджет KDE Plasma для Linux.
+- [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
+  от [@david-x3d](https://github.com/david-x3d) — виджеты рабочего стола Android
+  с анимациями Clawd, сердечками и небом; лимиты читает сам телефон, без сервера.
+- [claude-usage-iOS-widget](https://github.com/intelQong/claude-usage-iOS-widget)
+  от [@intelQong](https://github.com/intelQong) — виджет Scriptable для экрана
+  «Домой» и экрана блокировки iPhone, данные отдаёт `claude -p /usage` по cron
+  на Linux-машине.
 
 ## Лицензия
 

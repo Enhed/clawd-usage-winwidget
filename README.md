@@ -363,6 +363,15 @@ status bar. Made a port? Open an issue with a link and it'll be listed here.
 - [Clawd for Preen](https://gist.github.com/0x213F/03a22ed4307031dfcb4f1cc298b4ad64)
   by [@0x213F](https://github.com/0x213F) — Clawd and the usage numbers as an
   HTML widget on an iPhone (via [Preen](https://preendisplay.com)), fed by your Mac.
+- [plasma-clawd-usage](https://github.com/david-x3d/plasma-clawd-usage)
+  by [@david-x3d](https://github.com/david-x3d) — a KDE Plasma widget for Linux.
+- [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
+  by [@david-x3d](https://github.com/david-x3d) — home-screen widgets for Android
+  with Clawd's animations, hearts and the sky; reads the limits on the phone, no
+  server needed.
+- [claude-usage-iOS-widget](https://github.com/intelQong/claude-usage-iOS-widget)
+  by [@intelQong](https://github.com/intelQong) — a Scriptable widget for the iPhone
+  Home Screen and Lock Screen, fed by `claude -p /usage` from cron on a Linux box.
 
 ## License
 
