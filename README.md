@@ -59,6 +59,21 @@ Settings → Personalization → Taskbar → Other system tray icons → `clawd-
   `?` waiting (permission, question, dialog — what exactly is in brackets),
   `○` idle, plus the folder. Handy for catching a forgotten agent quietly
   burning your limit.
+
+  Sessions on another machine (a home server, a VM) can be added with
+  `remoteSessions` in `config.json` — a list of URLs or file paths, each
+  returning that machine's live sessions in the shape of
+  `~/.claude/sessions/<pid>.json`:
+
+  ```json
+  { "generatedAt": "2026-10-17T03:41:47+00:00", "host": "unraid",
+    "sessions": [ { "name": "api", "status": "busy", "waitingFor": "",
+                    "kind": "interactive", "sessionId": "4b8ca9ab-..." } ] }
+  ```
+
+  The publisher lists only live sessions; `cwd` is optional. They count for the
+  line and for Clawd and show the `host` in the hover list. A source that
+  fails, hangs or has a `generatedAt` older than two minutes adds nothing.
 - **Service status** — green "All Claude systems operational", or yellow/red
   with the active incident and affected components. Click opens
   status.claude.com.
@@ -299,6 +314,7 @@ are picked up on the fly, no restart needed.
 | `warnPercent` / `critPercent` | yellow and red thresholds |
 | `expanded` | details expanded |
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |
+| `remoteSessions` | sessions running on other machines: a list of URLs or file paths, see below |
 | `showHistory` | the 7-day chart and top projects in details (off by default) |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |

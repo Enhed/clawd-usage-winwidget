@@ -195,6 +195,8 @@ function Update-Widget {
     $ss = @()
     if ($script:Cfg.showSessions -or $script:Cfg.showMascot -or $script:Cfg.clawdSession) { $ss = Get-Sessions }
     Update-ClawdSession $ss
+    # Other machines' sessions count for the line and Clawd, but never for his own session above.
+    if (@($script:Cfg.remoteSessions).Count -or $script:Remote.Count) { $ss = @($ss) + @(Get-RemoteSessions $ss) }
     # Clawd's own session is always there: idle it is not "something running" -
     # otherwise the mascot would never fall asleep. Talking to it does count.
     $clawdHome = Get-ClawdHome
@@ -228,7 +230,8 @@ function Update-Widget {
         $tip = ($ss | ForEach-Object {
             $mark = $(if ($_.busy) { '▶' } elseif ($_.waiting) { '?' } else { '○' })
             $what = $(if ($_.waiting -and $_.waitingFor) { " [$($_.waitingFor)]" } else { '' })
-            "$mark $($_.name)$what — $($_.cwd)"
+            $where = $(if ($_.host -and $_.cwd) { "$($_.host): $($_.cwd)" } elseif ($_.host) { $_.host } else { $_.cwd })
+            "$mark $($_.name)$what — $where"
         }) -join "`n"
         if ($tip -ne $script:SessTip) {
             $script:SessTip = $tip

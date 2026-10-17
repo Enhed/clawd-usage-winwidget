@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0
+
+- **Sessions from other machines:** `"remoteSessions"` in `config.json` takes
+  a list of URLs or file paths, each serving another machine's live sessions in
+  the `~/.claude/sessions` shape (with `host` and `generatedAt`). They count in
+  SESSIONS and for Clawd's moods, and the hover list shows the host. A source
+  that fails, hangs or goes stale is ignored. Suggested by @Drawmonster (#3).
+
 ## 1.6.0
 
 - **No more transcripts from the `/usage` check:** it used to leave a session

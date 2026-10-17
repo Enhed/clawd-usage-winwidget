@@ -16,6 +16,7 @@ $DefaultConfig = [ordered]@{
     showStatus             = $true  # Anthropic service status line
     statusIntervalSeconds  = 120    # how often to query status.claude.com
     showSessions           = $true  # running Claude Code sessions
+    remoteSessions         = @()    # URLs or file paths with sessions running on other machines (see README)
     showAccount            = $true  # account plan and email at the bottom of the window
     accountIntervalSeconds = 600    # how often to run `claude auth status`
     showMascot             = $true  # animated Clawd above the session bar
