@@ -69,6 +69,8 @@ function Step-Mascot {
 
     $f = @{ feet = 'both'; look = $m.look; eyes = 'open'; arms = 'down'; flip = $false; lift = 0.0
            off = 0; x = 0; facing = ''; poof = ''; shadow = ''; soul = 0.0; soulT = 0; dig = 0; spray = 0 }
+    # Work is over - the edge he was running to is no longer a reason to walk there.
+    if ($m.cur -eq 'work' -and $mood -ne 'work') { $m.target = $null }
     $m.cur = $mood
     $bubble = ''; $zzz = $false; $canBlink = $true; $dust = $false
 

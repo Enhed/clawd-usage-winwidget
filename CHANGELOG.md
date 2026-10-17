@@ -2,8 +2,8 @@
 
 ## 1.10.1
 
-- Clawd no longer keeps walking into the right wall after the window gets
-  narrower: the spot he was heading for is pulled inside the new width.
+- Clawd no longer trudges into the wall once a session finishes: the edge he
+  was running to while Claude worked is forgotten when the work is over.
 
 ## 1.10.0
 
