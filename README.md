@@ -356,6 +356,10 @@ a new conversation there and hides the phone conversation so far; on the phone
 freezes. If it doesn't answer, the widget keeps the last numbers and marks them
 stale.
 
+`~/.claude` above means Claude Code's own folder: if `CLAUDE_CONFIG_DIR` is set,
+the widget reads sessions, transcripts, `settings.json` and `.claude.json` from
+there instead, the same as Claude Code does.
+
 > Don't run `claude -p "/usage"` by hand from Git Bash: MSYS rewrites `/usage`
 > into a path (`C:/Program Files/Git/usage`) and the prompt goes to the model,
 > spending tokens. PowerShell and cmd are fine.

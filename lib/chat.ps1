@@ -108,7 +108,7 @@ function Add-ChatMessage([string]$role, [string]$text, $run = $null) {
 
 # ------------------------------------------------- the phone conversation ----
 # Clawd's own session (Remote Control) keeps its conversation in
-# ~/.claude/projects/<home>/<id>.jsonl. The panel shows it in the same feed, and
+# projects\<home>\<id>.jsonl in Claude Code's folder. The panel shows it in the same feed, and
 # the panel's chat gets its latest part as context. Only what was added since the
 # last look is read: the file grows by the whole conversation, tool output included.
 
@@ -119,7 +119,7 @@ function Update-RemoteFeed {
     $id = Get-ClawdSessionId
     if (-not $id) { return }
     $key  = [regex]::Replace((Get-ClawdHome), '[^A-Za-z0-9]', '-')
-    $path = Join-Path $env:USERPROFILE ".claude\projects\$key\$id.jsonl"
+    $path = Join-Path (Get-ClaudeConfigDir) "projects\$key\$id.jsonl"
     $r = $script:Remote
     if ($path -ne $r.path) { $r.path = $path; $r.offset = 0; $r.items.Clear() }
     if (-not [System.IO.File]::Exists($path)) { return }
