@@ -390,6 +390,10 @@ Current week (Fable): 0% used · resets Sep 21, 6am (Europe/Moscow)
 виджет показывает последние полученные цифры и помечает их «устарело»; повтор —
 через тот же интервал.
 
+`~/.claude` здесь — собственная папка Claude Code: если задана переменная
+`CLAUDE_CONFIG_DIR`, виджет, как и сам Claude Code, читает сессии, транскрипты,
+`settings.json` и `.claude.json` оттуда.
+
 Запускать это вручную из Git Bash нельзя как есть: MSYS превращает `/usage` в путь
 `C:/Program Files/Git/usage`, и запрос уходит модели. Из PowerShell/cmd всё нормально.
 
