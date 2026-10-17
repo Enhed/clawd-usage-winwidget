@@ -38,7 +38,7 @@ function Get-Sessions {
 $RemoteStaleSeconds = 120   # a feed (or our last good fetch of it) older than this is ignored
 $RemoteHungSeconds  = 30    # a fetch still running after this is cancelled
 
-$script:Remote = @{}        # source -> @{ wc; task; try; at; list }
+$script:RemoteSess = @{}    # source -> @{ wc; task; try; at; list }
 
 function ConvertTo-RemoteSessions($text) {
     $j = $text | ConvertFrom-Json
@@ -65,17 +65,17 @@ function ConvertTo-RemoteSessions($text) {
 # sources that answered recently. $local - the local sessions, to drop duplicates.
 function Get-RemoteSessions($local) {
     $sources = @($script:Cfg.remoteSessions | Where-Object { $_ } | ForEach-Object { [string]$_ })
-    foreach ($k in @($script:Remote.Keys)) {
+    foreach ($k in @($script:RemoteSess.Keys)) {
         if ($sources -notcontains $k) {
-            try { $script:Remote[$k].wc.CancelAsync() } catch {}
-            $script:Remote.Remove($k)
+            try { $script:RemoteSess[$k].wc.CancelAsync() } catch {}
+            $script:RemoteSess.Remove($k)
         }
     }
     $now = Get-Date
     $out = @()
     foreach ($src in $sources) {
-        $r = $script:Remote[$src]
-        if (-not $r) { $r = @{ wc = $null; task = $null; try = [datetime]::MinValue; at = [datetime]::MinValue; list = @() }; $script:Remote[$src] = $r }
+        $r = $script:RemoteSess[$src]
+        if (-not $r) { $r = @{ wc = $null; task = $null; try = [datetime]::MinValue; at = [datetime]::MinValue; list = @() }; $script:RemoteSess[$src] = $r }
         if ($r.task -and $r.task.IsCompleted) {
             if ($r.task.Status -eq 'RanToCompletion') {
                 try { $r.list = ConvertTo-RemoteSessions $r.task.Result; $r.at = $now } catch { $r.list = @() }
