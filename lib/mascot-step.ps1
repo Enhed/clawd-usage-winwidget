@@ -36,6 +36,8 @@ function Step-Mascot {
     $span = [math]::Max(0, $UI.MascotArea.ActualWidth - $MascotW)
     if ($m.x -lt 0)     { $m.x = $span / 2 }
     if ($m.x -gt $span) { $m.x = $span }
+    # The area may have narrowed since the target was picked - otherwise he walks into the wall forever.
+    if ($null -ne $m.target -and $m.target -gt $span) { $m.target = $span }
 
     if ($m.demo -ge 0) { Step-MascotDemo }
     if ($m.drainT -ge 0) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.1
+
+- Clawd no longer keeps walking into the right wall after the window gets
+  narrower: the spot he was heading for is pulled inside the new width.
+
 ## 1.10.0
 
 - **Settings window:** the gear in the window's header (or Settings in the tray
