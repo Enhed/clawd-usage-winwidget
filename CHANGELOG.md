@@ -2,6 +2,10 @@
 
 ## 1.8.3
 
+- **Tasks at set times:** `at: 09:00, 18:00` in a task file instead of
+  `every` runs it at these times of day - once each, and once when the PC is
+  on again if it was off then. A morning summary is one run a day instead of
+  one every ten minutes.
 - **Moon phase in the sky's tooltip:** "first quarter, 42% lit". The phase is
   now worked out from where the Sun and the Moon are, not from the average
   lunar month - good to a few hours instead of up to a day, so the moon drawn

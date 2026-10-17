@@ -258,7 +258,9 @@ server as `mcp__<server>`, a command as a Claude Code rule like
 runs in the background and can't ask, so when a run is refused something the chat
 shows a card with the missing rules and **Allow** — it adds them to the file and
 runs the task again; `model` — instead of `quickModel`; `hours` — only between these
-hours; `paused: yes`. Ask in the chat ("check my mail every 10 minutes"), put
+hours; `paused: yes`. Instead of `every`, `at: 09:00, 18:00` runs it at these times
+of day — once each, and once on start if the PC was off then: a morning summary
+costs one run a day, not a run every ten minutes. Ask in the chat ("check my mail every 10 minutes"), put
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
 the phone, or write the file yourself; the Reminders tab lists them with Run now,
 Pause, Open and Delete; a click on a task shows a line on each of its latest runs

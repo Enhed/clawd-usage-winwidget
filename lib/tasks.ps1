@@ -4,7 +4,7 @@
 # reminders, so the chat, his phone session or the user can make one:
 #   tasks\Mail.md
 #   ---
-#   every: 10m
+#   every: 10m              (or at: 09:00, 18:00 - at these times of day)
 #   tools: mcp__mail
 #   hours: 8-23
 #   ---
@@ -37,20 +37,48 @@ function Read-TaskEvery([string]$s) {
     return $span
 }
 
+# "09:00, 18:00", "9", "9h30" -> sorted times of day; $null if any of them is not one.
+function Read-TaskAt([string]$s) {
+    $list = @()
+    foreach ($w in ($s.Trim() -split '[,;\s]+' | Where-Object { $_ })) {
+        $m = [regex]::Match($w.ToLower(), '^(\d{1,2})(?:[:.h](\d{2})|h)?$')
+        if (-not $m.Success -or [int]$m.Groups[1].Value -gt 23) { return $null }
+        $min = $(if ($m.Groups[2].Value) { [int]$m.Groups[2].Value } else { 0 })
+        if ($min -gt 59) { return $null }
+        $list += [timespan]::new([int]$m.Groups[1].Value, $min, 0)
+    }
+    if (-not $list.Count) { return $null }
+    return ,@($list | Sort-Object -Unique)
+}
+
+# The latest of the task's times that has come: today's, or yesterday's last one.
+function Get-TaskSlot($t, [datetime]$now) {
+    $past = @($t.at | Where-Object { $now.Date + $_ -le $now })
+    if ($past.Count) { return $now.Date + $past[-1] }
+    return $now.Date.AddDays(-1) + @($t.at)[-1]
+}
+
+# How often, for the panel: "at 09:00, 18:00" or "every 10 min".
+function Format-TaskWhen($t) {
+    if ($t.at) { return (T 'task.at') -f (@($t.at | ForEach-Object { $_.ToString('hh\:mm') }) -join ', ') }
+    if ($t.every) { return Format-TaskEvery $t.every }
+    return T 'task.badEvery'
+}
+
 function Format-TaskEvery([timespan]$span) {
     if ($span.TotalDays -ge 1 -and $span.TotalDays -eq [math]::Floor($span.TotalDays)) { return (T 'task.everyD') -f $span.TotalDays }
     if ($span.TotalHours -ge 1 -and $span.TotalHours -eq [math]::Floor($span.TotalHours)) { return (T 'task.everyH') -f $span.TotalHours }
     return (T 'task.everyM') -f [int]$span.TotalMinutes
 }
 
-# All tasks, by name: @{ name; path; every; everyText; tools; model; hours; paused; prompt }.
+# All tasks, by name: @{ name; path; every; everyText; at; atText; tools; model; hours; paused; prompt }.
 function Get-Tasks {
     $list = @()
     $dir = Get-TasksDir
     if (-not [System.IO.Directory]::Exists($dir)) { return ,$list }
     foreach ($f in @(Get-ChildItem $dir -File -Filter *.md -ErrorAction SilentlyContinue | Sort-Object Name)) {
         try { $raw = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8) } catch { continue }
-        $t = @{ name = $f.BaseName; path = $f.FullName; every = $null; everyText = ''; tools = @(); model = ''
+        $t = @{ name = $f.BaseName; path = $f.FullName; every = $null; everyText = ''; at = $null; atText = ''; tools = @(); model = ''
                 hours = $null; limit = $null; paused = $false; prompt = $raw.Trim() }
         $m = [regex]::Match($raw, '(?s)^\s*---\s*\r?\n(.*?)\r?\n---\s*\r?\n?(.*)$')
         if ($m.Success) {
@@ -61,6 +89,7 @@ function Get-Tasks {
                 $v = $kv.Groups[2].Value
                 switch ($kv.Groups[1].Value.ToLower()) {
                     'every'  { $t.everyText = $v; $t.every = Read-TaskEvery $v }
+                    'at'     { $t.atText = $v; $t.at = Read-TaskAt $v }
                     'tools'  { $t.tools = Split-TaskTools $v }
                     'model'  { $t.model = $v }
                     'paused' { $t.paused = ($v -match '^(yes|true|1|да)$') }
@@ -155,7 +184,7 @@ function New-TaskFile([string]$name, [hashtable]$head, [string]$prompt) {
     $file = ($name -replace '[\\/:*?"<>|\r\n]', ' ' -replace '\s+', ' ').Trim()
     if (-not $file) { return $null }
     $lines = @('---')
-    foreach ($k in @('every', 'tools', 'model', 'hours', 'limit', 'paused')) { if ($head[$k]) { $lines += "${k}: $($head[$k])" } }
+    foreach ($k in @('every', 'at', 'tools', 'model', 'hours', 'limit', 'paused')) { if ($head[$k]) { $lines += "${k}: $($head[$k])" } }
     $lines += @('---', $prompt.Trim(), '')
     $path = Join-Path $dir "$file.md"
     [System.IO.File]::WriteAllText($path, ($lines -join "`n"), (New-Object System.Text.UTF8Encoding $false))
@@ -232,7 +261,8 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
         $in  = Join-Path $env:TEMP "cuw-task-in-$PID.txt"
         $out = Join-Path $env:TEMP "cuw-task-out-$PID.json"
         $err = Join-Path $env:TEMP "cuw-task-err-$PID.txt"
-        $head = @("<task name=`"$($t.name)`" every=`"$($t.everyText)`">")
+        $when = $(if ($t.at) { "at=`"$($t.atText)`"" } else { "every=`"$($t.everyText)`"" })
+        $head = @("<task name=`"$($t.name)`" $when>")
         # With the zone: what the task looks at (GitHub, mail) often has times in UTC.
         $tz = [TimeZoneInfo]::Local.GetUtcOffset((Get-Date))
         $zone = "UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm'))"
@@ -407,9 +437,18 @@ function Update-Tasks {
     $st = Load-TaskState
     $now = Get-Date
     foreach ($t in (Get-Tasks)) {
-        if ($t.paused -or -not $t.every -or -not (Test-TaskHours $t)) { continue }
+        if ($t.paused -or -not ($t.at -or $t.every)) { continue }
         if ($null -ne (Get-TaskBudgetWait $t)) { continue }
         $last = $(if ($st[$t.name]) { $st[$t.name].last } else { [datetime]::MinValue })
+        if ($t.at) {
+            # Once per time of day; a time missed while the PC was off - once, when it is on.
+            # A new task waits for its next time instead of going off for yesterday's.
+            $since = $last
+            try { $made = [System.IO.File]::GetCreationTime($t.path); if ($made -gt $since) { $since = $made } } catch {}
+            if ((Get-TaskSlot $t $now) -gt $since) { Start-TaskRun $t; return }
+            continue
+        }
+        if (-not (Test-TaskHours $t)) { continue }
         if (($now - $last) -ge $t.every) { Start-TaskRun $t; return }
     }
 }

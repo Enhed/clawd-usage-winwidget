@@ -64,7 +64,8 @@ The widget works alongside you:
   ---
   Check the inbox for mail that came since the last run. Tell me only about ...
 
-  every - 10m, 2h, 1d; tools - what it may use besides reading files, space-
+  every - 10m, 2h, 1d, or instead "at: 09:00, 18:00" - at these times of day,
+  for what can wait till a set hour (one run a day instead of dozens); tools - what it may use besides reading files, space-
   separated: an MCP server as mcp__<server>, a command as a rule by its first
   words like PowerShell(gh issue list:*), a site as WebFetch(domain:github.com) -
   it runs in the background and can't ask, so list everything it needs; hours, model, limit (wait while the plan's usage is at

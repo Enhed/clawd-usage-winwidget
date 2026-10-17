@@ -120,7 +120,9 @@ letters from people and anything urgent; skip newsletters and notifications.
 ```
 
 `every` - 10m, 2h, 1d (not less than a few minutes: each run uses the user's
-limits). `tools` - what the task may use besides reading files and read-only
+limits). Or, instead of `every`, `at` - times of day, "09:00" or "09:00, 18:00":
+for what can wait till a set hour (a morning summary, an evening check) - one
+run a day instead of dozens. `tools` - what the task may use besides reading files and read-only
 PowerShell, space-separated. A task runs in the background and can't ask for
 permission, so list everything it needs, as narrowly as it will do:
 - an MCP server as mcp__<server> (mail is usually mcp__mail; ask if unsure);

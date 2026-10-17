@@ -6,7 +6,9 @@
     - an empty answer is retried once on the chat model; empty twice is a failure;
     - finding and removing a task by name touches only that task;
     - fields (tell / message / summary): a quiet run says nothing but leaves its
-      summary in the history, which the next run gets.
+      summary in the history, which the next run gets;
+    - `at`: times of day are read, the right one is picked, a task runs once per
+      time, and a new task waits for its next time.
 #>
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -99,6 +101,30 @@ try {
     $h = @((Load-TaskState)['B'].history)
     Check 'history: a line per run' (@($h | ForEach-Object { "$($_.text)=$($_.told)" }) -join '; ') 'nothing new, 2 newsletters=False; mail from Bob=True; quiet=False'
     Check 'the schema is passed' ([bool]($script:Argv -contains '--json-schema')) $true
+
+    Write-Host 'at'
+    $ra = Read-TaskAt '18:00, 9, 7h30'
+    Check 'read at' (@($ra | ForEach-Object { $_.ToString('hh\:mm') }) -join ' ') '07:30 09:00 18:00'
+    Check 'bad at' ($null -eq (Read-TaskAt '25:00')) $true
+    $tt = @{ at = Read-TaskAt '09:00, 18:00' }
+    Check 'slot in the day' (Get-TaskSlot $tt ([datetime]'2026-10-17 12:00')) ([datetime]'2026-10-17 09:00')
+    Check 'slot before the first' (Get-TaskSlot $tt ([datetime]'2026-10-17 08:00')) ([datetime]'2026-10-16 18:00')
+    Check 'when' (Format-TaskWhen $tt) 'task.at'
+    Reset
+    $slot = (Get-Date).AddMinutes(-5)
+    $file = Join-Path $Tasks 'C.md'
+    "---`nat: $($slot.ToString('HH:mm'))`n---`ndo C" | Out-File $file -Encoding utf8
+    [System.IO.File]::SetCreationTime($file, (Get-Date).AddDays(-2))
+    @(@{ tell = $false; message = ''; summary = 'c1' }, @{ tell = $false; message = ''; summary = 'c2' }) | ForEach-Object { $script:Answers.Enqueue($_) }
+    Update-Tasks; Update-Tasks; Update-Tasks
+    Check 'runs once for its time' ($script:Started -join '; ') 'haiku C'
+    Check 'the task line says at' ($script:TaskInput -match 'at="') $true
+    Reset
+    $st = Load-TaskState; $st.Remove('C'); Save-TaskState $st
+    [System.IO.File]::SetCreationTime($file, (Get-Date))
+    Update-Tasks
+    Check 'a new task waits for its next time' ($script:Started -join '; ') ''
+    Remove-Item $file
 
     Write-Host 'remove one'
     [void](Remove-TaskFile 'A')

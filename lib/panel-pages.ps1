@@ -213,8 +213,8 @@ function New-TaskRow($t, $st) {
     # A card of its own, like a reminder: the links clearly belong to this task.
     $card = New-PanelCard '#FF26262C'
     $box = New-Object System.Windows.Controls.StackPanel
-    $info = @($(if ($t.every) { Format-TaskEvery $t.every } else { T 'task.badEvery' }))
-    if ($t.hours) { $info += "$($t.hours[0])-$($t.hours[1])" }
+    $info = @(Format-TaskWhen $t)
+    if ($t.hours -and -not $t.at) { $info += "$($t.hours[0])-$($t.hours[1])" }
     $running = ($script:TaskProc -and $script:TaskProc.task.name -eq $t.name)
     $queued = $script:TaskQueue.Contains($t.name)
     if ($running) { $info += T 'task.running' }
@@ -282,7 +282,7 @@ function Update-RemindPage {
     $tasks = $(if ($script:Cfg.showTasks) { Get-Tasks } else { @() })
     $tst = Load-TaskState
     $key = (Get-Lang) + '|' + (@($rem | ForEach-Object { "$($_.path)$($_.at.Ticks)" }) -join ',') + '|' +
-           (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.paused)$(if ($tst[$_.name]) { $tst[$_.name].last.Ticks })" }) -join ',') +
+           (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.atText)$($_.paused)$(if ($tst[$_.name]) { $tst[$_.name].last.Ticks })" }) -join ',') +
            "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|$($script:TaskQueue -join ',')|$($script:TaskOpen)|" +
            (@($tasks | ForEach-Object { Get-TaskBudgetWait $_ }) -join ',') + '|' +
            (@($done | ForEach-Object { "$($_.at.Ticks)$($_.text)" }) -join ',') + "|$($script:RemEdit.path)|" +

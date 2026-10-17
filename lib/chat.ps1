@@ -211,7 +211,8 @@ function Get-ChatContext {
         $lines += 'recurring tasks (files in the tasks folder):'
         foreach ($t in $tasks) {
             $last = $(if ($st[$t.name] -and $st[$t.name].last -ne [datetime]::MinValue) { $st[$t.name].last.ToString('MM-dd HH:mm') } else { 'never' })
-            $lines += "- $($t.name): every $($t.everyText)$(if ($t.tools.Count) { ", tools $($t.tools -join ' ')" })$(if ($t.hours) { ", hours $($t.hours -join '-')" })$(if ($t.paused) { ', paused' }), last run $last - $(($t.prompt -replace '\s+', ' '))"
+            $when = $(if ($t.at) { "at $($t.atText)" } else { "every $($t.everyText)" })
+            $lines += "- $($t.name): $when$(if ($t.tools.Count) { ", tools $($t.tools -join ' ')" })$(if ($t.hours) { ", hours $($t.hours -join '-')" })$(if ($t.paused) { ', paused' }), last run $last - $(($t.prompt -replace '\s+', ' '))"
         }
     }
     # Task reports are put into the panel by the widget, not said in this conversation:
@@ -354,7 +355,7 @@ function Read-ChatReply([string]$reply) {
                 }
             }
             'task' {
-                # "key: value" lines (name, every, tools, model, hours), "---", then the task text.
+                # "key: value" lines (name, every or at, tools, model, hours), "---", then the task text.
                 $parts = [regex]::Split($body, '(?m)^---[ \t]*\r?$\n?', 2)
                 if ($parts.Count -lt 2) { break }
                 $head = @{}
@@ -362,11 +363,12 @@ function Read-ChatReply([string]$reply) {
                     $kv = [regex]::Match($line, '^\s*(\w+)\s*:\s*(.*?)\s*$')
                     if ($kv.Success) { $head[$kv.Groups[1].Value.ToLower()] = $kv.Groups[2].Value }
                 }
-                if (-not $head.name -or -not (Read-TaskEvery ([string]$head.every)) -or -not $parts[1].Trim()) {
+                $sched = @{ every = Read-TaskEvery ([string]$head.every); at = $(if ($head.at) { Read-TaskAt ([string]$head.at) }) }
+                if (-not $head.name -or -not ($sched.every -or $sched.at) -or -not $parts[1].Trim()) {
                     $notes += (T 'chat.taskBad') -f $head.name
                     break
                 }
-                if (New-TaskFile $head.name $head $parts[1]) { $notes += (T 'chat.taskSet') -f $head.name, $head.every }
+                if (New-TaskFile $head.name $head $parts[1]) { $notes += (T 'chat.taskSet') -f $head.name, (Format-TaskWhen $sched) }
             }
             'task-remove' {
                 foreach ($line in $body -split '\r?\n') {
