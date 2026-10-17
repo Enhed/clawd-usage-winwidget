@@ -1,16 +1,20 @@
 ﻿#requires -version 5
 <#
-  Screenshot of the history chart for the README: boots the widget modules in a
-  temporary copy with a fake 7-day history and made-up projects (the widget itself
-  on top), hovers the chart and renders the window to PNG via RenderTargetBitmap.
+  Screenshots for the README: boots the widget modules in a temporary copy with
+  fake data and renders the expanded window to PNG via RenderTargetBitmap.
+    preview - the /usage stats, sessions and the Claude Code version;
+    history - the 7-day chart (hovered) and made-up projects, the widget itself on top.
   Run from Windows PowerShell (not Git Bash):
 
-    .\tools\history-shot.ps1                          # -> docs\history.png
-    .\tools\history-shot.ps1 -Out $env:TEMP\h.png -Lang ru
+    .\tools\screenshot.ps1 preview                    # -> docs\preview.png
+    .\tools\screenshot.ps1 history                    # -> docs\history.png
+    .\tools\screenshot.ps1 history -Out $env:TEMP\h.png -Lang ru
 #>
-param([string]$Out, [string]$Lang = 'en')
+param([Parameter(Mandatory)][ValidateSet('preview', 'history')][string]$Kind,
+      [string]$Out, [string]$Lang = 'en')
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not $Out) { $Out = Join-Path $repo 'docs\history.png' }
+if (-not $Out) { $Out = Join-Path $repo "docs\$Kind.png" }
+$isHist = $Kind -eq 'history'
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Drawing
@@ -33,8 +37,8 @@ $script:ConfigPath = Join-Path $Root 'config.json'
 $script:IsAdmin    = $false
 
 @{
-    language = $Lang; scale = 1.0; expanded = $true; showAccount = $false; showStats = $false
-    showSessions = $true; showStatus = $true; showHistory = $true; showMascot = $true; showSky = $true
+    language = $Lang; scale = 1.0; expanded = $true; showAccount = $false; showStats = (-not $isHist)
+    showSessions = $true; showStatus = $true; showHistory = $isHist; showMascot = $true; showSky = $true
     showAdvisor = $false; showChat = $false; showTasks = $false; clawdSession = $false
     topmost = $true; left = 40; top = 40; theme = 'default'; skin = 'default'
 } | ConvertTo-Json | Out-File $script:ConfigPath -Encoding utf8
@@ -91,17 +95,39 @@ function Start-AdvisorScan { }
 function Start-ClawdSession { }
 function Update-ClawdSession($ss) { }
 function Start-HistoryJob([string]$kind) { }
-function Get-Sessions {
-    return ,@(@{ name = 'clawd-usage-winwidget'; cwd = 'C:\code\clawd-usage-winwidget'; busy = $false; waiting = $false },
-              @{ name = 'pixel-garden'; cwd = 'C:\code\pixel-garden'; busy = $false; waiting = $false })
+function S([string]$name, [bool]$busy = $false) {
+    return @{ name = $name; cwd = "C:\code\$name"; busy = $busy; waiting = $false }
 }
+if ($isHist) { $script:FakeSessions = @((S 'clawd-usage-winwidget'), (S 'pixel-garden')) }
+else         { $script:FakeSessions = @((S 'clawd-usage-winwidget' $true), (S 'pixel-garden'), (S 'invoice-bot'), (S 'dotfiles')) }
+function Get-Sessions { return ,@($script:FakeSessions) }
 $script:Usage = @{
     session = [int]$sess; week = [int]$week; fable = 12
     sessionReset = $now.AddMinutes(137); weekReset = $weekReset.AddDays(7); fableReset = $weekReset.AddDays(7)
     day = $null; week7 = $null
 }
+if (-not $isHist) {
+    # The stats as /usage prints them; the widget shortens and translates them itself.
+    $script:Usage.session = 37; $script:Usage.week = 23; $script:Usage.fable = 19
+    $script:Usage.sessionReset = $now.AddMinutes(164)
+    $script:Usage.day = @{ requests = 412; sessions = 9; lines = @(
+        '46% of your usage was at >150k context',
+        '27% of your usage went to always-on context over 40k',
+        '12% of your usage came from subagent-heavy sessions',
+        'Top skills: /dataviz 5%',
+        'Top MCP servers: claude-in-chrome 3%') }
+    $script:Usage.week7 = @{ requests = 2861; sessions = 54; lines = @(
+        '71% of your usage was at >150k context',
+        '52% of your usage came from subagent-heavy sessions',
+        '44% of your usage came from sessions active for 8+ hours',
+        'Top subagents: general-purpose 4%, Explore 2%',
+        'Top MCP servers: claude-in-chrome 6%') }
+    $script:VerLocal = '2.1.310'; $script:VerLatest = '2.1.310'
+}
 $script:UsageAt = Get-Date
-$script:Sky.force = 'day'; $script:Sky.forceWx = 1; $script:Sky.key = ''
+if ($isHist) { $script:Sky.force = 'day'; $script:Sky.forceWx = 1 }
+else         { $script:Sky.force = 'night'; $script:Sky.forceWx = 0 }
+$script:Sky.key = ''
 
 # Projects: weights per hour, the widget itself on top.
 $names = @(@('clawd-usage-winwidget', 38), @('pixel-garden', 22), @('invoice-bot', 17), @('tide-tables', 11), @('dotfiles', 6), @('~', 4))
@@ -140,7 +166,7 @@ $shot.add_Tick({
     $shot.Stop()
     Update-Widget
     $win.UpdateLayout()
-    Show-HistPoint ($BarWidth * $hoverAt)
+    if ($isHist) { Show-HistPoint ($BarWidth * $hoverAt) }
     $win.UpdateLayout()
     $w = [int][math]::Ceiling($win.ActualWidth * $k); $h = [int][math]::Ceiling($win.ActualHeight * $k)
     $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $w, $h, (96 * $k), (96 * $k), ([System.Windows.Media.PixelFormats]::Pbgra32)
