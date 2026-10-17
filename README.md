@@ -112,14 +112,16 @@ The ▾ in the header expands details (remembered between runs):
   the widget says so (and won't offer that version again).
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
-show/hide, refresh, settings, exit.
+show/hide, refresh, settings, exit. Drag the window anywhere — the position is
+saved.
 
 **Settings** — the gear in the window's header (or the tray menu): language,
 theme, Clawd's skin picked from cards with a live preview (he raises his arms
 under the mouse), size, opacity, always on top, which blocks the window shows,
 the tips, the chat, recurring tasks and Clawd's session. Everything applies at
-once; the rest of the keys are in `config.json`, linked at the bottom. Drag the window anywhere —
-the position is saved.
+once; the rest of the keys are in `config.json`, linked at the bottom.
+
+<img src="docs/settings.png" alt="Settings: Look, Window and Clawd tabs" width="680">
 
 ### Clawd
 
