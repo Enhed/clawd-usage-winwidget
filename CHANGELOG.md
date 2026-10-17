@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0
+
+- **The last 7 days in details:** a chart of the 5-hour and weekly percentages;
+  hover for the time, both values and the project busiest in that hour. The
+  first run fills it from what earlier `/usage` checks left behind, so it is not
+  empty for a week. `"showHistory": false` hides it.
+- **Top projects of the week:** which folders spent the most, estimated from
+  Claude Code's transcripts by tokens and model prices.
+- The `/usage` check no longer leaves a session transcript every minute in
+  `~/.claude/projects` (`--no-session-persistence`). Old ones are not removed.
+
 ## 1.5.4
 
 - **Français:** a French UI, in the tray menu under Language or with

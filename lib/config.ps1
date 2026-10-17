@@ -12,6 +12,7 @@ $DefaultConfig = [ordered]@{
     topmost                = $false # keep the window above all others
     trayResetClock         = $false # tray tooltip: resets as clock times (03:20, tmrw 01:00) instead of a countdown
     showStats              = $true  # "last 24h" / "last 7 days" blocks in details
+    showHistory            = $true  # in details: chart of both percentages over 7 days and top projects
     showStatus             = $true  # Anthropic service status line
     statusIntervalSeconds  = 120    # how often to query status.claude.com
     showSessions           = $true  # running Claude Code sessions

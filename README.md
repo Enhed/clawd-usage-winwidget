@@ -74,6 +74,16 @@ The ▾ in the header expands details (remembered between runs):
   context, always-on context, subagent-heavy sessions, top MCP servers, skills
   and subagents. Claude Code itself calls this approximate and counts only this
   computer.
+- **LIMITS · 7 DAYS** — the 5-hour (green) and weekly (blue) percentages over the
+  last week, one line each. Hover for the moment under the cursor: the time, both
+  percentages and the project that spent the most in that hour. On the first run
+  the chart is filled from the transcripts that `/usage` checks of earlier
+  versions left in `~/.claude/projects`; after that every `/usage` answer is a
+  sample in `usage-history.json`.
+- **PROJECTS · 7 DAYS** — the projects that spent the most this week, by the
+  folder they ran in. Counted from Claude Code's transcripts on this computer:
+  tokens weighted by the model's price, so the shares are an estimate of what
+  went into the limits, not an official figure.
 - **Version** — your Claude Code version. If a newer one is out the line turns
   yellow: hover for the official CHANGELOG between your version and the latest,
   click to run `claude update` in a separate window; otherwise a click opens
@@ -289,6 +299,7 @@ are picked up on the fly, no restart needed.
 | `warnPercent` / `critPercent` | yellow and red thresholds |
 | `expanded` | details expanded |
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |
+| `showHistory` | the 7-day chart and top projects in details |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |
 | `showAdvisor` | Clawd's tips about the computer |

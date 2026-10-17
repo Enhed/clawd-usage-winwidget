@@ -5,4 +5,5 @@ chat-state.json
 clawd-state.json
 tasks-state.json
 update-state.json
+usage-history.json
 CLAUDE.md

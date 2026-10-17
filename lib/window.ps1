@@ -17,7 +17,8 @@ foreach ($n in @('BtnToggle','BtnHide','BtnExit','PctText','PctSign','BarSession
                  'MascotArea','Mascot','MascotBody','MascotEyes','MascotFx','MascotSand','MascotSweat','MascotZ',
                  'MascotBubble','MascotTag','Hearts','MascotLove','MascotSoul','Sky','SkyFx',
                  'LblWeek','LblFable','LblSessions','LblDay','LblWeek7',
-                 'TipBadge','TipIcon','TipCount')) {
+                 'TipBadge','TipIcon','TipCount',
+                 'HistPanel','LblHist','HistChart','HistDays','HistCaption','ProjPanel','LblProj','ProjRows')) {
     $UI[$n] = $win.FindName($n)
 }
 

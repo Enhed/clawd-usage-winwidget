@@ -23,7 +23,7 @@ function Start-UsageProbe {
     $script:UsageTry = Get-Date
     try {
         $script:UsageProc = Start-Process -FilePath $script:ClaudeExe `
-            -ArgumentList '-p','/usage','--output-format','text' `
+            -ArgumentList '-p','/usage','--output-format','text','--no-session-persistence' `
             -RedirectStandardOutput $script:UsageFile -NoNewWindow -PassThru
     } catch {
         $script:UsageProc = $null
@@ -119,5 +119,6 @@ function Collect-UsageProbe {
     if ($null -ne $u.session -or $null -ne $u.week) {
         $script:Usage   = $u
         $script:UsageAt = Get-Date
+        Add-UsageSample $u
     }
 }

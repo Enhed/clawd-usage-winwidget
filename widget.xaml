@@ -155,6 +155,22 @@
                    Foreground="#FF8B8B94" Margin="0,0,0,10" TextWrapping="Wrap"/>
        </StackPanel>
 
+       <!-- the last 7 days: both percentages as lines, hover for a moment; top projects -->
+       <StackPanel x:Name="HistPanel">
+        <Border Background="#1AFFFFFF" Height="1" Margin="0,0,0,8"/>
+        <TextBlock x:Name="LblHist" Text="LIMITS · 7 DAYS" FontFamily="Segoe UI" FontSize="9"
+                   FontWeight="SemiBold" Foreground="#FF6B7280" Margin="0,0,0,4"/>
+        <Canvas x:Name="HistChart" Height="44" Background="Transparent" ClipToBounds="True"/>
+        <Canvas x:Name="HistDays" Height="11" IsHitTestVisible="False"/>
+        <TextBlock x:Name="HistCaption" Text="" FontFamily="Segoe UI" FontSize="10"
+                   Foreground="#FF8B8B94" Margin="0,1,0,10" TextTrimming="CharacterEllipsis"/>
+        <StackPanel x:Name="ProjPanel" Margin="0,0,0,10">
+          <TextBlock x:Name="LblProj" Text="PROJECTS · 7 DAYS" FontFamily="Segoe UI" FontSize="9"
+                     FontWeight="SemiBold" Foreground="#FF6B7280" Margin="0,0,0,4" Background="Transparent"/>
+          <StackPanel x:Name="ProjRows"/>
+        </StackPanel>
+       </StackPanel>
+
         <Border Background="#1AFFFFFF" Height="1" Margin="0,0,0,7"/>
         <Grid>
           <Grid.ColumnDefinitions>

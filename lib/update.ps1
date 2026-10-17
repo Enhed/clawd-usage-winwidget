@@ -34,6 +34,10 @@ function Update-Texts {
     $UI.LblSessions.Text    = T 'ui.sessions'
     $UI.LblDay.Text         = T 'ui.day'
     $UI.LblWeek7.Text       = T 'ui.week7'
+    $UI.LblHist.Text        = T 'ui.hist'
+    $UI.LblProj.Text        = T 'ui.projects'
+    $UI.LblProj.ToolTip     = T 'hist.projTip'
+    $script:HistKey = $null
     foreach ($k in $TrayItems.Keys) { $TrayItems[$k].Text = T $k }
     $UI.Mascot.ContextMenu  = New-MascotMenu
     $UI.Sky.ContextMenu     = $UI.Mascot.ContextMenu
@@ -274,6 +278,7 @@ function Update-Widget {
     Set-Period $(if ($real) { $real.week7 }) $UI.LineWeek7 $UI.LineWeek72
     if ($script:Cfg.showStats) { $UI.StatsPanel.Visibility = 'Visible' }
     else                       { $UI.StatsPanel.Visibility = 'Collapsed' }
+    Update-History
 
     $hasUpdate = Test-UpdateAvailable
     # Recreate the tooltip only when its content changes: replacing ToolTip every tick
