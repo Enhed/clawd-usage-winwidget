@@ -60,7 +60,8 @@ $UI.ChatSend.add_MouseLeftButtonDown({
     if ($script:ChatProc) { Stop-ChatReply } else { Submit-ChatInput }
 })
 $UI.ChatBusy.TextTrimming = 'CharacterEllipsis'
-# Enter sends, Shift+Enter - a new line.
+# Enter sends, Shift+Enter - a new line. AcceptsReturn stays on in the XAML all the
+# same: without it WPF pastes only the first line of a multi-line text.
 $UI.ChatInput.add_PreviewKeyDown({
     param($s, $e)
     if ($e.Key -ne [System.Windows.Input.Key]::Return) { return }

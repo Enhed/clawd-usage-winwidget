@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.1
+
+- **Pasting into the chat:** a multi-line text is pasted whole - before, only
+  its first line got into the field.
+
 ## 1.12.0
 
 - **Copy from the chat:** an icon in a message's corner on hover (a tick once

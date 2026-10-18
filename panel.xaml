@@ -96,7 +96,7 @@
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="ChatInput" Style="{StaticResource Field}" AcceptsReturn="False" MaxHeight="90"/>
+            <TextBox x:Name="ChatInput" Style="{StaticResource Field}" AcceptsReturn="True" MaxHeight="90"/>
             <TextBlock x:Name="ChatHint" Style="{StaticResource Hint}"/>
             <TextBlock x:Name="ChatSend" Grid.Column="1" Text="&#xE724;" FontFamily="Segoe MDL2 Assets"
                        FontSize="11" Foreground="#FF60A5FA" Margin="4,0,8,0" VerticalAlignment="Center"
