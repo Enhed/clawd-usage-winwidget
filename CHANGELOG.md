@@ -2,6 +2,9 @@
 
 ## 1.15.0
 
+👻 **Halloween update**: the Halloween theme is animated now, and Clawd has
+four spooky skins to dress up in.
+
 - **Halloween theme comes alive**: fog creeping along the bottom of the widget,
   green will-o'-the-wisps, bats flapping across, a ghost floating by now and
   then and a spider letting itself down from its web in the corner; in the sky
