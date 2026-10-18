@@ -25,7 +25,8 @@ function Get-Sessions {
         # waiting - the session waits for the user: permission, question, dialog (see waitingFor).
         $list += @{ name = $name; cwd = [string]$j.cwd; busy = ($j.status -eq 'busy')
                     waiting = ($j.status -eq 'waiting'); waitingFor = [string]$j.waitingFor
-                    kind = [string]$j.kind; sessionId = [string]$j.sessionId; pid = [int]$j.pid }
+                    kind = [string]$j.kind; sessionId = [string]$j.sessionId; pid = [int]$j.pid
+                    started = $proc.StartTime }
     }
     return ,$list
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.12.3
+
+- **Remote Control of Clawd's session:** when a resumed session could not
+  reconnect to Remote Control, it kept running unreachable from the phone. Now
+  the widget notices it and restarts the session as a fork of the same
+  conversation (a new Remote Control session), and if that fails too - as a
+  fresh conversation.
+
 ## 1.12.2
 
 - **Links in the chat:** an http(s) address or a markdown `[text](url)` in a

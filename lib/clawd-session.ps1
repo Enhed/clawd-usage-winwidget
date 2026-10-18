@@ -11,6 +11,11 @@ $ClawdStatePath     = Join-Path $script:Root 'clawd-state.json'
 $SessionPromptPath  = Join-Path $script:Root 'clawd-session-prompt.md'
 $script:ClawdLaunch = [datetime]::MinValue
 $script:ClawdMisses = 0     # launches after which no session showed up
+# Remote Control may fail to reconnect to a resumed conversation while the session
+# itself keeps running. Each such loss steps this up: 1 - next start forks the
+# conversation (--fork-session, a new id and a new Remote Control session),
+# 2 - next start is a fresh conversation, 3 - give up until restart.
+$script:ClawdRcRetry = 0
 
 function Get-ClawdSessionName {
     $n = [string]$script:Cfg.clawdSessionName
@@ -37,6 +42,33 @@ function Test-FolderTrusted([string]$dir) {
     } catch { return $false }
 }
 
+function Get-ClawdTranscriptPath([string]$id) {
+    $key = [regex]::Replace((Get-ClawdHome), '[^A-Za-z0-9]', '-')
+    return [System.IO.Path]::Combine((Get-ClaudeConfigDir), "projects\$key\$id.jsonl")
+}
+
+# True when the session's conversation says Remote Control was lost after the
+# session's process started (older lines may come from a resumed conversation).
+function Test-ClawdRcLost($s) {
+    if (-not $s.sessionId -or -not $s.started) { return $false }
+    $since = ([datetime]$s.started).ToUniversalTime()
+    try {
+        $fs = New-Object System.IO.FileStream((Get-ClawdTranscriptPath $s.sessionId), 'Open', 'Read', 'ReadWrite')
+        try {
+            $n = [int][math]::Min($fs.Length, 262144)
+            [void]$fs.Seek(-$n, 'End')
+            $buf = New-Object byte[] $n
+            [void]$fs.Read($buf, 0, $n)
+        } finally { $fs.Dispose() }
+    } catch { return $false }
+    foreach ($line in ([System.Text.Encoding]::UTF8.GetString($buf) -split "`n")) {
+        if ($line -notlike '*"content":"Remote Control disconnected*') { continue }
+        $m = [regex]::Match($line, '"timestamp":"([^"]+)"')
+        if ($m.Success -and [datetime]::Parse($m.Groups[1].Value).ToUniversalTime() -ge $since) { return $true }
+    }
+    return $false
+}
+
 function Start-ClawdSession {
     $dir = Get-ClawdHome
     $q = { param($s) "'" + ($s -replace "'", "''") + "'" }
@@ -45,9 +77,9 @@ function Start-ClawdSession {
     # Its own conversation if there is one (conversations live in
     # projects\<path with every non-alphanumeric as -> in Claude Code's folder), a new one otherwise.
     $id = Get-ClawdSessionId
-    $key = [regex]::Replace($dir, '[^A-Za-z0-9]', '-')
-    if ($id -and (Test-Path -LiteralPath ([System.IO.Path]::Combine((Get-ClaudeConfigDir), "projects\$key\$id.jsonl")))) {
+    if ($id -and $script:ClawdRcRetry -lt 2 -and (Test-Path -LiteralPath (Get-ClawdTranscriptPath $id))) {
         $cli += @('--resume', $id)
+        if ($script:ClawdRcRetry -eq 1) { $cli += '--fork-session' }
     }
     $cli += @('--remote-control', $name, '--append-system-prompt-file', (& $q $SessionPromptPath))
 
@@ -109,7 +141,22 @@ function Update-ClawdSession($ss) {
     if ($there.Count) {
         $script:ClawdMisses = 0
         $mine = $there | Where-Object { $_.name -eq (Get-ClawdSessionName) } | Select-Object -First 1
-        if ($mine -and $mine.sessionId) { Set-ClawdSessionId $mine.sessionId }
+        if (-not ($mine -and $mine.sessionId)) { return }
+        if ($script:ClawdRcRetry -lt 3 -and (Test-ClawdRcLost $mine)) {
+            # Alive but unreachable from the phone - stop it, the next tick starts another.
+            $script:ClawdRcRetry++
+            $msg = $(if ($script:ClawdRcRetry -ge 3) { 'giving up until restart' } else { 'restarting' })
+            try {
+                "$(Get-Date -Format s)`tclawd session: Remote Control lost, $msg" |
+                    Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
+            } catch {}
+            if ($script:ClawdRcRetry -lt 3) {
+                & taskkill.exe /PID $mine.pid /T /F 2>&1 | Out-Null
+                $script:ClawdLaunch = [datetime]::MinValue
+            }
+            return
+        }
+        Set-ClawdSessionId $mine.sessionId
         return
     }
     # Just started - give it time to show up in the registry.
