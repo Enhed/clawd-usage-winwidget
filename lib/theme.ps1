@@ -5,7 +5,8 @@
 # The XAML gets them as {DynamicResource} (Convert-ThemeXaml), the code through
 # New-Brush. Level colours (green/yellow/red), the sky and Clawd are not themed.
 # A theme may also have a pattern: small pixel pictures repeated faintly over the
-# window's background, like a chat wallpaper.
+# window's background, like a chat wallpaper - and a scene, an animated backdrop
+# of the main window (lib\scene.ps1).
 
 $ThemeBase = [ordered]@{
     bg      = '#FF1A1A1E'   # window
@@ -45,11 +46,14 @@ $Themes = [ordered]@{
                    textHi = '#FFFFF7ED'; text = '#FFF5E6DA'; text2 = '#FFE7D3C4'; text3 = '#FFC9B3A4'; text4 = '#FFB39E91'
                    muted = '#FFA08B9C'; dim = '#FF7E6A80'; faint = '#FF5B4A63'; off = '#FF3F3048'
                    accent = '#FFF97316'; accent2 = '#FFFDBA74'; pattern = 'halloween' }
-    # The main window also gets a moving starfield and planets (lib\space.ps1).
     space    = @{ bg = '#FF0E0820'; code = '#FF09051A'; card = '#FF1C1436'; card2 = '#FF281D4C'
                   textHi = '#FFF5F3FF'; text = '#FFE9E5F8'; text2 = '#FFD6D0EE'; text3 = '#FFB8B0D6'; text4 = '#FFA49BC6'
                   muted = '#FF9A90BE'; dim = '#FF746A99'; faint = '#FF544A78'; off = '#FF3A3160'
-                  accent = '#FFA78BFA'; accent2 = '#FFC4B5FD'; pattern = 'space' }
+                  accent = '#FFA78BFA'; accent2 = '#FFC4B5FD'; pattern = 'space'; scene = 'space' }
+    ocean    = @{ bg = '#FF0A2236'; code = '#FF071A2A'; card = '#FF0F3149'; card2 = '#FF143E5C'
+                  textHi = '#FFF0F9FF'; text = '#FFE0F2FE'; text2 = '#FFCDE6F5'; text3 = '#FFA9C9DC'; text4 = '#FF93B6CB'
+                  muted = '#FF86A9BF'; dim = '#FF62849A'; faint = '#FF456679'; off = '#FF2F4C5E'
+                  accent = '#FF22D3EE'; accent2 = '#FF67E8F9'; pattern = 'ocean'; scene = 'ocean' }
 }
 
 # Patterns: a tile of sprites ("." - empty, a letter - a colour), repeated over the window.
@@ -75,6 +79,18 @@ $Patterns = @{
             @{ x = 24; y = 47; art = @('p') }; @{ x = 63; y = 58; art = @('.w.', 'www', '.w.') }
             @{ x = 88; y = 40; art = @('v') }; @{ x = 6; y = 79; art = @('b') }; @{ x = 47; y = 86; art = @('w') }
             @{ x = 83; y = 81; art = @('p') }
+        )
+    }
+    ocean = @{
+        tile = 104; px = 2; opacity = 0.07
+        colors = @{ w = '#FFE0F2FE'; p = '#FFF9A8D4'; y = '#FFFDE68A' }
+        sprites = @(
+            @{ x = 8; y = 10; art = @('.ww.', 'w..w', 'w..w', '.ww.') }
+            @{ x = 22; y = 2; art = @('w') }
+            @{ x = 56; y = 28; art = @('.p.p.', 'ppppp', '.pyp.', 'ppppp', '.p.p.') }
+            @{ x = 30; y = 70; art = @('.w.', 'w.w', '.w.') }
+            @{ x = 84; y = 76; art = @('.ww.', 'w..w', 'w..w', '.ww.') }
+            @{ x = 94; y = 62; art = @('w') }
         )
     }
 }
@@ -196,7 +212,7 @@ function Set-Theme {
     }
     Set-ThemePattern
     # Defined further down the module list; the first Set-Theme runs before it.
-    if (Get-Command Sync-Space -ErrorAction SilentlyContinue) { Sync-Space }
+    if (Get-Command Sync-Scene -ErrorAction SilentlyContinue) { Sync-Scene }
 }
 
 Set-Theme

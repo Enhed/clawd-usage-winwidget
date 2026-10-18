@@ -166,17 +166,8 @@ $mascotTimer.add_Tick({
                 Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
         } catch {}
     }
-    if ($script:Space.on) {
-        try { Step-Space } catch {
-            $script:Space.broken = $true
-            Sync-Space
-            try {
-                "$(Get-Date -Format s)`tspace: $($_.Exception.Message)`t$($_.InvocationInfo.PositionMessage)" |
-                    Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
-            } catch {}
-        }
-        return
-    }
+    # An animated theme takes the sky row's place (lib\scene.ps1).
+    if ($script:Scene.id) { Step-Scene; return }
     if ($UI.Sky.Visibility -ne 'Visible' -or $script:Sky.broken) { return }
     try { Step-Sky } catch {
         $script:Sky.broken = $true

@@ -1,44 +1,17 @@
 ﻿# ----------------------------------------------------------------- space ----
 # The Space theme, after the one in clawd-usage-mac by @fl03er: a starfield behind
 # the whole window - twinkling stars, drifting nebulae, a shooting star now and
-# then - and in the sky row, in place of the weather, two slowly turning pixel
-# planets (one ringed) and a little ship crossing. Stepped by the mascot's timer.
+# then - and in the sky row two slowly turning pixel planets (one ringed) and a
+# little ship crossing.
 
-$script:Space = @{ on = $false; tick = 0; ship = 0.25; shoot = -1; sx = 0.0; sy = 0.0; broken = $false }
-
-# The backdrop: a canvas between the theme's pattern layer and the window's content
-# (Add-ThemeTo -Pattern has put a Grid [pattern, content] into the root Border).
-$SpaceFx = New-Object System.Windows.Controls.Canvas
-$SpaceFx.IsHitTestVisible = $false
-$SpaceFx.Visibility = 'Collapsed'
-$SpaceFx.Margin = $win.Content.Child.Children[0].Margin
-$win.Content.Child.Children.Insert(1, $SpaceFx)
-# Clipped to the window's rounded corners.
-$SpaceFx.add_SizeChanged({
-    $r = $win.Content.CornerRadius.TopLeft
-    $SpaceFx.Clip = New-Object System.Windows.Media.RectangleGeometry (
-        [System.Windows.Rect]::new(0, 0, $SpaceFx.ActualWidth, $SpaceFx.ActualHeight)), $r, $r
-})
-
-function New-SpaceShape($parent, [string]$kind, [double]$w, [double]$h, $fill) {
-    $s = New-Object "System.Windows.Shapes.$kind"
-    if ($w) { $s.Width = $w; $s.Height = $h }
-    if ($fill) { $s.Fill = $(if ($fill -is [string]) { New-Brush $fill } else { $fill }) }
-    [void]$parent.Children.Add($s)
-    return $s
-}
-
-function New-Glow([string]$hex, [double]$a) {
-    $c = ConvertTo-Color $hex
-    return New-Object System.Windows.Media.RadialGradientBrush (
-        [System.Windows.Media.Color]::FromArgb([byte](255 * $a), $c.R, $c.G, $c.B)),
-        ([System.Windows.Media.Color]::FromArgb(0, $c.R, $c.G, $c.B))
-}
+$script:Space = @{ ship = 0.25; shoot = -1; sx = 0.0; sy = 0.0 }
+$SpaceFx = New-SceneBackdrop
+$SpaceSky = New-SceneSky
 
 # Nebulae: soft purple, pink and indigo clouds, drifting slowly.
 $script:Nebulae = @()
 foreach ($n in @(@('#7C3AED', 0.22), @('#DB2777', 0.13), @('#4F46E5', 0.15))) {
-    $script:Nebulae += New-SpaceShape $SpaceFx Ellipse 10 10 (New-Glow $n[0] $n[1])
+    $script:Nebulae += New-SceneShape $SpaceFx Ellipse 10 10 (New-Glow $n[0] $n[1])
 }
 
 # Stars sit at fixed points over a strip taller than the window ever gets, so
@@ -48,7 +21,7 @@ $SpaceStarColors = @('#FFFFFFFF', '#FFE9D5FF', '#FFC4B5FD', '#FFF9A8D4', '#FFA5B
 $SpaceW = 262; $SpaceH = 900
 $script:StarGroups = @()
 for ($g = 0; $g -lt 10; $g++) {
-    $p = New-SpaceShape $SpaceFx Path 0 0 $SpaceStarColors[$g % $SpaceStarColors.Count]
+    $p = New-SceneShape $SpaceFx Path 0 0 $SpaceStarColors[$g % $SpaceStarColors.Count]
     $p.Data = New-Object System.Windows.Media.GeometryGroup
     $script:StarGroups += @{ p = $p; ph = $script:Rnd.NextDouble() * 6.28; v = 0.05 + 0.15 * $script:Rnd.NextDouble() }
 }
@@ -66,18 +39,18 @@ for ($i = 0; $i -lt 14; $i++) {
     [System.Windows.Controls.Canvas]::SetLeft($c, [math]::Round($script:Rnd.NextDouble() * $SpaceW))
     [System.Windows.Controls.Canvas]::SetTop($c, [math]::Round($c.Tag))
     [void]$SpaceFx.Children.Add($c)
-    $glow = New-SpaceShape $c Ellipse 14 14 (New-Glow $hex 0.25)
+    $glow = New-SceneShape $c Ellipse 14 14 (New-Glow $hex 0.25)
     [System.Windows.Controls.Canvas]::SetLeft($glow, -7); [System.Windows.Controls.Canvas]::SetTop($glow, -7)
     # Rays are 12 long around the centre, scaled to 4..12 as the star flares.
     $rays = @()
     foreach ($r in @([System.Windows.Rect]::new(-6, -0.5, 12, 1), [System.Windows.Rect]::new(-0.5, -6, 1, 12))) {
-        $ray = New-SpaceShape $c Path 0 0 $hex
+        $ray = New-SceneShape $c Path 0 0 $hex
         $ray.Data = [System.Windows.Media.RectangleGeometry]::new($r)
         $ray.Opacity = 0.6
         $ray.RenderTransform = New-Object System.Windows.Media.ScaleTransform 1, 1
         $rays += $ray.RenderTransform
     }
-    $core = New-SpaceShape $c Rectangle 2 2 $hex
+    $core = New-SceneShape $c Rectangle 2 2 $hex
     [System.Windows.Controls.Canvas]::SetLeft($core, -1); [System.Windows.Controls.Canvas]::SetTop($core, -1)
     $script:BrightStars += @{ c = $c; rays = $rays; ph = $script:Rnd.NextDouble() * 6.28; v = 0.05 + 0.15 * $script:Rnd.NextDouble() }
 }
@@ -91,18 +64,8 @@ $tail.X1 = 0; $tail.Y1 = 0; $tail.X2 = 26; $tail.Y2 = -10; $tail.StrokeThickness
 $tail.Stroke = New-Object System.Windows.Media.LinearGradientBrush (
     (ConvertTo-Color '#CCFFFFFF'), (ConvertTo-Color '#00FFFFFF'), 0)
 [void]$ShootFx.Children.Add($tail)
-$head = New-SpaceShape $ShootFx Rectangle 2 2 '#FFFFFFFF'
+$head = New-SceneShape $ShootFx Rectangle 2 2 '#FFFFFFFF'
 [System.Windows.Controls.Canvas]::SetLeft($head, -1); [System.Windows.Controls.Canvas]::SetTop($head, -1)
-
-# The sky row: its own canvas next to the weather's, which the theme hides.
-$SpaceSky = New-Object System.Windows.Controls.Canvas
-$SpaceSky.IsHitTestVisible = $false
-$SpaceSky.Visibility = 'Collapsed'
-$skyGrid = New-Object System.Windows.Controls.Grid
-$UI.Sky.Child = $null
-[void]$skyGrid.Children.Add($UI.SkyFx)
-[void]$skyGrid.Children.Add($SpaceSky)
-$UI.Sky.Child = $skyGrid
 
 # Planets: a pixel sphere with bands of colour wrapped round it, lit from the upper
 # left. A turn is $PlanetFrames bitmaps, each drawn the first time it is needed.
@@ -143,8 +106,8 @@ function New-PlanetFrame($p, [int]$k) {
 
 # A ring: the far half behind the planet, the near half in front.
 function New-RingHalf($p, [double]$d, [bool]$back) {
-    $e = New-SpaceShape $SpaceSky Ellipse ($d * 1.9) ($d * 0.44) $null
-    $e.Stroke = New-Brush $p.pal[3]
+    $e = New-SceneShape $SpaceSky Ellipse ($d * 1.9) ($d * 0.44) $null
+    $e.Stroke = New-SceneBrush $p.pal[3]
     $e.StrokeThickness = 1.6
     $e.Opacity = $(if ($back) { 0.45 } else { 0.85 })
     $e.Clip = [System.Windows.Media.RectangleGeometry]::new(
@@ -156,7 +119,7 @@ foreach ($p in $script:Planets) {
     $p.cols = @($p.pal | ForEach-Object { ConvertTo-Color $_ })
     $p.frames = @{}
     $p.d = (2 * $p.r + 1) * $p.px
-    $p.glow = New-SpaceShape $SpaceSky Ellipse ($p.d * 2) ($p.d * 2) (New-Glow $p.pal[2] 0.28)
+    $p.glow = New-SceneShape $SpaceSky Ellipse ($p.d * 2) ($p.d * 2) (New-Glow $p.pal[2] 0.28)
     if ($p.ring) { $p.back = New-RingHalf $p $p.d $true }
     $p.img = New-Object System.Windows.Controls.Image
     $p.img.Width = $p.d; $p.img.Height = $p.d
@@ -170,23 +133,16 @@ $ShipPx = 1.6
 $ShipArt = @('....##....', '..######..', '.##o##o##.', '##########', '.#..##..#.')
 $ShipFx = New-Object System.Windows.Controls.Canvas
 [void]$SpaceSky.Children.Add($ShipFx)
-(New-SpaceShape $ShipFx Path 0 0 '#FF94A3B8').Data = New-PixelGeo $ShipArt $ShipPx
-(New-SpaceShape $ShipFx Path 0 0 '#FF67E8F9').Data = New-PixelGeo $ShipArt $ShipPx 'o'
-$ShipFlame = New-SpaceShape $ShipFx Rectangle 0 $ShipPx '#D9F472B6'
+(New-SceneShape $ShipFx Path 0 0 '#FF94A3B8').Data = New-PixelGeo $ShipArt $ShipPx
+(New-SceneShape $ShipFx Path 0 0 '#FF67E8F9').Data = New-PixelGeo $ShipArt $ShipPx 'o'
+$ShipFlame = New-SceneShape $ShipFx Rectangle 0 $ShipPx '#D9F472B6'
 $ShipFlame.Height = $ShipPx
 [System.Windows.Controls.Canvas]::SetTop($ShipFlame, 3 * $ShipPx)
-$ShipSpark = New-SpaceShape $ShipFx Rectangle $ShipPx $ShipPx '#FFFDE68A'
+$ShipSpark = New-SceneShape $ShipFx Rectangle $ShipPx $ShipPx '#FFFDE68A'
 [System.Windows.Controls.Canvas]::SetLeft($ShipSpark, -$ShipPx); [System.Windows.Controls.Canvas]::SetTop($ShipSpark, 3 * $ShipPx)
 
-function Set-At($el, [double]$x, [double]$y) {
-    [System.Windows.Controls.Canvas]::SetLeft($el, $x)
-    [System.Windows.Controls.Canvas]::SetTop($el, $y)
-}
-
-function Step-Space {
+function Step-Space([int]$t) {
     $s = $script:Space
-    $s.tick++
-    $t = $s.tick
     $w = $SpaceFx.ActualWidth; $h = $SpaceFx.ActualHeight
     if ($w -le 0 -or $h -le 0) { return }
 
@@ -243,16 +199,5 @@ function Step-Space {
     [System.Windows.Controls.Canvas]::SetLeft($ShipFlame, -$fl)
 }
 
-# On with the Space theme: the backdrop shows, and the sky row trades the weather
-# for the planets (the sky's own colour would hide the stars behind it).
-function Sync-Space {
-    $on = ((Get-ThemeId) -eq 'space') -and -not $script:Space.broken
-    $script:Space.on = $on
-    $vis = $(if ($on) { 'Visible' } else { 'Collapsed' })
-    $SpaceFx.Visibility = $vis
-    $SpaceSky.Visibility = $vis
-    $UI.SkyFx.Visibility = $(if ($on) { 'Collapsed' } else { 'Visible' })
-    $UI.Sky.Background = $(if ($on) { $null } else { $SkyBrush })
-    if ($on) { Step-Space }
-}
-Sync-Space
+$Scenes.space = @{ back = $SpaceFx; sky = $SpaceSky; step = ${function:Step-Space} }
+Sync-Scene
