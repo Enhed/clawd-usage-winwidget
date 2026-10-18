@@ -109,9 +109,9 @@ $UI.Sky.Child = $skyGrid
 $PlanetFrames = 120
 $PlanetDark = ConvertTo-Color '#FF0B0518'
 $script:Planets = @(
-    @{ fx = 0.52; fy = 0.45; amp = 0.07; r = 8; px = 1.6; spin = 0.5; seed = 1.3; ring = $false
+    @{ fx = 0.47; fy = 0.45; amp = 0.06; r = 8; px = 1.6; spin = 0.5; seed = 1.3; ring = $false
        pal = @('#FF2E1065', '#FF6D28D9', '#FFA855F7', '#FFF472B6', '#FF67E8F9', '#FFC084FC') }
-    @{ fx = 0.82; fy = 0.32; amp = 0.04; r = 5; px = 1.6; spin = 0.7; seed = 4.1; ring = $true
+    @{ fx = 0.7; fy = 0.32; amp = 0.03; r = 5; px = 1.6; spin = 0.7; seed = 4.1; ring = $true
        pal = @('#FF1E1B4B', '#FF3730A3', '#FF6366F1', '#FFA5B4FC', '#FF818CF8') }
 )
 
