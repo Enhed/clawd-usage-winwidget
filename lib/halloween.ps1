@@ -8,7 +8,7 @@
 $SpookFx  = New-SceneBackdrop
 $SpookSky = New-SceneSky
 $SpookPx  = 1.6
-$script:Spook = @{ w = 0; ghost = $null; wait = 80; spider = 0.0; spiderT = 0; scare = -1 }
+$script:Spook = @{ w = 0; ghost = $null; wait = 80; spider = 0.0; spiderT = 0; scare = -1; night = $null }
 
 # Fog: soft green and purple clouds creeping along the bottom.
 $script:Fog = @()
@@ -132,7 +132,7 @@ for ($x = 0; $x -lt 170; $x++) {
 }
 $SpookGround = New-ScenePixels $SpookSky $ground $SpookPx @{ d = '#FF2E1F3D'; g = '#FF3F2F52' }
 
-# The scare, a secret: once in a long while, at a random moment, lightning flashes
+# The scare, a secret: at midnight, and not every night, lightning flashes
 # twice, the lights go out and a huge face with burning eyes and a jagged grin looms
 # out of the dark behind the window, blinks and fades - and Clawd jumps.
 $ScareLen = 70
@@ -258,8 +258,14 @@ function Step-Halloween([int]$t) {
         }
     }
 
-    # About once in half an hour of the theme on screen.
-    if ($s.scare -lt 0 -and $script:Rnd.Next(20000) -eq 0) { $s.scare = 0 }
+    # Midnight strikes - one night in three, while the window is on screen.
+    if ($s.scare -lt 0 -and $t % 10 -eq 0) {
+        $now = Get-Date
+        if ($now.Hour -eq 0 -and $now.Minute -eq 0 -and $s.night -ne $now.Date) {
+            $s.night = $now.Date
+            if ($script:Rnd.Next(3) -eq 0) { $s.scare = 0 }
+        }
+    }
     if ($s.scare -ge 0) {
         Step-Scare $s.scare $w $h
         $s.scare++
