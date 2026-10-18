@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.4
+
+- **Reset time:** also read when `/usage` prints it as `Oct 17 at 2:29pm`,
+  without the comma, as some Claude Code versions do.
+
 ## 1.12.3
 
 - **Remote Control of Clawd's session:** when a resumed session could not

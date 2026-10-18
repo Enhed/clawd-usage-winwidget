@@ -483,6 +483,9 @@ status bar. Made a port? Open an issue with a link and it'll be listed here.
   HTML widget on an iPhone (via [Preen](https://preendisplay.com)), fed by your Mac.
 - [plasma-clawd-usage](https://github.com/david-x3d/plasma-clawd-usage)
   by [@david-x3d](https://github.com/david-x3d) — a KDE Plasma widget for Linux.
+- [CrabBar](https://github.com/Breitec/crabbar)
+  by [@Breitec](https://github.com/Breitec) — a native macOS menu bar app in
+  Swift/SwiftUI with Clawd's panel, WidgetKit widgets and an optional iPhone app.
 - [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
   by [@david-x3d](https://github.com/david-x3d) — home-screen widgets for Android
   with Clawd's animations, hearts and the sky; reads the limits on the phone, no

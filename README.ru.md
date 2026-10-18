@@ -553,6 +553,9 @@ macOS, Linux, телефона или строки состояния. Сдел�
   на iPhone (через [Preen](https://preendisplay.com)), данные отдаёт Mac.
 - [plasma-clawd-usage](https://github.com/david-x3d/plasma-clawd-usage)
   от [@david-x3d](https://github.com/david-x3d) — виджет KDE Plasma для Linux.
+- [CrabBar](https://github.com/Breitec/crabbar)
+  от [@Breitec](https://github.com/Breitec) — нативное приложение для строки меню
+  macOS на Swift/SwiftUI с панелью Clawd, виджетами WidgetKit и приложением для iPhone.
 - [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
   от [@david-x3d](https://github.com/david-x3d) — виджеты рабочего стола Android
   с анимациями Clawd, сердечками и небом; лимиты читает сам телефон, без сервера.

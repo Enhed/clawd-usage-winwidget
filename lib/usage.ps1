@@ -31,8 +31,8 @@ function Start-UsageProbe {
 }
 
 function Parse-ResetStamp([string]$s) {
-    # "Sep 16, 7:30am (Europe/Moscow)" or "Sep 21, 6am" -> DateTime in local time
-    $m = [regex]::Match($s, '([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m)')
+    # "Sep 16, 7:30am (Europe/Moscow)", "Sep 21, 6am" or "Oct 17 at 2:29pm" -> DateTime in local time
+    $m = [regex]::Match($s, '([A-Za-z]{3})\s+(\d{1,2}),?\s*(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap]m)')
     if (-not $m.Success) { return $null }
     try {
         $min = $m.Groups[4].Value

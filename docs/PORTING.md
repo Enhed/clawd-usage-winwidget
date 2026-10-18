@@ -55,7 +55,7 @@ Parsing (regexes as used in [`lib/usage.ps1`](../lib/usage.ps1)):
 | session % and reset | `Current session:\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?` |
 | week % and reset | `Current week \(all models\):\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?` |
 | Fable week % and reset | `Current week \(Fable\):\s*(\d+)%(?:[^\r\n]*?resets\s*([^\r\n]+))?` |
-| reset stamp | `([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m)` |
+| reset stamp | `([A-Za-z]{3})\s+(\d{1,2}),?\s*(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap]m)` (some Claude Code versions print `Oct 17 at 2:29pm` instead of `Oct 17, 2:29pm`) |
 | 24h / 7d block | `^Last 24h[^\n]*?(\d+)\s+requests?\b[^\n]*?(\d+)\s+sessions?\b` (singular when it is 1) + the indented lines below |
 
 Things that bite:
@@ -102,8 +102,9 @@ Claude Code keeps a registry of running sessions itself, one file per process
 
 **Files outlive their processes.** Only count a file if a process with that
 `pid` is alive. On Windows `procStart` is the process start time as a FILETIME
-(100 ns ticks since 1601, UTC), and the widget allows 5 s of drift. On other
-systems the format may differ; checking that the PID is alive (and, ideally,
+(100 ns ticks since 1601, UTC), and the widget allows 5 s of drift. On macOS
+it is a ctime-style string such as `Fri Oct 16 11:36:17 2026`, in UTC without
+a zone. On other systems the format may differ; checking that the PID is alive (and, ideally,
 is a `claude`/`node` process) is a good start.
 
 Also skip the processes you spawned yourself (your own `claude -p /usage`
