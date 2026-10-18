@@ -2,7 +2,7 @@
 
 ## 1.13.1
 
-- **Head tie skin** for Clawd: a striped tie knotted round his head, its end
+- **Head tie skin** for Clawd: a striped tie knotted on top of his head, its end
   sticking up.
 
 ## 1.13.0
