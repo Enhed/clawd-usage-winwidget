@@ -45,6 +45,11 @@ $Themes = [ordered]@{
                    textHi = '#FFFFF7ED'; text = '#FFF5E6DA'; text2 = '#FFE7D3C4'; text3 = '#FFC9B3A4'; text4 = '#FFB39E91'
                    muted = '#FFA08B9C'; dim = '#FF7E6A80'; faint = '#FF5B4A63'; off = '#FF3F3048'
                    accent = '#FFF97316'; accent2 = '#FFFDBA74'; pattern = 'halloween' }
+    # The main window also gets a moving starfield and planets (lib\space.ps1).
+    space    = @{ bg = '#FF0E0820'; code = '#FF09051A'; card = '#FF1C1436'; card2 = '#FF281D4C'
+                  textHi = '#FFF5F3FF'; text = '#FFE9E5F8'; text2 = '#FFD6D0EE'; text3 = '#FFB8B0D6'; text4 = '#FFA49BC6'
+                  muted = '#FF9A90BE'; dim = '#FF746A99'; faint = '#FF544A78'; off = '#FF3A3160'
+                  accent = '#FFA78BFA'; accent2 = '#FFC4B5FD'; pattern = 'space' }
 }
 
 # Patterns: a tile of sprites ("." - empty, a letter - a colour), repeated over the window.
@@ -60,6 +65,16 @@ $Patterns = @{
             @{ x = 76; y = 70; art = @('.y.', 'yyy', '.y.') }
             @{ x = 8; y = 84; art = @('y') }
             @{ x = 92; y = 4; art = @('y') }
+        )
+    }
+    space = @{
+        tile = 96; px = 1; opacity = 0.45
+        colors = @{ w = '#FFFFFFFF'; v = '#FFC4B5FD'; p = '#FFF9A8D4'; b = '#FF93C5FD' }
+        sprites = @(
+            @{ x = 10; y = 8; art = @('w') }; @{ x = 41; y = 22; art = @('v') }; @{ x = 77; y = 12; art = @('b') }
+            @{ x = 24; y = 47; art = @('p') }; @{ x = 63; y = 58; art = @('.w.', 'www', '.w.') }
+            @{ x = 88; y = 40; art = @('v') }; @{ x = 6; y = 79; art = @('b') }; @{ x = 47; y = 86; art = @('w') }
+            @{ x = 83; y = 81; art = @('p') }
         )
     }
 }
@@ -180,6 +195,8 @@ function Set-Theme {
         try { $script:ThemeBrush[$ThemeBase[$k]].Color = [System.Windows.Media.ColorConverter]::ConvertFromString($to) } catch {}
     }
     Set-ThemePattern
+    # Defined further down the module list; the first Set-Theme runs before it.
+    if (Get-Command Sync-Space -ErrorAction SilentlyContinue) { Sync-Space }
 }
 
 Set-Theme

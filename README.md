@@ -198,8 +198,12 @@ the clock. Turn it off with `showSky`.
 ![Themes](docs/themes.png)
 
 **Themes** — Settings → Look: Halloween, Classic, Midnight, Mocha, OLED black,
-Forest; they switch at once. Halloween has a wallpaper of tiny pumpkins, bats and
-ghosts. The default, By season, is Halloween in September–November and Classic
+Forest, Space; they switch at once. Halloween has a wallpaper of tiny pumpkins,
+bats and ghosts. Space, after the one in
+[clawd-usage-mac](https://github.com/fl03er/clawd-usage-mac), puts a twinkling
+starfield with drifting nebulae and shooting stars behind the whole widget, and in
+the sky row two slowly turning pixel planets and a little ship take the weather's
+place. The default, By season, is Halloween in September–November and Classic
 the rest of the year. `accent` in `config.json` (`"#F472B6"`) puts your own colour on
 links and the weekly bar over the theme's. The level colours of the bars, the sky
 and Clawd stay as they are.
@@ -414,7 +418,7 @@ are picked up on the fly, no restart needed.
 | `remoteSessions` | sessions running on other machines: a list of URLs or file paths, see below |
 | `showHistory` | the 7-day chart and top projects in details (off by default) |
 | `showMascot` / `showSky` | Clawd and the sky behind him |
-| `theme` | `auto` (by season: `halloween` in autumn, `classic` otherwise), `classic`, `midnight`, `mocha`, `oled`, `forest`, `halloween` (also in Settings) |
+| `theme` | `auto` (by season: `halloween` in autumn, `classic` otherwise), `classic`, `midnight`, `mocha`, `oled`, `forest`, `halloween`, `space` (also in Settings) |
 | `accent` | your own accent colour, `#RRGGBB`, over the theme's |
 | `skin` | Clawd's skin: a built in one or yours from `<clawdHome>\skins` (also in Settings) |
 | `weatherLat` / `weatherLon` | coordinates for weather; empty — by IP |

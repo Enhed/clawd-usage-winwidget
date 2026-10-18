@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.0
+
+- **Space theme** (Settings → Look), after the one in
+  [clawd-usage-mac](https://github.com/fl03er/clawd-usage-mac) by @fl03er: a
+  twinkling starfield with drifting nebulae and a shooting star now and then
+  behind the whole widget; in the sky row two slowly turning pixel planets, one
+  of them ringed, and a little ship crossing take the weather's place.
+
 ## 1.12.4
 
 - **Reset time:** also read when `/usage` prints it as `Oct 17 at 2:29pm`,
