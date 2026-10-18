@@ -1,0 +1,17 @@
+---
+name: Astronaut
+top: -4
+w: #F1F5F9
+g: #6693C5FD
+h: #E6FFFFFF
+c: #94A3B8
+---
+......wwwwwww.....
+....wwgggggggww...
+...wghhggggggggw..
+..wghgggggggggggw.
+..wh............w.
+..w.............w.
+..w.............w.
+..w.............w.
+..ccccccccccccccc.

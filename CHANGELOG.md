@@ -7,6 +7,7 @@
   twinkling starfield with drifting nebulae and a shooting star now and then
   behind the whole widget; in the sky row two slowly turning pixel planets, one
   of them ringed, and a little ship crossing take the weather's place.
+- **Astronaut skin** for Clawd: a glass helmet with a glint and a suit collar.
 
 ## 1.12.4
 
