@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.1
+
+- **Head tie skin** for Clawd: a striped tie knotted round his head, its end
+  sticking up.
+
 ## 1.13.0
 
 - **Space theme** (Settings → Look), after the one in

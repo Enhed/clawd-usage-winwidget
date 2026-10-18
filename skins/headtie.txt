@@ -1,0 +1,13 @@
+---
+name: Head tie
+top: -3
+r: #DC2626
+s: #1E3A8A
+k: #991B1B
+---
+................rr
+...............rsr
+..............rsr.
+...rrsrrrsrrrsrkk.
+...rsrrrsrrrsrrkr.
+................r.
