@@ -8,7 +8,7 @@
 $SpookFx  = New-SceneBackdrop
 $SpookSky = New-SceneSky
 $SpookPx  = 1.6
-$script:Spook = @{ w = 0; ghost = $null; wait = 80; spider = 0.0; spiderT = 0 }
+$script:Spook = @{ w = 0; ghost = $null; wait = 80; spider = 0.0; spiderT = 0; scare = -1 }
 
 # Fog: soft green and purple clouds creeping along the bottom.
 $script:Fog = @()
@@ -132,6 +132,66 @@ for ($x = 0; $x -lt 170; $x++) {
 }
 $SpookGround = New-ScenePixels $SpookSky $ground $SpookPx @{ d = '#FF2E1F3D'; g = '#FF3F2F52' }
 
+# The scare, a secret: once in a long while, at a random moment, lightning flashes
+# twice, the lights go out and a huge face with burning eyes and a jagged grin looms
+# out of the dark behind the window, blinks and fades - and Clawd jumps.
+$ScareLen = 70
+$SpookDark = New-SceneShape $SpookFx Rectangle 10 10 '#FF07040B'
+$SpookFlash = New-SceneShape $SpookFx Rectangle 10 10 '#FFF5F3FF'
+$SpookFace = New-Object System.Windows.Controls.Canvas
+[void]$SpookFx.Children.Add($SpookFace)
+$FacePx = 6
+$FaceArt = @(
+    'rrr................rrr',
+    'rrrrr............rrrrr',
+    'rryyrr..........rryyrr',
+    'rryyrr..........rryyrr',
+    'rryyrr..........rryyrr',
+    '.rrrr............rrrr.',
+    '......................',
+    '......................',
+    'm....................m',
+    'mm..................mm',
+    '.mmwmmwmmwmmwmmwmmwmm.',
+    '..mmmmmmmmmmmmmmmmmm..',
+    '....mmwmmwmmwmmwmm....',
+    '.......mmmmmmmm.......'
+)
+foreach ($x in @(3, 19)) {
+    $g = New-SceneShape $SpookFace Ellipse 70 70 (New-Glow '#DC2626' 0.6)
+    Set-At $g ($x * $FacePx - 35) (3 * $FacePx - 35)
+}
+$FaceMouth = New-ScenePixels $SpookFace $FaceArt $FacePx @{ m = '#FFEA580C'; w = '#FF07040B' }
+$FaceEyes = New-ScenePixels $SpookFace $FaceArt $FacePx @{ r = '#FFDC2626'; y = '#FFFEF08A' }
+$FaceW = 22 * $FacePx; $FaceH = 14 * $FacePx
+foreach ($e in @($SpookDark, $SpookFlash, $SpookFace)) { $e.Opacity = 0; $e.Visibility = 'Collapsed' }
+
+function Step-Scare([int]$k, [double]$w, [double]$h) {
+    $vis = $(if ($k -ge 0) { 'Visible' } else { 'Collapsed' })
+    foreach ($e in @($SpookDark, $SpookFlash, $SpookFace)) { $e.Visibility = $vis }
+    if ($k -lt 0) { $SpookSky.Opacity = 1; return }
+    $SpookDark.Width = $w; $SpookDark.Height = $h
+    $SpookFlash.Width = $w; $SpookFlash.Height = $h
+    # Two flashes of lightning, the dark falls, the face looms, holds, blinks, fades.
+    $SpookFlash.Opacity = $(switch ($k) { 0 { 0.5 } 1 { 0.15 } 3 { 0.4 } 4 { 0.1 } default { 0 } })
+    $dark = $(if ($k -lt 4) { 0 } elseif ($k -lt 12) { ($k - 4) / 8.0 } elseif ($k -lt $ScareLen - 12) { 1 }
+              else { ($ScareLen - $k) / 12.0 })
+    $SpookDark.Opacity = 0.8 * $dark
+    $SpookSky.Opacity = 1 - 0.6 * $dark
+    $SpookFace.Opacity = $(if ($k -lt 12) { 0 } elseif ($k -lt 30) { ($k - 12) / 18.0 } elseif ($k -lt $ScareLen - 16) { 1 }
+                           else { [math]::Max(0, ($ScareLen - 6 - $k) / 10.0) })
+    $FaceEyes.Visibility = $(if ($k -ge 40 -and $k -lt 43) { 'Collapsed' } else { 'Visible' })
+    # Creeping a little closer while it is there.
+    $z = 0.9 + 0.15 * $k / $ScareLen
+    $SpookFace.RenderTransform = New-Object System.Windows.Media.ScaleTransform $z, $z, ($FaceW / 2), ($FaceH / 2)
+    Set-At $SpookFace ([math]::Round(($w - $FaceW) / 2)) ([math]::Round(($h - $FaceH) * 0.4))
+    # Clawd startles - unless he is asleep, lying flat or busy with something already.
+    if ($k -eq 24) {
+        $m = $script:Mz
+        if ($m -and -not $m.act -and $m.mood -ne 'dead' -and $m.cur -ne 'dead' -and -not $m.buried) { Start-MascotAct 'jump' }
+    }
+}
+
 function Step-Halloween([int]$t) {
     $s = $script:Spook
     $w = $SpookFx.ActualWidth; $h = $SpookFx.ActualHeight
@@ -196,6 +256,14 @@ function Step-Halloween([int]$t) {
             $GhostHem[1].Visibility = $(if ($hem -eq 1) { 'Visible' } else { 'Collapsed' })
             Set-At $SpookGhost ([math]::Round($w - ($w + 22) * $s.ghost)) ([math]::Round($s.gy + 6 * [math]::Sin($t / 12.0)))
         }
+    }
+
+    # About once in half an hour of the theme on screen.
+    if ($s.scare -lt 0 -and $script:Rnd.Next(20000) -eq 0) { $s.scare = 0 }
+    if ($s.scare -ge 0) {
+        Step-Scare $s.scare $w $h
+        $s.scare++
+        if ($s.scare -ge $ScareLen) { $s.scare = -1; Step-Scare -1 $w $h }
     }
 
     # The sky row.
