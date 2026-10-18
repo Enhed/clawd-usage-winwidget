@@ -572,6 +572,10 @@ macOS, Linux, телефона или строки состояния. Сдел�
   от [@intelQong](https://github.com/intelQong) — виджет Scriptable для экрана
   «Домой» и экрана блокировки iPhone, данные отдаёт `claude -p /usage` по cron
   на Linux-машине.
+- [clawd-usage-linux](https://github.com/Ivan1Rev/clawd-usage-linux)
+  от [@Ivan1Rev](https://github.com/Ivan1Rev) — плавающее окно и иконка в трее
+  для большинства рабочих столов Linux (GNOME, KDE, XFCE…) на Python + Qt,
+  с Clawd, сердечками и небом.
 
 ## Лицензия
 

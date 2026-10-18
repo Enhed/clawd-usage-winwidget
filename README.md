@@ -502,6 +502,10 @@ status bar. Made a port? Open an issue with a link and it'll be listed here.
 - [claude-usage-iOS-widget](https://github.com/intelQong/claude-usage-iOS-widget)
   by [@intelQong](https://github.com/intelQong) — a Scriptable widget for the iPhone
   Home Screen and Lock Screen, fed by `claude -p /usage` from cron on a Linux box.
+- [clawd-usage-linux](https://github.com/Ivan1Rev/clawd-usage-linux)
+  by [@Ivan1Rev](https://github.com/Ivan1Rev) — a floating window + tray icon for
+  most Linux desktops (GNOME, KDE, XFCE…) in Python + Qt, with Clawd, the hearts
+  and the sky.
 
 ## License
 
