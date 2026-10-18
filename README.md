@@ -486,6 +486,9 @@ status bar. Made a port? Open an issue with a link and it'll be listed here.
 - [CrabBar](https://github.com/Breitec/crabbar)
   by [@Breitec](https://github.com/Breitec) — a native macOS menu bar app in
   Swift/SwiftUI with Clawd's panel, WidgetKit widgets and an optional iPhone app.
+- [clawd-usage-mac](https://github.com/fl03er/clawd-usage-mac)
+  by [@fl03er](https://github.com/fl03er) — a small macOS menu bar app with
+  themes, skins and limit notifications; a prebuilt universal download.
 - [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
   by [@david-x3d](https://github.com/david-x3d) — home-screen widgets for Android
   with Clawd's animations, hearts and the sky; reads the limits on the phone, no

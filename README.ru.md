@@ -556,6 +556,9 @@ macOS, Linux, телефона или строки состояния. Сдел�
 - [CrabBar](https://github.com/Breitec/crabbar)
   от [@Breitec](https://github.com/Breitec) — нативное приложение для строки меню
   macOS на Swift/SwiftUI с панелью Clawd, виджетами WidgetKit и приложением для iPhone.
+- [clawd-usage-mac](https://github.com/fl03er/clawd-usage-mac)
+  от [@fl03er](https://github.com/fl03er) — компактное приложение для строки меню
+  macOS с темами, скинами и уведомлениями о лимитах; готовая универсальная сборка.
 - [clawd-usage-android](https://github.com/david-x3d/clawd-usage-android)
   от [@david-x3d](https://github.com/david-x3d) — виджеты рабочего стола Android
   с анимациями Clawd, сердечками и небом; лимиты читает сам телефон, без сервера.
