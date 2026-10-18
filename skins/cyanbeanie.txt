@@ -1,0 +1,10 @@
+---
+name: Cyan beanie
+top: -4
+c: #22D3EE
+y: #FACC15
+---
+........yy........
+.......yyyy.......
+....ccccccccccc...
+...yyyyyyyyyyyyy..

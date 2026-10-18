@@ -1,0 +1,17 @@
+---
+name: Orange parka
+body: #F97316
+top: -2
+o: #EA580C
+f: #B7804A
+d: #78350F
+---
+....ooooooooooo...
+..oofffffffffffoo.
+..of...........fo.
+..of...........fo.
+..of...........fo.
+..of...........fo.
+...fffffffffffff..
+.......d...d......
+.......d...d......

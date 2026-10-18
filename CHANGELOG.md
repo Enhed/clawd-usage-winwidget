@@ -1,9 +1,10 @@
 # Changelog
 
-## 1.13.1
+## 1.14.0
 
-- **Head tie skin** for Clawd: a striped tie knotted on top of his head, its end
-  sticking up.
+- **Nine new skins** for Clawd: Head tie (a striped tie knotted on top of his
+  head), Orange parka, Green ushanka, Pompom beanie, Cyan beanie, Square pants,
+  Flower shorts, Red crab and Fry cook hat.
 
 ## 1.13.0
 

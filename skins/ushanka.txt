@@ -1,0 +1,12 @@
+---
+name: Green ushanka
+top: -3
+g: #22C55E
+d: #15803D
+---
+.....ggggggggg....
+...ggggggggggggg..
+..ddddddddddddddd.
+.dd.............dd
+.dd.............dd
+..d.............d.

@@ -1,0 +1,10 @@
+---
+name: Pompom beanie
+top: -4
+b: #2563EB
+r: #DC2626
+---
+........rr........
+.......rrrr.......
+....bbbbbbbbbbb...
+...rrrrrrrrrrrrr..
