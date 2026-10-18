@@ -45,7 +45,7 @@ $Themes = [ordered]@{
     halloween = @{ bg = '#FF1C1326'; code = '#FF140E1C'; card = '#FF2A1D38'; card2 = '#FF3A2550'
                    textHi = '#FFFFF7ED'; text = '#FFF5E6DA'; text2 = '#FFE7D3C4'; text3 = '#FFC9B3A4'; text4 = '#FFB39E91'
                    muted = '#FFA08B9C'; dim = '#FF7E6A80'; faint = '#FF5B4A63'; off = '#FF3F3048'
-                   accent = '#FFF97316'; accent2 = '#FFFDBA74'; pattern = 'halloween' }
+                   accent = '#FFF97316'; accent2 = '#FFFDBA74'; pattern = 'halloween'; scene = 'halloween' }
     space    = @{ bg = '#FF0E0820'; code = '#FF09051A'; card = '#FF1C1436'; card2 = '#FF281D4C'
                   textHi = '#FFF5F3FF'; text = '#FFE9E5F8'; text2 = '#FFD6D0EE'; text3 = '#FFB8B0D6'; text4 = '#FFA49BC6'
                   muted = '#FF9A90BE'; dim = '#FF746A99'; faint = '#FF544A78'; off = '#FF3A3160'

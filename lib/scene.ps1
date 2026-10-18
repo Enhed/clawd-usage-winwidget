@@ -2,7 +2,7 @@
 # Animated themes ("scenes"): a backdrop over the whole window, between the theme's
 # pattern layer and the content, and a layer in the sky row that takes the
 # weather's place. A theme names its scene with `scene = '<id>'`; the scene's module
-# (space, ocean) registers it in $Scenes. Stepped by the mascot's timer.
+# (space, ocean, halloween) registers it in $Scenes. Stepped by the mascot's timer.
 
 $Scenes = @{}
 $script:Scene = @{ id = ''; tick = 0; broken = @{} }

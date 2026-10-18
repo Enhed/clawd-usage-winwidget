@@ -199,7 +199,10 @@ the clock. Turn it off with `showSky`.
 
 **Themes** — Settings → Look: Halloween, Classic, Midnight, Mocha, OLED black,
 Forest, Space, Underwater; they switch at once. Halloween has a wallpaper of tiny pumpkins,
-bats and ghosts. Space, after the one in
+bats and ghosts and comes alive: fog creeping along the bottom, will-o'-the-wisps,
+bats flapping across, a ghost floating by and a spider letting itself down from its
+web; in the sky row a big moon over a graveyard with tombstones, a dead tree and
+flickering jack-o'-lanterns. Space, after the one in
 [clawd-usage-mac](https://github.com/fl03er/clawd-usage-mac), puts a twinkling
 starfield with drifting nebulae and shooting stars behind the whole widget, and in
 the sky row two slowly turning pixel planets and a little ship take the weather's

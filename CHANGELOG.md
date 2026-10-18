@@ -2,6 +2,11 @@
 
 ## 1.15.0
 
+- **Halloween theme comes alive**: fog creeping along the bottom of the widget,
+  green will-o'-the-wisps, bats flapping across, a ghost floating by now and
+  then and a spider letting itself down from its web in the corner; in the sky
+  row a big moon over a graveyard - tombstones, a cross, a dead tree and
+  jack-o'-lanterns with a flickering candle inside.
 - **Four Halloween skins** for Clawd: Zombie crab (rotting green, a wound and
   torn rags), Skeleton crab (a skull and ribs), Frankenstein crab (a flat
   top, a scar, neck bolts and a dark jacket) and Dracula crab (red eyes, fangs,
