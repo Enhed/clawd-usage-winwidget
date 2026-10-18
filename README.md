@@ -292,7 +292,7 @@ brief and within `chatTimeoutSeconds`; turned off, he is a full agent: replies a
 long as needed, deep checks, no time limit. While he answers, the line under the
 conversation shows what he is doing ("Reading win.ini", "Running: Get-ChildItem...")
 and the Send button turns into Stop. To copy a message, use the icon in its corner
-(on hover) or right-click it. Reminders are kept by the widget and fire on time with a card to
+(on hover) or right-click it; links in messages open in the browser on a click. Reminders are kept by the widget and fire on time with a card to
 put them off, a bell in the header and a hop from Clawd — even with the panel
 closed. The chat uses your plan's limits; the model is `chatModel` (Sonnet by
 default), `showChat` turns it off.

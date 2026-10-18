@@ -98,6 +98,42 @@ function New-PanelLink([string]$text, [string]$color, $tag, $onClick) {
     return $t
 }
 
+# A message's text with its links clickable: a bare http(s) address or a markdown
+# [text](url); a click opens it in the browser.
+$ChatLinkRx = [regex]'\[([^\]\r\n]+)\]\((https?://[^\s)]+)\)|https?://[^\s<>"''`\[\]]+'
+function New-ChatText([string]$text, [double]$size = 10.5, [string]$color = '#FFD4D4D8') {
+    $found = $ChatLinkRx.Matches($text)
+    if (-not $found.Count) { return New-PanelText $text $size $color }
+    $t = New-PanelText '' $size $color
+    $at = 0
+    foreach ($m in $found) {
+        $label = $(if ($m.Groups[1].Success) { $m.Groups[1].Value } else { '' })
+        $url   = $(if ($m.Groups[2].Success) { $m.Groups[2].Value } else { $m.Value })
+        $tail  = ''
+        # "see https://x.com/a." - the full stop, and a bracket closing the sentence's own, stay text.
+        while (-not $label -and $url) {
+            $c = $url[-1]
+            if ('.,;:!?»”''"'.Contains($c) -or
+                ($c -eq ')' -and ($url.Split('(').Count -lt $url.Split(')').Count))) {
+                $tail = "$c$tail"; $url = $url.Substring(0, $url.Length - 1)
+            } else { break }
+        }
+        $uri = $null
+        if (-not [uri]::TryCreate($url, [UriKind]::Absolute, [ref]$uri)) { continue }
+        if ($m.Index -gt $at) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at, $m.Index - $at))) }
+        $a = New-Object System.Windows.Documents.Hyperlink (New-Object System.Windows.Documents.Run $(if ($label) { $label } else { $url }))
+        $a.NavigateUri = $uri
+        $a.Foreground  = New-Brush '#FF60A5FA'
+        $a.ToolTip     = $url
+        $a.add_Click({ param($s, $e); try { Start-Process $s.NavigateUri.AbsoluteUri } catch {} })
+        $t.Inlines.Add($a)
+        if ($tail) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $tail)) }
+        $at = $m.Index + $m.Length
+    }
+    if ($at -lt $text.Length) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at))) }
+    return $t
+}
+
 function New-PanelCard([string]$bg, [string]$edge = '#1AFFFFFF') {
     $card = New-Object System.Windows.Controls.Border
     $card.Background      = New-Brush $bg
@@ -278,7 +314,7 @@ function New-RemoteBox($msg, [string]$color) {
     $cap = New-PanelText "  $(T 'chat.remoteTag')  $($msg.at.ToString('HH:mm'))" 8.5 '#FF6B7280'
     [void]$row.Children.Add($cap)
     [void]$box.Children.Add($row)
-    [void]$box.Children.Add((New-PanelText $msg.text 10.5 $color))
+    [void]$box.Children.Add((New-ChatText $msg.text 10.5 $color))
     return $box
 }
 
@@ -352,16 +388,16 @@ function New-ChatCard($msg) {
             $card = New-PanelCard '#FF2B3245'
             $card.HorizontalAlignment = 'Right'
             $card.Margin = New-Object System.Windows.Thickness 36, 0, 0, 6
-            $card.Child = $(if ($msg.remote) { New-RemoteBox $msg '#FFD4D4D8' } else { New-PanelText $msg.text })
+            $card.Child = $(if ($msg.remote) { New-RemoteBox $msg '#FFD4D4D8' } else { New-ChatText $msg.text })
             return $card
         }
         'remind' {
             $card = New-PanelCard '#FF26262C' '#FFD77757'
-            $card.Child = New-PanelText "$([char]0x23F0) $($msg.text)" 10.5 '#FFF4F4F5'
+            $card.Child = New-ChatText "$([char]0x23F0) $($msg.text)" 10.5 '#FFF4F4F5'
             return $card
         }
         'note' {
-            $t = New-PanelText $msg.text 9.5 '#FF8B8B94'
+            $t = New-ChatText $msg.text 9.5 '#FF8B8B94'
             $t.Margin = New-Object System.Windows.Thickness 4, 0, 4, 6
             return $t
         }
@@ -370,7 +406,7 @@ function New-ChatCard($msg) {
             $card.Margin = New-Object System.Windows.Thickness 0, 0, 24, 6
             if ($msg.remote) { $card.Child = New-RemoteBox $msg '#FFD4D4D8'; return $card }
             $box = New-Object System.Windows.Controls.StackPanel
-            if ($msg.text) { [void]$box.Children.Add((New-PanelText $msg.text)) }
+            if ($msg.text) { [void]$box.Children.Add((New-ChatText $msg.text)) }
             if ($msg.run) { [void]$box.Children.Add((New-RunBlock $msg)) }
             if ($msg.act) { [void]$box.Children.Add((New-ActBlock $msg)) }
             if ($msg.grant) { [void]$box.Children.Add((New-GrantBlock $msg)) }

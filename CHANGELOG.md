@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.2
+
+- **Links in the chat:** an http(s) address or a markdown `[text](url)` in a
+  message is a link - a click opens it in the browser.
+
 ## 1.12.1
 
 - **Pasting into the chat:** a multi-line text is pasted whole - before, only
