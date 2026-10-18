@@ -1,0 +1,19 @@
+---
+name: Dracula crab
+body: #CFC8DC
+eyes: #DC2626
+top: 0
+k: #3F3F46
+c: #4C1D95
+r: #B91C1C
+w: #F8FAFC
+y: #FBBF24
+---
+...kkkkkkkkkkkkk..
+...kk....k....kk..
+.c...............c
+.cr.............rc
+.......w...w......
+..................
+...ccwwwwywwwwcc..
+...ccrwwwwwwwrcc..

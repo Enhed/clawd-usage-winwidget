@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.0
+
+- **Four Halloween skins** for Clawd: Zombie crab (rotting green, a wound and
+  torn rags), Skeleton crab (a skull and ribs), Frankenstein crab (a flat
+  top, a scar, neck bolts and a dark jacket) and Dracula crab (red eyes, fangs,
+  a widow's peak and a cape with a high collar).
+
 ## 1.14.0
 
 - **Nine new skins** for Clawd: Head tie (a striped tie knotted on top of his

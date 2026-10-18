@@ -1,0 +1,20 @@
+---
+name: Frankenstein crab
+body: #65A30D
+top: -2
+k: #1C1917
+s: #27272A
+g: #A1A1AA
+j: #292524
+w: #E7E5E4
+---
+...kkkkkkkkkkkkk..
+...kkkkkkkkkkkkk..
+...k.kk.kkk.kk.k..
+.......sssss......
+..................
+.gg.............gg
+..................
+..................
+...jjjjjwwwjjjjj..
+...jjjjjjwjjjjjj..
