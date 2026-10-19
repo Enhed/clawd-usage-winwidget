@@ -13,6 +13,8 @@
   and its exit code and output are kept; a running one can be stopped. "Clawd
   does it" sends the words to the chat. Save one under a name to keep it as a
   card, or run it just once without a name.
+- Task and action cards are compact: the name with icons on the right (run,
+  change, pause, delete); a click on the card opens what is inside.
 - Every panel tab shows how much it holds, Lists - the items still to tick off.
 - **The panel's tabs can be turned off** in Settings → Clawd: Reminders, Tasks,
   Actions, Lists. One turned off is gone from the panel and does nothing in the
