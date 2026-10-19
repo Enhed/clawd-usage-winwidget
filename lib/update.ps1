@@ -214,6 +214,7 @@ function Update-Widget {
     Update-Advisor
     Update-Reminders
     Update-Tasks
+    Update-Actions
     Update-RemoteFeed
     Update-Badge
     if ($advWin.IsVisible) { Update-Panel }

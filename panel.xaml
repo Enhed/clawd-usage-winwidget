@@ -32,8 +32,8 @@
     </Style>
     <Style x:Key="Tab" TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Segoe UI"/>
-      <Setter Property="FontSize" Value="10.5"/>
-      <Setter Property="Margin" Value="0,0,14,0"/>
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="Margin" Value="0,0,9,0"/>
       <Setter Property="Padding" Value="0,0,0,4"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Background" Value="Transparent"/>
@@ -71,6 +71,8 @@
         <StackPanel Orientation="Horizontal">
           <TextBlock x:Name="TabChat" Style="{StaticResource Tab}"/>
           <TextBlock x:Name="TabRemind" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="TabTasks" Style="{StaticResource Tab}"/>
+          <TextBlock x:Name="TabActions" Style="{StaticResource Tab}"/>
           <TextBlock x:Name="TabLists" Style="{StaticResource Tab}"/>
         </StackPanel>
       </Grid>
@@ -134,11 +136,80 @@
         <TextBlock x:Name="RemParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
                    Margin="2,3,0,0"/>
         <WrapPanel x:Name="RemChips" Margin="0,4,0,0"/>
-        <!-- an opened task's runs can be long: scrolled, the panel does not grow off the screen -->
-        <ScrollViewer MaxHeight="260" Margin="0,8,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel x:Name="RemTasks"/>
-        </ScrollViewer>
         <StackPanel x:Name="RemDone" Margin="0,8,0,0"/>
+      </StackPanel>
+
+      <!-- tasks: the recurring ones (a click on the name shows its runs), the form -->
+      <StackPanel x:Name="PageTasks" Visibility="Collapsed">
+        <!-- an opened task's runs can be long: scrolled, the panel does not grow off the screen -->
+        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="TaskList"/>
+        </ScrollViewer>
+        <Border Style="{StaticResource FieldBox}" Margin="0,6,0,0">
+          <Grid>
+            <TextBox x:Name="TaskName" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
+            <TextBlock x:Name="TaskNameHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Border Style="{StaticResource FieldBox}" Margin="0,4,0,0">
+          <Grid>
+            <TextBox x:Name="TaskText" Style="{StaticResource Field}" AcceptsReturn="True" MaxHeight="90"/>
+            <TextBlock x:Name="TaskTextHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Grid Margin="0,4,0,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Border Style="{StaticResource FieldBox}">
+            <Grid>
+              <TextBox x:Name="TaskWhen" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
+              <TextBlock x:Name="TaskWhenHint" Style="{StaticResource Hint}"/>
+            </Grid>
+          </Border>
+          <TextBlock x:Name="TaskSave" Grid.Column="1" FontFamily="Segoe UI" FontSize="10.5"
+                     Foreground="#FF4ADE80" Margin="10,0,2,0" VerticalAlignment="Center"
+                     Cursor="Hand" Background="Transparent"/>
+        </Grid>
+        <TextBlock x:Name="TaskParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
+                   Margin="2,3,0,0" TextWrapping="Wrap"/>
+        <WrapPanel x:Name="TaskChips" Margin="0,4,0,0"/>
+      </StackPanel>
+
+      <!-- actions: planned and running, the form (Clawd or a command), recently done -->
+      <StackPanel x:Name="PageActions" Visibility="Collapsed">
+        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="ActList"/>
+        </ScrollViewer>
+        <WrapPanel x:Name="ActKinds" Margin="0,6,0,0"/>
+        <Border Style="{StaticResource FieldBox}">
+          <Grid>
+            <TextBox x:Name="ActText" Style="{StaticResource Field}" AcceptsReturn="True" MaxHeight="90"/>
+            <TextBlock x:Name="ActTextHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Grid Margin="0,4,0,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Border Style="{StaticResource FieldBox}">
+            <Grid>
+              <TextBox x:Name="ActWhen" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
+              <TextBlock x:Name="ActWhenHint" Style="{StaticResource Hint}"/>
+            </Grid>
+          </Border>
+          <TextBlock x:Name="ActSave" Grid.Column="1" FontFamily="Segoe UI" FontSize="10.5"
+                     Foreground="#FF4ADE80" Margin="10,0,2,0" VerticalAlignment="Center"
+                     Cursor="Hand" Background="Transparent"/>
+        </Grid>
+        <TextBlock x:Name="ActParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
+                   Margin="2,3,0,0" TextWrapping="Wrap"/>
+        <WrapPanel x:Name="ActChips" Margin="0,4,0,0"/>
+        <ScrollViewer MaxHeight="200" Margin="0,8,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="ActDone"/>
+        </ScrollViewer>
       </StackPanel>
 
       <!-- lists: which list, its items, add -->

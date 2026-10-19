@@ -29,12 +29,43 @@ function Get-TasksDir { return Join-Path (Get-ClawdHome) 'tasks' }
 
 # "10m", "2h", "1d", "30 мин" -> TimeSpan; at least two minutes.
 function Read-TaskEvery([string]$s) {
-    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|м|мин\w*|h|hours?|ч|час\w*|d|days?|д|дн\w*|день)$')
+    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|м|мин\w*|h|hours?|heures?|ч|час\w*|d|days?|j|jours?|д|дн\w*|день)$')
     if (-not $m.Success) { return $null }
     $n = [int]$m.Groups[1].Value; $u = $m.Groups[2].Value
     $span = $(if ($u -match '^(m|м)') { [timespan]::FromMinutes($n) } elseif ($u -match '^(h|ч)') { [timespan]::FromHours($n) } else { [timespan]::FromDays($n) })
     if ($span.TotalMinutes -lt 2) { $span = [timespan]::FromMinutes(2) }
     return $span
+}
+
+# "How often" as the panel's form takes it: "10m", "every 2 hours", "каждый час",
+# "09:00, 18:00", "в 9:30", with hours at the end - "10m 8-23". Returns the file's
+# fields @{ every; at; hours } (as text) and the parsed @{ sched; hours }, or $null.
+function Read-TaskSchedule([string]$s) {
+    $s = ($s.Trim().ToLower() -replace '\s+', ' ')
+    $hours = $null
+    $h = [regex]::Match($s, '\s+(\d{1,2})(?::00)?\s*-\s*(\d{1,2})(?::00)?$')
+    if ($h.Success -and [int]$h.Groups[1].Value -le 24 -and [int]$h.Groups[2].Value -le 24) {
+        $hours = @([int]$h.Groups[1].Value, [int]$h.Groups[2].Value)
+        $s = $s.Substring(0, $h.Index).Trim()
+    }
+    $s = $s -replace '^(every|each|каждые|каждый|каждую|каждое|раз в|toutes les|tous les|chaque|в|at|à)\s+', ''
+    if (-not $s) { return $null }
+    $every = Read-TaskEvery $s
+    # "каждый час", "every day": one unit.
+    if (-not $every -and $s -notmatch '^\d') { $every = Read-TaskEvery "1 $s" }
+    $r = @{ every = ''; at = ''; hours = $(if ($hours) { "$($hours[0])-$($hours[1])" } else { '' }); sched = $null; hoursList = $hours }
+    if ($every) {
+        $r.every = $(if ($every.TotalDays -ge 1 -and $every.TotalDays -eq [math]::Floor($every.TotalDays)) { "$($every.TotalDays)d" }
+                     elseif ($every.TotalHours -ge 1 -and $every.TotalHours -eq [math]::Floor($every.TotalHours)) { "$($every.TotalHours)h" }
+                     else { "$([int]$every.TotalMinutes)m" })
+        $r.sched = @{ every = $every; at = $null }
+        return $r
+    }
+    $at = Read-TaskAt $s
+    if (-not $at) { return $null }
+    $r.at = (@($at | ForEach-Object { $_.ToString('hh\:mm') }) -join ', ')
+    $r.sched = @{ every = $null; at = $at }
+    return $r
 }
 
 # "09:00, 18:00", "9", "9h30" -> sorted times of day; $null if any of them is not one.
@@ -189,6 +220,27 @@ function New-TaskFile([string]$name, [hashtable]$head, [string]$prompt) {
     $path = Join-Path $dir "$file.md"
     [System.IO.File]::WriteAllText($path, ($lines -join "`n"), (New-Object System.Text.UTF8Encoding $false))
     return $path
+}
+
+# From the panel's form: $s - Read-TaskSchedule's fields; $old - the task being
+# changed, whose other fields (tools, model, limit, paused) and history stay.
+function Save-TaskForm([string]$name, $s, [string]$prompt, $old) {
+    $head = @{ every = $s.every; at = $s.at; hours = $s.hours }
+    if ($old) {
+        $head.tools  = ($old.tools -join ' ')
+        $head.model  = $old.model
+        $head.limit  = $(if ($null -ne $old.limit) { "$($old.limit)" } else { '' })
+        $head.paused = $(if ($old.paused) { 'yes' } else { '' })
+    }
+    $path = New-TaskFile $name $head $prompt
+    if (-not $path) { return $null }
+    $new = [System.IO.Path]::GetFileNameWithoutExtension($path)
+    if ($old -and $old.path -ne $path) {
+        try { Remove-Item -LiteralPath $old.path -Force } catch {}
+        $st = Load-TaskState
+        if ($st.ContainsKey($old.name)) { $st[$new] = $st[$old.name]; $st.Remove($old.name); Save-TaskState $st }
+    }
+    return $new
 }
 
 function Remove-TaskFile([string]$name) {

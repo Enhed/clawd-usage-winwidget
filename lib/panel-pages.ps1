@@ -1,11 +1,12 @@
 ﻿# ----------------------------------------------------------- panel pages ----
 # The panel's tabs besides the chat: reminders (upcoming, a form to add or change
 # one, recently fired) and lists (shopping and others, with checkboxes). Both are
-# the same files Clawd works with, so changes made anywhere show up here.
+# the same files Clawd works with, so changes made anywhere show up here. The
+# tasks and actions tabs are in panel-jobs.ps1.
 
-foreach ($n in @('TabChat', 'TabRemind', 'TabLists', 'PageChat', 'PageRemind', 'PageLists',
-                 'RemList', 'RemText', 'RemTextHint', 'RemWhen', 'RemWhenHint', 'RemSave', 'RemParsed',
-                 'RemChips', 'RemTasks', 'RemDone', 'ListTabs', 'ListItems', 'ListAdd', 'ListAddHint', 'ListClear', 'ListDelete')) {
+foreach ($n in @('TabChat', 'TabRemind', 'TabTasks', 'TabActions', 'TabLists', 'PageChat', 'PageRemind', 'PageTasks',
+                 'PageActions', 'PageLists', 'RemList', 'RemText', 'RemTextHint', 'RemWhen', 'RemWhenHint', 'RemSave', 'RemParsed',
+                 'RemChips', 'RemDone', 'ListTabs', 'ListItems', 'ListAdd', 'ListAddHint', 'ListClear', 'ListDelete')) {
     $UI[$n] = $advWin.FindName($n)
 }
 $script:PanelTab = 'chat'
@@ -19,22 +20,31 @@ function Set-PanelTab([string]$tab) {
     $script:PanelTab = $tab
     $UI.PageChat.Visibility   = $(if ($tab -eq 'chat')   { 'Visible' } else { 'Collapsed' })
     $UI.PageRemind.Visibility = $(if ($tab -eq 'remind') { 'Visible' } else { 'Collapsed' })
+    $UI.PageTasks.Visibility  = $(if ($tab -eq 'tasks')  { 'Visible' } else { 'Collapsed' })
+    $UI.PageActions.Visibility = $(if ($tab -eq 'actions') { 'Visible' } else { 'Collapsed' })
     $UI.PageLists.Visibility  = $(if ($tab -eq 'lists')  { 'Visible' } else { 'Collapsed' })
     # Rescan and "new conversation" are about the chat.
     foreach ($b in @($UI.AdvStamp, $UI.AdvRescan, $UI.ChatAuto, $UI.ChatNew)) {
         $b.Visibility = $(if ($tab -eq 'chat') { 'Visible' } else { 'Collapsed' })
     }
     Update-PanelTabs
-    $script:RemKey = $null; $script:ListKey = $null
+    $script:RemKey = $null; $script:ListKey = $null; $script:TaskKey = $null; $script:ActKey = $null
     Update-Panel -Force
 }
 
+# A tab's name with how much is there: reminders and actions planned, tasks, items
+# still to tick off in all the lists.
 function Update-PanelTabs {
-    $n = (Get-Reminders).Count
-    $UI.TabChat.Text   = T 'tab.chat'
-    $UI.TabRemind.Text = $(if ($n) { "$(T 'tab.remind')  $n" } else { T 'tab.remind' })
-    $UI.TabLists.Text  = T 'tab.lists'
-    foreach ($p in @(@($UI.TabChat, 'chat'), @($UI.TabRemind, 'remind'), @($UI.TabLists, 'lists'))) {
+    $count = { param($name, $n) $(if ($n) { "$(T $name) $n" } else { T $name }) }
+    $open = 0
+    foreach ($l in (Get-Lists)) { $open += @((Read-List $l).items | Where-Object { -not $_.done }).Count }
+    $UI.TabChat.Text    = T 'tab.chat'
+    $UI.TabRemind.Text  = & $count 'tab.remind' (Get-Reminders).Count
+    $UI.TabTasks.Text   = & $count 'tab.tasks' (Get-Tasks).Count
+    $UI.TabActions.Text = & $count 'tab.actions' ((Get-Actions).Count + $script:ActRuns.Count)
+    $UI.TabLists.Text   = & $count 'tab.lists' $open
+    foreach ($p in @(@($UI.TabChat, 'chat'), @($UI.TabRemind, 'remind'), @($UI.TabTasks, 'tasks'),
+                     @($UI.TabActions, 'actions'), @($UI.TabLists, 'lists'))) {
         $on = ($p[1] -eq $script:PanelTab)
         $p[0].Foreground = New-Brush $(if ($on) { '#FFF4F4F5' } else { '#FF6B7280' })
         # Assigned directly: through $( ) PowerShell would unroll the collection into one item.
@@ -45,6 +55,8 @@ function Update-PanelTabs {
 
 $UI.TabChat.add_MouseLeftButtonDown({   param($s, $e) $e.Handled = $true; Set-PanelTab 'chat' })
 $UI.TabRemind.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-PanelTab 'remind' })
+$UI.TabTasks.add_MouseLeftButtonDown({  param($s, $e) $e.Handled = $true; Set-PanelTab 'tasks' })
+$UI.TabActions.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-PanelTab 'actions' })
 $UI.TabLists.add_MouseLeftButtonDown({  param($s, $e) $e.Handled = $true; Set-PanelTab 'lists' })
 
 # A hint over an empty field, as in the chat.
@@ -122,6 +134,8 @@ $whenTimer.add_Tick({
         $r = Collect-WhenProbe
         if (-not $r) { return }
         $whenTimer.Stop()
+        # Asked for the actions tab's form.
+        if ($r.data.action) { Complete-ActWhen $r; return }
         $same = ($UI.RemWhen.Text.Trim() -eq $r.when -and $UI.RemText.Text.Trim() -eq $r.data.text)
         if ($r.at) {
             Save-Rem $r.at $r.data.text $r.data.edit
@@ -205,86 +219,10 @@ function New-RemCard($r) {
     return $card
 }
 
-$script:TaskOpen = $null   # the task whose reports are shown
-
-# A recurring task: name, how often, when it last ran; run now, pause, open the file.
-# A click on the name shows its latest reports, under the links.
-function New-TaskRow($t, $st) {
-    # A card of its own, like a reminder: the links clearly belong to this task.
-    $card = New-PanelCard '#FF26262C'
-    $box = New-Object System.Windows.Controls.StackPanel
-    $info = @(Format-TaskWhen $t)
-    if ($t.hours -and -not $t.at) { $info += "$($t.hours[0])-$($t.hours[1])" }
-    $running = ($script:TaskProc -and $script:TaskProc.task.name -eq $t.name)
-    $queued = $script:TaskQueue.Contains($t.name)
-    if ($running) { $info += T 'task.running' }
-    elseif ($queued) { $info += T 'task.queued' }
-    elseif ($st -and $st.last -ne [datetime]::MinValue) { $info += (T 'task.last') -f (Format-RemindTime $st.last) }
-    if ($t.paused) { $info += T 'task.paused' }
-    $wait = Get-TaskBudgetWait $t
-    if (-not $t.paused -and $null -ne $wait) { $info += (T 'task.budget') -f $wait }
-    $open = ($script:TaskOpen -eq $t.name)
-    $arrow = $(if ($open) { [char]0x25BE } else { [char]0x25B8 })
-    $line = New-PanelText "$arrow $($t.name)  $([char]0x00B7)  $($info -join "  $([char]0x00B7)  ")" 10 $(if ($t.paused) { '#FF6B7280' } else { '#FFD4D4D8' })
-    if ($st -and $st.error) { $line.ToolTip = $st.error; $line.Foreground = New-Brush $Palette.warn.Wpf }
-    $line.Cursor = [System.Windows.Input.Cursors]::Hand
-    $line.Background = [System.Windows.Media.Brushes]::Transparent
-    $line.Tag = $t.name
-    $line.add_MouseLeftButtonDown({
-        param($s, $e)
-        $e.Handled = $true
-        $script:TaskOpen = $(if ($script:TaskOpen -eq $s.Tag) { $null } else { $s.Tag })
-        $script:RemKey = $null
-        Update-Panel
-    })
-    [void]$box.Children.Add($line)
-    $row = New-Object System.Windows.Controls.StackPanel
-    $row.Orientation = 'Horizontal'
-    $row.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
-    if (-not $running -and -not $queued) {
-        [void]$row.Children.Add((New-PanelLink (T 'task.now') '#FF60A5FA' $t {
-            param($s, $e); $e.Handled = $true; Request-TaskRun $s.Tag; $script:RemKey = $null; Update-Panel }))
-    }
-    [void]$row.Children.Add((New-PanelLink $(if ($t.paused) { T 'task.resume' } else { T 'task.pause' }) '#FF8B8B94' $t {
-        param($s, $e); $e.Handled = $true; Set-TaskPaused $s.Tag (-not $s.Tag.paused); Update-Panel }))
-    [void]$row.Children.Add((New-PanelLink (T 'task.open') '#FF8B8B94' $t {
-        param($s, $e); $e.Handled = $true; try { Start-Process notepad.exe -ArgumentList "`"$($s.Tag.path)`"" } catch {} }))
-    [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $t {
-        param($s, $e); $e.Handled = $true; [void](Remove-TaskFile $s.Tag.name); Update-Panel }))
-    [void]$box.Children.Add($row)
-    if ($open) {
-        $hist = @($(if ($st) { $st.history }) | Where-Object { $_ })
-        if ($st -and $st.error) { $hist += @{ at = $st.last; text = (T 'task.lastError') -f $st.error; bad = $true } }
-        if (-not $hist.Count) {
-            $none = New-PanelText (T 'task.noReports') 9.5 '#FF6B7280'
-            $none.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
-            [void]$box.Children.Add($none)
-        }
-        # Newest first, a line per run; what the user was told is brighter. The whole
-        # line is in the tooltip.
-        foreach ($h in @($hist | Sort-Object { $_.at } -Descending)) {
-            $color = $(if ($h.bad) { $Palette.warn.Wpf } elseif ($h.told) { '#FFA1A1AA' } else { '#FF6B7280' })
-            $r = New-PanelText "$(Format-RemindTime $h.at)  $([char]0x00B7)  $($h.text)" 9.5 $color
-            $r.TextWrapping = 'NoWrap'
-            $r.TextTrimming = 'CharacterEllipsis'
-            $r.ToolTip = $h.text
-            $r.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
-            [void]$box.Children.Add($r)
-        }
-    }
-    $card.Child = $box
-    return $card
-}
-
 function Update-RemindPage {
     $rem = Get-Reminders
     $done = Get-DoneReminders 5
-    $tasks = $(if ($script:Cfg.showTasks) { Get-Tasks } else { @() })
-    $tst = Load-TaskState
     $key = (Get-Lang) + '|' + (@($rem | ForEach-Object { "$($_.path)$($_.at.Ticks)" }) -join ',') + '|' +
-           (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.atText)$($_.paused)$(if ($tst[$_.name]) { $tst[$_.name].last.Ticks })" }) -join ',') +
-           "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|$($script:TaskQueue -join ',')|$($script:TaskOpen)|" +
-           (@($tasks | ForEach-Object { Get-TaskBudgetWait $_ }) -join ',') + '|' +
            (@($done | ForEach-Object { "$($_.at.Ticks)$($_.text)" }) -join ',') + "|$($script:RemEdit.path)|" +
            [int]((Get-Date) - [datetime]::Today).TotalMinutes    # "in 2 h" goes stale
     if ($key -eq $script:RemKey) { return }
@@ -311,12 +249,6 @@ function Update-RemindPage {
     if ($script:RemEdit) {
         [void]$UI.RemChips.Children.Add((New-PanelLink (T 'rem.cancel') '#FF6B7280' $null {
             param($s, $e); $e.Handled = $true; Reset-RemForm }))
-    }
-
-    $UI.RemTasks.Children.Clear()
-    if ($tasks.Count) {
-        [void]$UI.RemTasks.Children.Add((New-PanelText (T 'task.head') 9 '#FF6B7280'))
-        foreach ($t in $tasks) { [void]$UI.RemTasks.Children.Add((New-TaskRow $t $tst[$t.name])) }
     }
 
     $UI.RemDone.Children.Clear()

@@ -308,7 +308,8 @@ default), `showChat` turns it off.
 
 **Reminders and lists.** A reminder that goes off shows as a card in the
 bottom-right corner, like a phone notification: put it off — +15m, +1h, +3h,
-tomorrow 9:00 or any time — or mark it done; it waits until you answer. The panel has three tabs: Chat, Reminders and Lists.
+tomorrow 9:00 or any time — or mark it done; it waits until you answer. The panel has five tabs: Chat, Reminders, Tasks,
+Actions and Lists, each with how many things it holds.
 Reminders shows what's coming (Change, +1 hour, Delete) and a form to add one:
 the "when" field understands `18:30`, `tomorrow 10`, `+20m`, `in a week`,
 `mon 9:00`, `19.10 14:00` and shows what it made of it; anything else ("next Friday
@@ -358,14 +359,26 @@ hours; `paused: yes`. Instead of `every`, `at: 09:00, 18:00` runs it at these ti
 of day — once each, and once on start if the PC was off then: a morning summary
 costs one run a day, not a run every ten minutes. Ask in the chat ("check my mail every 10 minutes"), put
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
-the phone, or write the file yourself; the Reminders tab lists them with Run now,
-Pause, Open and Delete; a click on a task shows a line on each of its latest runs
+the phone, write the file yourself, or fill in the form on the Tasks tab: a name,
+what to do and how often (`10m`, `2h`, `1d`, `09:00, 18:00`, with hours at the end:
+`10m 8-23`). The tab lists them with Run now, Change, Pause, Open and Delete; a click on a task shows a line on each of its latest runs
 (brighter - what you were told), and those lines are what the next run is given
 about the past. A script a
 task proposes always waits for a click. Each run uses your plan's limits, so tasks
 wait while the five-hour session or the week is at `tasksMaxPercent` (80%) or
-more — the Reminders tab says so; `limit: 60` in a task file sets its own
+more — the Tasks tab says so; `limit: 60` in a task file sets its own
 threshold. `showTasks` turns them off.
+
+**One-time actions.** The Actions tab is for something to do once — now or at a
+set time (`23:00`, `+20m`, `tomorrow 10`; empty — right away). **Clawd does it**:
+the words go to the chat when the time comes, and Clawd handles them the chat's
+way (a script he proposes waits for a click unless AUTO is on). **Command**: the
+widget runs it itself, no Claude and no tokens — a program, file, folder or
+link is opened, anything else runs as PowerShell; the exit code and output are
+kept under Recently (click a line to see the output, "again" puts it back in the
+form). A running command can be stopped. Actions are files in `actions\` in
+Clawd's home (`at:` and `kind: command` or `clawd`); one that fell due while the
+widget was off is not run late, it shows as missed.
 
 The chat may use the tools you gave your tasks too, so "move it to the trash"
 after a mail report works. Without AUTO it reads at once, but an action (move,

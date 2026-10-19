@@ -216,6 +216,11 @@ function Get-ChatContext {
             $lines += "- $($t.name): $when$(if ($t.tools.Count) { ", tools $($t.tools -join ' ')" })$(if ($t.hours) { ", hours $($t.hours -join '-')" })$(if ($t.paused) { ', paused' }), last run $last - $(($t.prompt -replace '\s+', ' '))"
         }
     }
+    $acts = Get-Actions
+    if ($acts.Count) {
+        $lines += 'one-time actions planned by the user (files in the actions folder; command - run by the widget itself, clawd - sent to you when due):'
+        foreach ($a in $acts) { $lines += "- $($a.at.ToString('yyyy-MM-dd HH:mm')) $($a.kind): $(($a.text -replace '\s+', ' '))" }
+    }
     # Task reports are put into the panel by the widget, not said in this conversation:
     # without them "move it to the trash" right after a mail report means nothing.
     $since = (Get-Date).AddHours(-24)

@@ -1,6 +1,6 @@
 ﻿# ----------------------------------------------------------------- panel ----
 # Clawd's panel: a small window beside the widget with the tips and the chat
-# (the reminders and lists tabs are in panel-pages.ps1).
+# (the reminders and lists tabs are in panel-pages.ps1, tasks and actions - in panel-jobs.ps1).
 # Opened and closed by the icon in the header (or its cross), stays open otherwise. The icon tells what
 # is waiting: a bell - a reminder went off, a blue chat - Clawd answered, a lamp
 # with a number - tips, a grey chat - nothing, just talk.
@@ -444,7 +444,9 @@ function Update-Panel([switch]$Force) {
     Update-PanelBusy
     Update-PanelTabs
     switch ($script:PanelTab) {
-        'remind' { Update-RemindPage }
+        'remind'  { Update-RemindPage }
+        'tasks'   { Update-TasksPage }
+        'actions' { Update-ActionsPage }
         'lists'  { Update-ListsPage }
         default  { Update-ChatPage -Force:$Force }
     }
