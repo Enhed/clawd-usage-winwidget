@@ -369,16 +369,17 @@ wait while the five-hour session or the week is at `tasksMaxPercent` (80%) or
 more — the Tasks tab says so; `limit: 60` in a task file sets its own
 threshold. `showTasks` turns them off.
 
-**One-time actions.** The Actions tab is for something to do once — now or at a
-set time (`23:00`, `+20m`, `tomorrow 10`; empty — right away). **Clawd does it**:
-the words go to the chat when the time comes, and Clawd handles them the chat's
-way (a script he proposes waits for a click unless AUTO is on). **Command**: the
-widget runs it itself, no Claude and no tokens — a program, file, folder or
-link is opened, anything else runs as PowerShell; the exit code and output are
-kept under Recently (click a line to see the output, "again" puts it back in the
-form). A running command can be stopped. Actions are files in `actions\` in
-Clawd's home (`at:` and `kind: command` or `clawd`); one that fell due while the
-widget was off is not run late, it shows as missed.
+**Actions.** The Actions tab keeps things you run once in a while with a click:
+a command or a mini-skill for Clawd. **Command**: the widget runs it itself, no
+Claude and no tokens — a program, file, folder or link is opened, anything else
+runs as PowerShell; the exit code and output are kept under Recently (click a
+line to see the output). A running command can be stopped. **Clawd does it**:
+the words go to the chat as a message, and Clawd handles them the chat's way (a
+script he proposes waits for a click unless AUTO is on); while the chat is busy
+it waits its turn. Give it a name and **Save** to keep it as a card with
+**Run**; leave the name empty and **Run** to do it just once. Saved actions are
+files `actions\<name>.md` in Clawd's home (`kind: command` or `clawd`, then the
+text), and Clawd in the chat knows about them.
 
 The chat may use the tools you gave your tasks too, so "move it to the trash"
 after a mail report works. Without AUTO it reads at once, but an action (move,

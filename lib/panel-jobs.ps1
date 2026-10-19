@@ -1,11 +1,11 @@
 ﻿# ------------------------------------------------------------ panel jobs ----
 # The panel's tabs for what Clawd does: tasks (recurring, a form to add or change
-# one) and actions (once, now or at a time: Clawd or a command). The same files
-# as everywhere else - tasks.ps1 and actions.ps1 run them.
+# one) and actions (saved commands and Clawd's mini-skills, run on a click). The
+# same files as everywhere else - tasks.ps1 and actions.ps1 run them.
 
 foreach ($n in @('TaskList', 'TaskName', 'TaskNameHint', 'TaskText', 'TaskTextHint', 'TaskWhen', 'TaskWhenHint',
-                 'TaskSave', 'TaskParsed', 'TaskChips', 'ActList', 'ActKinds', 'ActText', 'ActTextHint',
-                 'ActWhen', 'ActWhenHint', 'ActSave', 'ActParsed', 'ActChips', 'ActDone')) {
+                 'TaskSave', 'TaskParsed', 'TaskChips', 'ActList', 'ActKinds', 'ActName', 'ActNameHint', 'ActText',
+                 'ActTextHint', 'ActSave', 'ActRun', 'ActCancel', 'ActParsed', 'ActDone')) {
     $UI[$n] = $advWin.FindName($n)
 }
 $script:TaskKey  = $null
@@ -13,12 +13,11 @@ $script:TaskOpen = $null     # the task whose reports are shown
 $script:TaskEdit = $null     # task being changed in the form
 $script:ActKey   = $null
 $script:ActKind  = 'clawd'   # what the form makes
-$script:ActEdit  = $null     # planned action being changed
+$script:ActEdit  = $null     # saved action being changed
 $script:ActShown = ''        # history line whose output is shown: "<time in ticks>|<text>"
-$script:ActWhenBad = $null
 
 foreach ($pair in @(@($UI.TaskName, $UI.TaskNameHint), @($UI.TaskText, $UI.TaskTextHint), @($UI.TaskWhen, $UI.TaskWhenHint),
-                    @($UI.ActText, $UI.ActTextHint), @($UI.ActWhen, $UI.ActWhenHint))) {
+                    @($UI.ActName, $UI.ActNameHint), @($UI.ActText, $UI.ActTextHint))) {
     $pair[0].Tag = $pair[1]
     $pair[0].add_TextChanged({ param($s) $s.Tag.Visibility = $(if ($s.Text) { 'Collapsed' } else { 'Visible' }) })
 }
@@ -33,7 +32,7 @@ function Add-FormKeys($tb) {
                 $i = $s.CaretIndex
                 $s.Text = $s.Text.Insert($i, "`n")
                 $s.CaretIndex = $i + 1
-            } elseif ($s.Name -like 'Task*') { Save-TaskForm2 } else { Save-ActForm }
+            } elseif ($s.Name -like 'Task*') { Save-TaskForm2 } else { Submit-ActForm }
         } elseif ($e.Key -eq [System.Windows.Input.Key]::Escape) {
             if ($s.Name -like 'Task*') { if ($script:TaskEdit) { $e.Handled = $true; Reset-TaskForm } }
             elseif ($script:ActEdit) { $e.Handled = $true; Reset-ActForm }
@@ -219,75 +218,67 @@ function Update-TasksPage {
 
 # --------------------------------------------------------------- actions ----
 
-function Update-ActParsed {
-    $when = $UI.ActWhen.Text.Trim()
-    $UI.ActSave.Text = $(if ($when) { T 'act.plan' } else { T 'act.now' })
-    $gray = New-Brush '#FF8B8B94'
-    $UI.ActParsed.Foreground = $gray
-    if (-not $when) { $UI.ActParsed.Text = T 'act.nowParsed'; return }
-    $at = ConvertFrom-RemindWhen $when
-    if ($at) {
-        $UI.ActParsed.Text = $(if ($at -le (Get-Date)) { T 'act.nowParsed' } else { "$([char]0x2192) $(Format-RemindTime $at)" })
-    } elseif (Test-RemRepeat $when) {
-        $UI.ActParsed.Text = T 'act.repeat'
-        $UI.ActParsed.Foreground = New-Brush '#FF60A5FA'
-    } elseif ($script:WhenProc -and $script:WhenProc.when -eq $when) {
-        $UI.ActParsed.Text = T 'rem.whenAsking'
-    } elseif ($when -eq $script:ActWhenBad) {
-        $UI.ActParsed.Text = T 'rem.badWhen'
-        $UI.ActParsed.Foreground = New-Brush $Palette.crit.Wpf
-    } else {
-        $UI.ActParsed.Text = T 'rem.whenAsk'
-        $UI.ActParsed.Foreground = New-Brush '#FF6B7280'
-    }
+# Under the form: what is wrong with it, or what Enter does.
+function Update-ActParsed([string]$bad = '') {
+    $UI.ActNameHint.Text = T 'act.nameHint'
+    $UI.ActTextHint.Text = T "act.textHint.$($script:ActKind)"
+    $UI.ActSave.Text     = $(if ($script:ActEdit) { T 'rem.save' } else { T 'act.save' })
+    $UI.ActRun.Text      = T 'act.run'
+    $UI.ActCancel.Text   = T 'rem.cancel'
+    $UI.ActCancel.Visibility = $(if ($script:ActEdit) { 'Visible' } else { 'Collapsed' })
+    if ($bad) { $UI.ActParsed.Text = $bad; $UI.ActParsed.Foreground = New-Brush $Palette.crit.Wpf; return }
+    $UI.ActParsed.Text = $(if ($script:ActKind -eq 'command') { T 'act.noteCommand' } else { T 'act.noteClawd' })
+    $UI.ActParsed.Foreground = New-Brush '#FF6B7280'
 }
-$UI.ActWhen.add_TextChanged({ Update-ActParsed })
+
+# The form's text, or $null (and the focus where something is missing).
+function Get-ActForm([switch]$NeedName) {
+    $name = ($UI.ActName.Text -replace '[\\/:*?"<>|\r\n]', ' ' -replace '\s+', ' ').Trim()
+    $text = $UI.ActText.Text.Trim()
+    if ($NeedName -and -not $name) { [void]$UI.ActName.Focus(); return $null }
+    if (-not $text) { [void]$UI.ActText.Focus(); return $null }
+    return @{ name = $name; kind = $script:ActKind; text = $text }
+}
 
 function Save-ActForm {
-    $text = $UI.ActText.Text.Trim()
-    $when = $UI.ActWhen.Text.Trim()
-    if (-not $text) { [void]$UI.ActText.Focus(); return }
-    $at = $(if ($when) { ConvertFrom-RemindWhen $when } else { Get-Date })
-    if (-not $at) {
-        # Every day is a task, not an action.
-        if ((Test-RemRepeat $when) -or $when -eq $script:ActWhenBad) { [void]$UI.ActWhen.Focus(); return }
-        if (Start-WhenProbe $when @{ action = $true; text = $text; kind = $script:ActKind; edit = $script:ActEdit }) { $whenTimer.Start() }
-        Update-ActParsed
+    $f = Get-ActForm -NeedName
+    if (-not $f) { return }
+    # A new one must not overwrite another of the same name.
+    $other = Find-Action $f.name
+    if ($other -and -not ($script:ActEdit -and $script:ActEdit.path -eq $other.path)) {
+        Update-ActParsed (T 'act.nameTaken')
+        [void]$UI.ActName.Focus()
         return
     }
-    Save-Act $at $script:ActKind $text $script:ActEdit
-    Reset-ActForm
+    if (Save-ActionFile $f.name $f.kind $f.text $script:ActEdit) { Reset-ActForm }
 }
 
-function Save-Act([datetime]$at, [string]$kind, [string]$text, $edit) {
-    if ($edit) { try { Remove-Item -LiteralPath $edit.path -Force } catch {} }
-    [void](New-ActionFile $at $kind $text)
-    # One for now starts at once, not on the next tick.
-    if ($at -le (Get-Date)) { Update-Actions }
+# Run what is in the form once, saved or not: a one-off needs no name.
+function Invoke-ActForm {
+    $f = Get-ActForm
+    if (-not $f) { return }
+    if (-not $script:ActEdit) { $f.name = '' }
+    Invoke-Action $f
+    if (-not $script:ActEdit) { Reset-ActForm }
 }
 
-# Claude's answer about the time, from the reminders' timer (panel-pages.ps1).
-function Complete-ActWhen($r) {
-    $same = ($UI.ActWhen.Text.Trim() -eq $r.when -and $UI.ActText.Text.Trim() -eq $r.data.text)
-    if ($r.at) {
-        Save-Act $r.at $r.data.kind $r.data.text $r.data.edit
-        if ($same) { Reset-ActForm } else { $script:ActKey = $null; Update-Panel }
-    } else {
-        $script:ActWhenBad = $r.when
-        Update-ActParsed
-    }
+# Enter: with a name - save, without one - just run it.
+function Submit-ActForm {
+    if ($UI.ActName.Text.Trim()) { Save-ActForm } else { Invoke-ActForm }
 }
 
 function Reset-ActForm {
     $script:ActEdit = $null
+    $UI.ActName.Text = ''
     $UI.ActText.Text = ''
-    $UI.ActWhen.Text = ''
     $script:ActKey = $null
     Update-Panel
 }
 
-$UI.ActSave.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Save-ActForm })
-foreach ($tb in @($UI.ActText, $UI.ActWhen)) { Add-FormKeys $tb }
+$UI.ActSave.add_MouseLeftButtonDown({   param($s, $e) $e.Handled = $true; Save-ActForm })
+$UI.ActRun.add_MouseLeftButtonDown({    param($s, $e) $e.Handled = $true; Invoke-ActForm })
+$UI.ActCancel.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Reset-ActForm })
+foreach ($tb in @($UI.ActName, $UI.ActText)) { Add-FormKeys $tb }
 
 function Set-ActKind([string]$kind) {
     $script:ActKind = $kind
@@ -297,28 +288,34 @@ function Set-ActKind([string]$kind) {
     Update-Panel
 }
 
-# A planned or running one: when, what kind, the text; links to run it now, change, drop or stop.
-function New-ActCard($a, $run) {
+# A saved one: name and kind, the text; Run (Stop while a command runs), Change, Delete.
+function New-ActCard($a) {
     $card = New-PanelCard $(if ($script:ActEdit -and $a.path -eq $script:ActEdit.path) { '#FF2B3245' } else { '#FF26262C' })
     $box = New-Object System.Windows.Controls.StackPanel
-    $head = New-Object System.Windows.Controls.Grid
+    $run = Get-ActionRun $a.name
+    $queued = Test-ActionQueued $a.name
     $kind = "$(if ($a.kind -eq 'command') { [char]0x203A } else { [char]0x2726 }) $(T "act.kind.$($a.kind)")"
-    $when = $(if ($run) { T 'act.running' } elseif ($a.at -le (Get-Date)) { T $(if ($a.kind -eq 'clawd') { 'act.waitChat' } else { 'act.running' }) }
-              else { Format-RemindTime $a.at })
-    $w = New-PanelText "$when  $([char]0x00B7)  $kind" 10 $(if ($run) { $Palette.warn.Wpf } else { '#FFF4F4F5' })
-    $w.FontWeight = 'SemiBold'
-    [void]$head.Children.Add($w)
-    $left = $(if (-not $run) { Format-Span $a.at })
-    if ($left) {
-        $rel = New-PanelText ((T 'rem.in') -f $left) 9.5 '#FF6B7280'
-        $rel.HorizontalAlignment = 'Right'
-        [void]$head.Children.Add($rel)
+    $head = New-PanelText '' 10.5 '#FFF4F4F5'
+    $n = New-Object System.Windows.Documents.Run $a.name
+    $n.FontWeight = 'SemiBold'
+    $head.Inlines.Add($n)
+    $k = New-Object System.Windows.Documents.Run "  $([char]0x00B7)  $kind"
+    $k.Foreground = New-Brush '#FF6B7280'
+    $k.FontSize = 9.5
+    $head.Inlines.Add($k)
+    if ($run -or $queued) {
+        $st = New-Object System.Windows.Documents.Run "  $([char]0x00B7)  $(if ($run) { T 'act.running' } else { T 'task.queued' })"
+        $st.Foreground = New-Brush $Palette.warn.Wpf
+        $st.FontSize = 9.5
+        $head.Inlines.Add($st)
     }
     [void]$box.Children.Add($head)
-    $t = New-PanelText $a.text 10 '#FFD4D4D8'
-    if ($a.kind -eq 'command') { $t.FontFamily = 'Consolas'; $t.FontSize = 9.5 }
+    $t = New-PanelText ($a.text -replace '\s*\r?\n\s*', ' ') 9.5 '#FF8B8B94'
+    if ($a.kind -eq 'command') { $t.FontFamily = 'Consolas' }
+    $t.TextWrapping = 'NoWrap'
+    $t.TextTrimming = 'CharacterEllipsis'
+    $t.ToolTip = $a.text
     $t.Margin = New-Object System.Windows.Thickness 0, 2, 0, 0
-    $t.MaxHeight = 60
     [void]$box.Children.Add($t)
     $row = New-Object System.Windows.Controls.StackPanel
     $row.Orientation = 'Horizontal'
@@ -326,41 +323,34 @@ function New-ActCard($a, $run) {
     if ($run) {
         [void]$row.Children.Add((New-PanelLink (T 'act.stop') $Palette.crit.Wpf $run {
             param($s, $e); $e.Handled = $true; Stop-ActionRun $s.Tag; Update-Panel }))
-    } else {
-        if ($a.at -gt (Get-Date)) {
-            [void]$row.Children.Add((New-PanelLink (T 'task.now') '#FF60A5FA' $a {
-                param($s, $e)
-                $e.Handled = $true
-                try { Remove-Item -LiteralPath $s.Tag.path -Force } catch { return }
-                Save-Act (Get-Date) $s.Tag.kind $s.Tag.text $null
-                $script:ActKey = $null
-                Update-Panel
-            }))
-        }
-        [void]$row.Children.Add((New-PanelLink (T 'rem.edit') '#FF8B8B94' $a {
-            param($s, $e)
-            $e.Handled = $true
-            $script:ActEdit = $s.Tag
-            $UI.ActText.Text = $s.Tag.text
-            $UI.ActWhen.Text = $(if ($s.Tag.at -gt (Get-Date)) { $s.Tag.at.ToString('dd.MM.yyyy HH:mm') } else { '' })
-            Set-ActKind $s.Tag.kind
-            [void]$UI.ActText.Focus()
-        }))
-        [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $a {
-            param($s, $e)
-            $e.Handled = $true
-            try { Remove-Item -LiteralPath $s.Tag.path -Force } catch {}
-            if ($script:ActEdit -and $script:ActEdit.path -eq $s.Tag.path) { Reset-ActForm } else { Update-Panel }
-        }))
+    } elseif (-not $queued) {
+        [void]$row.Children.Add((New-PanelLink (T 'act.run') '#FF4ADE80' $a {
+            param($s, $e); $e.Handled = $true; Invoke-Action $s.Tag }))
     }
+    [void]$row.Children.Add((New-PanelLink (T 'rem.edit') '#FF8B8B94' $a {
+        param($s, $e)
+        $e.Handled = $true
+        $script:ActEdit = $s.Tag
+        $UI.ActName.Text = $s.Tag.name
+        $UI.ActText.Text = $s.Tag.text
+        Set-ActKind $s.Tag.kind
+        [void]$UI.ActText.Focus()
+    }))
+    [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $a {
+        param($s, $e)
+        $e.Handled = $true
+        try { Remove-Item -LiteralPath $s.Tag.path -Force } catch {}
+        if ($script:ActEdit -and $script:ActEdit.path -eq $s.Tag.path) { Reset-ActForm } else { Update-Panel }
+    }))
     [void]$box.Children.Add($row)
     $card.Child = $box
     return $card
 }
 
-# A line of the history: when, how it went, the text; a click shows a command's
-# output, "again" puts it back into the form.
+# A line of the history: when, how it went, the name or the text; a click shows a
+# command's output, "again" puts a one-off back into the form.
 function New-ActDoneRow($h) {
+    $id = "$($h.at.Ticks)|$($h.text)"
     $box = New-Object System.Windows.Controls.StackPanel
     $box.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
     $row = New-Object System.Windows.Controls.Grid
@@ -368,7 +358,6 @@ function New-ActDoneRow($h) {
         'done'    { @([string][char]0x2713, $Palette.ok.Wpf) }
         'failed'  { @(((T 'act.code') -f $h.code), $Palette.crit.Wpf) }
         'sent'    { @((T 'act.state.sent'), '#FF60A5FA') }
-        'missed'  { @((T 'act.state.missed'), $Palette.warn.Wpf) }
         default   { @((T "act.state.$($h.state)"), '#FF8B8B94') }
     }
     $line = New-PanelText '' 10 '#FF8B8B94'
@@ -379,12 +368,12 @@ function New-ActDoneRow($h) {
     $m = New-Object System.Windows.Documents.Run $mark[0]
     $m.Foreground = New-Brush $mark[1]
     $line.Inlines.Add($m)
-    $line.Inlines.Add((New-Object System.Windows.Documents.Run "  $($h.text -replace '\s+', ' ')"))
+    $line.Inlines.Add((New-Object System.Windows.Documents.Run "  $(if ($h.name) { $h.name } else { $h.text -replace '\s+', ' ' })"))
     $line.ToolTip = $h.text
     if ($h.kind -eq 'command') {
         $line.Cursor = [System.Windows.Input.Cursors]::Hand
         $line.Background = [System.Windows.Media.Brushes]::Transparent
-        $line.Tag = "$($h.at.Ticks)|$($h.text)"
+        $line.Tag = $id
         $line.add_MouseLeftButtonDown({
             param($s, $e)
             $e.Handled = $true
@@ -394,12 +383,15 @@ function New-ActDoneRow($h) {
         })
     }
     [void]$row.Children.Add($line)
+    # A saved one runs again as it is now; a one-off goes back into the form.
     $again = New-PanelLink (T 'rem.again') '#FF60A5FA' $h {
         param($s, $e)
         $e.Handled = $true
+        $a = $(if ($s.Tag.name) { Find-Action $s.Tag.name })
+        if ($a) { Invoke-Action $a; return }
         $script:ActEdit = $null
+        $UI.ActName.Text = ''
         $UI.ActText.Text = $s.Tag.text
-        $UI.ActWhen.Text = ''
         Set-ActKind $(if ($s.Tag.kind -eq 'command') { 'command' } else { 'clawd' })
         [void]$UI.ActText.Focus()
     }
@@ -407,7 +399,7 @@ function New-ActDoneRow($h) {
     $again.Margin = New-Object System.Windows.Thickness 0
     [void]$row.Children.Add($again)
     [void]$box.Children.Add($row)
-    if ($h.kind -eq 'command' -and $script:ActShown -eq "$($h.at.Ticks)|$($h.text)") {
+    if ($h.kind -eq 'command' -and $script:ActShown -eq $id) {
         $out = New-Object System.Windows.Controls.TextBox
         $out.Text            = $(if ($h.output) { $h.output } else { T 'act.noOutput' })
         $out.IsReadOnly      = $true
@@ -430,25 +422,23 @@ function Update-ActionsPage {
     $acts = Get-Actions
     $hist = Load-ActionHistory
     $key = (Get-Lang) + "|$($script:ActKind)|$($script:ActEdit.path)|$($script:ActShown)|" +
-           (@($acts | ForEach-Object { "$($_.path)$($_.at.Ticks)$($_.kind)" }) -join ',') + '|' +
-           (@($script:ActRuns | ForEach-Object { "$($_.act.path)$($_.stopped)" }) -join ',') + "|$([bool]$script:ChatProc)|" +
+           (@($acts | ForEach-Object { "$($_.name)$($_.kind)$($_.text.Length)" }) -join ',') + '|' +
+           (@($script:ActRuns | ForEach-Object { "$($_.act.name)$($_.stopped)" }) -join ',') + '|' +
+           (@($script:ActQueue | ForEach-Object { $_.name }) -join ',') + '|' +
            (@($hist | ForEach-Object { "$($_.at.Ticks)$($_.state)" }) -join ',') + '|' +
            [int]((Get-Date) - [datetime]::Today).TotalMinutes
     if ($key -eq $script:ActKey) { return }
     $script:ActKey = $key
 
-    $UI.ActTextHint.Text = T "act.textHint.$($script:ActKind)"
-    $UI.ActWhenHint.Text = T 'act.whenHint'
     Update-ActParsed
 
     $UI.ActList.Children.Clear()
-    foreach ($r in @($script:ActRuns)) { [void]$UI.ActList.Children.Add((New-ActCard $r.act $r)) }
-    foreach ($a in $acts) { [void]$UI.ActList.Children.Add((New-ActCard $a $null)) }
-    if (-not $UI.ActList.Children.Count) {
+    if (-not $acts.Count) {
         $none = New-PanelText (T 'act.none') 10 '#FF8B8B94'
         $none.Margin = New-Object System.Windows.Thickness 2, 0, 0, 4
         [void]$UI.ActList.Children.Add($none)
     }
+    foreach ($a in $acts) { [void]$UI.ActList.Children.Add((New-ActCard $a)) }
 
     $UI.ActKinds.Children.Clear()
     foreach ($k in $ActionKinds) {
@@ -456,22 +446,29 @@ function Update-ActionsPage {
             param($s, $e); $e.Handled = $true; Set-ActKind $s.Tag; [void]$UI.ActText.Focus() }))
     }
 
-    $UI.ActChips.Children.Clear()
-    foreach ($c in @(T 'act.chips')) {
-        [void]$UI.ActChips.Children.Add((New-PanelLink $c '#FF8B8B94' $c {
-            param($s, $e); $e.Handled = $true; $UI.ActWhen.Text = $s.Tag; [void]$UI.ActText.Focus() }))
-    }
-    if ($script:ActEdit) {
-        [void]$UI.ActChips.Children.Add((New-PanelLink (T 'rem.cancel') '#FF6B7280' $null {
-            param($s, $e); $e.Handled = $true; Reset-ActForm }))
-    }
-
+    # One-offs running from the form have no card: they show here until they end.
     $UI.ActDone.Children.Clear()
-    if ($hist.Count) {
+    $loose = @($script:ActRuns | Where-Object { -not $_.act.name })
+    if ($hist.Count -or $loose.Count) {
         [void]$UI.ActDone.Children.Add((New-PanelText (T 'rem.done') 9 '#FF6B7280'))
-        # Newest first.
-        for ($i = $hist.Count - 1; $i -ge [math]::Max(0, $hist.Count - 6); $i--) {
-            [void]$UI.ActDone.Children.Add((New-ActDoneRow $hist[$i]))
-        }
+    }
+    foreach ($r in $loose) {
+        $row = New-Object System.Windows.Controls.Grid
+        $row.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
+        $t = New-PanelText "$(T 'act.running')  $($r.act.text -replace '\s+', ' ')" 10 $Palette.warn.Wpf
+        $t.TextWrapping = 'NoWrap'
+        $t.TextTrimming = 'CharacterEllipsis'
+        $t.Margin = New-Object System.Windows.Thickness 0, 0, 70, 0
+        [void]$row.Children.Add($t)
+        $stop = New-PanelLink (T 'act.stop') $Palette.crit.Wpf $r {
+            param($s, $e); $e.Handled = $true; Stop-ActionRun $s.Tag; Update-Panel }
+        $stop.HorizontalAlignment = 'Right'
+        $stop.Margin = New-Object System.Windows.Thickness 0
+        [void]$row.Children.Add($stop)
+        [void]$UI.ActDone.Children.Add($row)
+    }
+    # Newest first.
+    for ($i = $hist.Count - 1; $i -ge [math]::Max(0, $hist.Count - 6); $i--) {
+        [void]$UI.ActDone.Children.Add((New-ActDoneRow $hist[$i]))
     }
 }

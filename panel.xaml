@@ -177,36 +177,36 @@
         <WrapPanel x:Name="TaskChips" Margin="0,4,0,0"/>
       </StackPanel>
 
-      <!-- actions: planned and running, the form (Clawd or a command), recently done -->
+      <!-- actions: saved commands and Clawd's mini-skills run on a click, the form, recently run -->
       <StackPanel x:Name="PageActions" Visibility="Collapsed">
-        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel x:Name="ActList"/>
         </ScrollViewer>
         <WrapPanel x:Name="ActKinds" Margin="0,6,0,0"/>
         <Border Style="{StaticResource FieldBox}">
           <Grid>
+            <TextBox x:Name="ActName" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
+            <TextBlock x:Name="ActNameHint" Style="{StaticResource Hint}"/>
+          </Grid>
+        </Border>
+        <Border Style="{StaticResource FieldBox}" Margin="0,4,0,0">
+          <Grid>
             <TextBox x:Name="ActText" Style="{StaticResource Field}" AcceptsReturn="True" MaxHeight="90"/>
             <TextBlock x:Name="ActTextHint" Style="{StaticResource Hint}"/>
           </Grid>
         </Border>
-        <Grid Margin="0,4,0,0">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-          </Grid.ColumnDefinitions>
-          <Border Style="{StaticResource FieldBox}">
-            <Grid>
-              <TextBox x:Name="ActWhen" Style="{StaticResource Field}" TextWrapping="NoWrap"/>
-              <TextBlock x:Name="ActWhenHint" Style="{StaticResource Hint}"/>
-            </Grid>
-          </Border>
-          <TextBlock x:Name="ActSave" Grid.Column="1" FontFamily="Segoe UI" FontSize="10.5"
-                     Foreground="#FF4ADE80" Margin="10,0,2,0" VerticalAlignment="Center"
-                     Cursor="Hand" Background="Transparent"/>
+        <Grid Margin="2,5,2,0">
+          <TextBlock x:Name="ActParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF6B7280"
+                     VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,150,0"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <TextBlock x:Name="ActCancel" FontFamily="Segoe UI" FontSize="10.5" Foreground="#FF6B7280"
+                       Margin="0,0,12,0" Cursor="Hand" Background="Transparent"/>
+            <TextBlock x:Name="ActRun" FontFamily="Segoe UI" FontSize="10.5" Foreground="#FF60A5FA"
+                       Margin="0,0,12,0" Cursor="Hand" Background="Transparent"/>
+            <TextBlock x:Name="ActSave" FontFamily="Segoe UI" FontSize="10.5" Foreground="#FF4ADE80"
+                       Cursor="Hand" Background="Transparent"/>
+          </StackPanel>
         </Grid>
-        <TextBlock x:Name="ActParsed" FontFamily="Segoe UI" FontSize="9.5" Foreground="#FF8B8B94"
-                   Margin="2,3,0,0" TextWrapping="Wrap"/>
-        <WrapPanel x:Name="ActChips" Margin="0,4,0,0"/>
         <ScrollViewer MaxHeight="200" Margin="0,8,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel x:Name="ActDone"/>
         </ScrollViewer>

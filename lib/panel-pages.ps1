@@ -32,7 +32,7 @@ function Set-PanelTab([string]$tab) {
     Update-Panel -Force
 }
 
-# A tab's name with how much is there: reminders and actions planned, tasks, items
+# A tab's name with how much is there: reminders planned, tasks and actions saved, items
 # still to tick off in all the lists.
 function Update-PanelTabs {
     $count = { param($name, $n) $(if ($n) { "$(T $name) $n" } else { T $name }) }
@@ -41,7 +41,7 @@ function Update-PanelTabs {
     $UI.TabChat.Text    = T 'tab.chat'
     $UI.TabRemind.Text  = & $count 'tab.remind' (Get-Reminders).Count
     $UI.TabTasks.Text   = & $count 'tab.tasks' (Get-Tasks).Count
-    $UI.TabActions.Text = & $count 'tab.actions' ((Get-Actions).Count + $script:ActRuns.Count)
+    $UI.TabActions.Text = & $count 'tab.actions' (Get-Actions).Count
     $UI.TabLists.Text   = & $count 'tab.lists' $open
     foreach ($p in @(@($UI.TabChat, 'chat'), @($UI.TabRemind, 'remind'), @($UI.TabTasks, 'tasks'),
                      @($UI.TabActions, 'actions'), @($UI.TabLists, 'lists'))) {
@@ -134,8 +134,6 @@ $whenTimer.add_Tick({
         $r = Collect-WhenProbe
         if (-not $r) { return }
         $whenTimer.Stop()
-        # Asked for the actions tab's form.
-        if ($r.data.action) { Complete-ActWhen $r; return }
         $same = ($UI.RemWhen.Text.Trim() -eq $r.when -and $UI.RemText.Text.Trim() -eq $r.data.text)
         if ($r.at) {
             Save-Rem $r.at $r.data.text $r.data.edit

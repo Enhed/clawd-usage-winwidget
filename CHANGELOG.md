@@ -7,12 +7,12 @@
   often (`10m`, `2h`, `1d`, `09:00, 18:00`, hours at the end: `10m 8-23`).
   An existing task can be changed there too; its permissions, model and history
   stay.
-- **Actions**: a new tab for something to do once - now or at a set time.
-  "Clawd does it" sends the words to the chat when due; "Command" is run by the
-  widget itself, no Claude and no tokens: a program, file or link is opened,
-  anything else runs as PowerShell, and its exit code and output are kept. A
-  running command can be stopped; one that fell due while the widget was off is
-  not run late.
+- **Actions**: a new tab for things you run with a click - a command or a
+  mini-skill for Clawd. A command is run by the widget itself, no Claude and no
+  tokens: a program, file or link is opened, anything else runs as PowerShell,
+  and its exit code and output are kept; a running one can be stopped. "Clawd
+  does it" sends the words to the chat. Save one under a name to keep it as a
+  card, or run it just once without a name.
 - Every panel tab shows how much it holds, Lists - the items still to tick off.
 
 ## 1.15.1
