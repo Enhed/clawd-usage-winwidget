@@ -43,11 +43,37 @@ function Add-FormKeys($tb) {
 
 # ----------------------------------------------------------------- tasks ----
 
-# A recurring task: name, how often, when it last ran; run now, change, pause, open
-# the file. A click on the name shows its latest reports, under the links.
+# An icon button on a card (Segoe MDL2 Assets), with its name as the tooltip.
+function New-PanelIcon([int]$glyph, [string]$color, [string]$tip, $tag, $onClick) {
+    $i = New-PanelText ([string][char]$glyph) 11 $color
+    $i.FontFamily = 'Segoe MDL2 Assets'
+    $i.TextWrapping = 'NoWrap'
+    $i.VerticalAlignment = 'Center'
+    $i.Padding = New-Object System.Windows.Thickness 5, 3, 5, 3
+    $i.Margin = New-Object System.Windows.Thickness 2, 0, 0, 0
+    $i.Cursor = [System.Windows.Input.Cursors]::Hand
+    $i.Background = [System.Windows.Media.Brushes]::Transparent
+    $i.ToolTip = $tip
+    $i.Tag = $tag
+    if ($onClick) { $i.add_MouseLeftButtonDown($onClick) }
+    return $i
+}
+
+# A recurring task: the name with icons on the right (run now, change, pause, open
+# the file, delete), under it how often and when it last ran. A click on the card
+# shows its latest reports.
 function New-TaskRow($t, $st) {
-    # A card of its own: the links clearly belong to this task.
     $card = New-PanelCard $(if ($script:TaskEdit -and $script:TaskEdit.name -eq $t.name) { '#FF2B3245' } else { '#FF26262C' })
+    $card.Padding = New-Object System.Windows.Thickness 9, 4, 4, 5
+    $card.Cursor = [System.Windows.Input.Cursors]::Hand
+    $card.Tag = $t.name
+    $card.add_MouseLeftButtonDown({
+        param($s, $e)
+        $e.Handled = $true
+        $script:TaskOpen = $(if ($script:TaskOpen -eq $s.Tag) { $null } else { $s.Tag })
+        $script:TaskKey = $null
+        Update-Panel
+    })
     $box = New-Object System.Windows.Controls.StackPanel
     $info = @(Format-TaskWhen $t)
     if ($t.hours -and -not $t.at) { $info += "$($t.hours[0])-$($t.hours[1])" }
@@ -60,27 +86,28 @@ function New-TaskRow($t, $st) {
     $wait = Get-TaskBudgetWait $t
     if (-not $t.paused -and $null -ne $wait) { $info += (T 'task.budget') -f $wait }
     $open = ($script:TaskOpen -eq $t.name)
-    $arrow = $(if ($open) { [char]0x25BE } else { [char]0x25B8 })
-    $line = New-PanelText "$arrow $($t.name)  $([char]0x00B7)  $($info -join "  $([char]0x00B7)  ")" 10 $(if ($t.paused) { '#FF6B7280' } else { '#FFD4D4D8' })
-    if ($st -and $st.error) { $line.ToolTip = $st.error; $line.Foreground = New-Brush $Palette.warn.Wpf }
-    $line.Cursor = [System.Windows.Input.Cursors]::Hand
-    $line.Background = [System.Windows.Media.Brushes]::Transparent
-    $line.Tag = $t.name
-    $line.add_MouseLeftButtonDown({
-        param($s, $e)
-        $e.Handled = $true
-        $script:TaskOpen = $(if ($script:TaskOpen -eq $s.Tag) { $null } else { $s.Tag })
-        $script:TaskKey = $null
-        Update-Panel
-    })
-    [void]$box.Children.Add($line)
-    $row = New-Object System.Windows.Controls.WrapPanel
-    $row.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
-    if (-not $running -and -not $queued) {
-        [void]$row.Children.Add((New-PanelLink (T 'task.now') '#FF60A5FA' $t {
+
+    $head = New-Object System.Windows.Controls.Grid
+    $c = New-Object System.Windows.Controls.ColumnDefinition; $head.ColumnDefinitions.Add($c)
+    $c = New-Object System.Windows.Controls.ColumnDefinition; $c.Width = 'Auto'; $head.ColumnDefinitions.Add($c)
+    $name = New-PanelText $t.name 10.5 $(if ($t.paused) { '#FF8B8B94' } else { '#FFF4F4F5' })
+    $name.FontWeight = 'SemiBold'
+    $name.TextWrapping = 'NoWrap'
+    $name.TextTrimming = 'CharacterEllipsis'
+    $name.VerticalAlignment = 'Center'
+    [void]$head.Children.Add($name)
+
+    $icons = New-Object System.Windows.Controls.StackPanel
+    $icons.Orientation = 'Horizontal'
+    [System.Windows.Controls.Grid]::SetColumn($icons, 1)
+    if ($running -or $queued) {
+        [void]$icons.Children.Add((New-PanelIcon 0xE768 '#FF52525B' $(if ($running) { T 'task.running' } else { T 'task.queued' }) $null {
+            param($s, $e); $e.Handled = $true }))
+    } else {
+        [void]$icons.Children.Add((New-PanelIcon 0xE768 '#FF4ADE80' (T 'task.now') $t {
             param($s, $e); $e.Handled = $true; Request-TaskRun $s.Tag; $script:TaskKey = $null; Update-Panel }))
     }
-    [void]$row.Children.Add((New-PanelLink (T 'rem.edit') '#FF8B8B94' $t {
+    [void]$icons.Children.Add((New-PanelIcon 0xE70F '#FF8B8B94' (T 'rem.edit') $t {
         param($s, $e)
         $e.Handled = $true
         $t = $s.Tag
@@ -94,17 +121,27 @@ function New-TaskRow($t, $st) {
         Update-Panel
         [void]$UI.TaskText.Focus()
     }))
-    [void]$row.Children.Add((New-PanelLink $(if ($t.paused) { T 'task.resume' } else { T 'task.pause' }) '#FF8B8B94' $t {
+    # Pause is a toggle: lit while the task is paused.
+    $pc = $(if ($t.paused) { $Palette.warn.Wpf } else { '#FF8B8B94' })
+    $pt = $(if ($t.paused) { T 'task.resume' } else { T 'task.pause' })
+    [void]$icons.Children.Add((New-PanelIcon 0xE769 $pc $pt $t {
         param($s, $e); $e.Handled = $true; Set-TaskPaused $s.Tag (-not $s.Tag.paused); Update-Panel }))
-    [void]$row.Children.Add((New-PanelLink (T 'task.open') '#FF8B8B94' $t {
+    [void]$icons.Children.Add((New-PanelIcon 0xE8E5 '#FF8B8B94' (T 'task.open') $t {
         param($s, $e); $e.Handled = $true; try { Start-Process notepad.exe -ArgumentList "`"$($s.Tag.path)`"" } catch {} }))
-    [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $t {
+    [void]$icons.Children.Add((New-PanelIcon 0xE74D '#FF6B7280' (T 'rem.delete') $t {
         param($s, $e)
         $e.Handled = $true
         [void](Remove-TaskFile $s.Tag.name)
         if ($script:TaskEdit -and $script:TaskEdit.name -eq $s.Tag.name) { Reset-TaskForm } else { Update-Panel }
     }))
-    [void]$box.Children.Add($row)
+    [void]$head.Children.Add($icons)
+    [void]$box.Children.Add($head)
+
+    $line = New-PanelText ($info -join "  $([char]0x00B7)  ") 9.5 $(if ($running) { $Palette.warn.Wpf } else { '#FF8B8B94' })
+    $line.Margin = New-Object System.Windows.Thickness 0, 0, 5, 0
+    if ($st -and $st.error) { $line.ToolTip = $st.error; $line.Foreground = New-Brush $Palette.warn.Wpf }
+    [void]$box.Children.Add($line)
+
     if ($open) {
         $hist = @($(if ($st) { $st.history }) | Where-Object { $_ })
         if ($st -and $st.error) { $hist += @{ at = $st.last; text = (T 'task.lastError') -f $st.error; bad = $true } }
@@ -121,7 +158,7 @@ function New-TaskRow($t, $st) {
             $r.TextWrapping = 'NoWrap'
             $r.TextTrimming = 'CharacterEllipsis'
             $r.ToolTip = $h.text
-            $r.Margin = New-Object System.Windows.Thickness 0, 3, 0, 0
+            $r.Margin = New-Object System.Windows.Thickness 0, 3, 5, 0
             [void]$box.Children.Add($r)
         }
     }
@@ -287,22 +324,6 @@ function Set-ActKind([string]$kind) {
     $UI.ActText.FontFamily = $(if ($kind -eq 'command') { 'Consolas' } else { 'Segoe UI' })
     $script:ActKey = $null
     Update-Panel
-}
-
-# An icon button on a card (Segoe MDL2 Assets), with its name as the tooltip.
-function New-PanelIcon([int]$glyph, [string]$color, [string]$tip, $tag, $onClick) {
-    $i = New-PanelText ([string][char]$glyph) 11 $color
-    $i.FontFamily = 'Segoe MDL2 Assets'
-    $i.TextWrapping = 'NoWrap'
-    $i.VerticalAlignment = 'Center'
-    $i.Padding = New-Object System.Windows.Thickness 5, 3, 5, 3
-    $i.Margin = New-Object System.Windows.Thickness 2, 0, 0, 0
-    $i.Cursor = [System.Windows.Input.Cursors]::Hand
-    $i.Background = [System.Windows.Media.Brushes]::Transparent
-    $i.ToolTip = $tip
-    $i.Tag = $tag
-    if ($onClick) { $i.add_MouseLeftButtonDown($onClick) }
-    return $i
 }
 
 # A saved one: one line - name and kind, icons on the right: run (stop while a
