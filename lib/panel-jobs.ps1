@@ -15,6 +15,7 @@ $script:ActKey   = $null
 $script:ActKind  = 'clawd'   # what the form makes
 $script:ActEdit  = $null     # saved action being changed
 $script:ActShown = ''        # history line whose output is shown: "<time in ticks>|<text>"
+$script:ActOpen  = ''        # saved action whose text is shown
 
 foreach ($pair in @(@($UI.TaskName, $UI.TaskNameHint), @($UI.TaskText, $UI.TaskTextHint), @($UI.TaskWhen, $UI.TaskWhenHint),
                     @($UI.ActName, $UI.ActNameHint), @($UI.ActText, $UI.ActTextHint))) {
@@ -288,46 +289,85 @@ function Set-ActKind([string]$kind) {
     Update-Panel
 }
 
-# A saved one: name and kind, the text; Run (Stop while a command runs), Change, Delete.
+# An icon button on a card (Segoe MDL2 Assets), with its name as the tooltip.
+function New-PanelIcon([int]$glyph, [string]$color, [string]$tip, $tag, $onClick) {
+    $i = New-PanelText ([string][char]$glyph) 11 $color
+    $i.FontFamily = 'Segoe MDL2 Assets'
+    $i.TextWrapping = 'NoWrap'
+    $i.VerticalAlignment = 'Center'
+    $i.Padding = New-Object System.Windows.Thickness 5, 3, 5, 3
+    $i.Margin = New-Object System.Windows.Thickness 2, 0, 0, 0
+    $i.Cursor = [System.Windows.Input.Cursors]::Hand
+    $i.Background = [System.Windows.Media.Brushes]::Transparent
+    $i.ToolTip = $tip
+    $i.Tag = $tag
+    if ($onClick) { $i.add_MouseLeftButtonDown($onClick) }
+    return $i
+}
+
+# A saved one: one line - name and kind, icons on the right: run (stop while a
+# command runs), change, delete. A click on the card shows what it does.
 function New-ActCard($a) {
     $card = New-PanelCard $(if ($script:ActEdit -and $a.path -eq $script:ActEdit.path) { '#FF2B3245' } else { '#FF26262C' })
-    $box = New-Object System.Windows.Controls.StackPanel
+    $card.Padding = New-Object System.Windows.Thickness 9, 4, 4, 4
+    $card.Cursor = [System.Windows.Input.Cursors]::Hand
+    $card.Tag = $a.name
+    $card.add_MouseLeftButtonDown({
+        param($s, $e)
+        $e.Handled = $true
+        $script:ActOpen = $(if ($script:ActOpen -eq $s.Tag) { '' } else { $s.Tag })
+        $script:ActKey = $null
+        Update-Panel
+    })
     $run = Get-ActionRun $a.name
     $queued = Test-ActionQueued $a.name
-    $kind = "$(if ($a.kind -eq 'command') { [char]0x203A } else { [char]0x2726 }) $(T "act.kind.$($a.kind)")"
-    $head = New-PanelText '' 10.5 '#FFF4F4F5'
+    $open = ($script:ActOpen -eq $a.name)
+    $box = New-Object System.Windows.Controls.StackPanel
+    $head = New-Object System.Windows.Controls.Grid
+    $c = New-Object System.Windows.Controls.ColumnDefinition; $head.ColumnDefinitions.Add($c)
+    $c = New-Object System.Windows.Controls.ColumnDefinition; $c.Width = 'Auto'; $head.ColumnDefinitions.Add($c)
+
+    $title = New-PanelText '' 10.5 '#FFF4F4F5'
+    $title.TextWrapping = 'NoWrap'
+    $title.TextTrimming = 'CharacterEllipsis'
+    $title.VerticalAlignment = 'Center'
+    # The kind as a mark: a prompt for a command, Clawd's spark for his.
+    if ($a.kind -eq 'command') {
+        $k = New-Object System.Windows.Documents.Run ([string][char]0xE756)
+        $k.FontFamily = 'Segoe MDL2 Assets'
+        $k.FontSize = 10
+        $k.Foreground = New-Brush '#FF8B8B94'
+    } else {
+        $k = New-Object System.Windows.Documents.Run ([string][char]0x2726)
+        $k.Foreground = New-Brush '#FFD77757'
+    }
+    $title.Inlines.Add($k)
+    $title.Inlines.Add((New-Object System.Windows.Documents.Run '  '))
     $n = New-Object System.Windows.Documents.Run $a.name
     $n.FontWeight = 'SemiBold'
-    $head.Inlines.Add($n)
-    $k = New-Object System.Windows.Documents.Run "  $([char]0x00B7)  $kind"
-    $k.Foreground = New-Brush '#FF6B7280'
-    $k.FontSize = 9.5
-    $head.Inlines.Add($k)
+    $title.Inlines.Add($n)
     if ($run -or $queued) {
-        $st = New-Object System.Windows.Documents.Run "  $([char]0x00B7)  $(if ($run) { T 'act.running' } else { T 'task.queued' })"
+        $st = New-Object System.Windows.Documents.Run "  $(if ($run) { T 'act.running' } else { T 'task.queued' })"
         $st.Foreground = New-Brush $Palette.warn.Wpf
         $st.FontSize = 9.5
-        $head.Inlines.Add($st)
+        $title.Inlines.Add($st)
     }
-    [void]$box.Children.Add($head)
-    $t = New-PanelText ($a.text -replace '\s*\r?\n\s*', ' ') 9.5 '#FF8B8B94'
-    if ($a.kind -eq 'command') { $t.FontFamily = 'Consolas' }
-    $t.TextWrapping = 'NoWrap'
-    $t.TextTrimming = 'CharacterEllipsis'
-    $t.ToolTip = $a.text
-    $t.Margin = New-Object System.Windows.Thickness 0, 2, 0, 0
-    [void]$box.Children.Add($t)
-    $row = New-Object System.Windows.Controls.StackPanel
-    $row.Orientation = 'Horizontal'
-    $row.Margin = New-Object System.Windows.Thickness 0, 4, 0, 0
+    $title.ToolTip = T "act.kind.$($a.kind)"
+    [void]$head.Children.Add($title)
+
+    $icons = New-Object System.Windows.Controls.StackPanel
+    $icons.Orientation = 'Horizontal'
+    [System.Windows.Controls.Grid]::SetColumn($icons, 1)
     if ($run) {
-        [void]$row.Children.Add((New-PanelLink (T 'act.stop') $Palette.crit.Wpf $run {
+        [void]$icons.Children.Add((New-PanelIcon 0xE71A $Palette.crit.Wpf (T 'act.stop') $run {
             param($s, $e); $e.Handled = $true; Stop-ActionRun $s.Tag; Update-Panel }))
-    } elseif (-not $queued) {
-        [void]$row.Children.Add((New-PanelLink (T 'act.run') '#FF4ADE80' $a {
+    } elseif ($queued) {
+        [void]$icons.Children.Add((New-PanelIcon 0xE768 '#FF52525B' (T 'task.queued') $null { param($s, $e); $e.Handled = $true }))
+    } else {
+        [void]$icons.Children.Add((New-PanelIcon 0xE768 '#FF4ADE80' (T 'act.run') $a {
             param($s, $e); $e.Handled = $true; Invoke-Action $s.Tag }))
     }
-    [void]$row.Children.Add((New-PanelLink (T 'rem.edit') '#FF8B8B94' $a {
+    [void]$icons.Children.Add((New-PanelIcon 0xE70F '#FF8B8B94' (T 'rem.edit') $a {
         param($s, $e)
         $e.Handled = $true
         $script:ActEdit = $s.Tag
@@ -336,13 +376,21 @@ function New-ActCard($a) {
         Set-ActKind $s.Tag.kind
         [void]$UI.ActText.Focus()
     }))
-    [void]$row.Children.Add((New-PanelLink (T 'rem.delete') '#FF6B7280' $a {
+    [void]$icons.Children.Add((New-PanelIcon 0xE74D '#FF6B7280' (T 'rem.delete') $a {
         param($s, $e)
         $e.Handled = $true
         try { Remove-Item -LiteralPath $s.Tag.path -Force } catch {}
         if ($script:ActEdit -and $script:ActEdit.path -eq $s.Tag.path) { Reset-ActForm } else { Update-Panel }
     }))
-    [void]$box.Children.Add($row)
+    [void]$head.Children.Add($icons)
+    [void]$box.Children.Add($head)
+
+    if ($open) {
+        $t = New-PanelText $a.text 9.5 '#FFA1A1AA'
+        if ($a.kind -eq 'command') { $t.FontFamily = 'Consolas' }
+        $t.Margin = New-Object System.Windows.Thickness 0, 2, 5, 4
+        [void]$box.Children.Add($t)
+    }
     $card.Child = $box
     return $card
 }
@@ -421,7 +469,7 @@ function New-ActDoneRow($h) {
 function Update-ActionsPage {
     $acts = Get-Actions
     $hist = Load-ActionHistory
-    $key = (Get-Lang) + "|$($script:ActKind)|$($script:ActEdit.path)|$($script:ActShown)|" +
+    $key = (Get-Lang) + "|$($script:ActKind)|$($script:ActEdit.path)|$($script:ActShown)|$($script:ActOpen)|" +
            (@($acts | ForEach-Object { "$($_.name)$($_.kind)$($_.text.Length)" }) -join ',') + '|' +
            (@($script:ActRuns | ForEach-Object { "$($_.act.name)$($_.stopped)" }) -join ',') + '|' +
            (@($script:ActQueue | ForEach-Object { $_.name }) -join ',') + '|' +
