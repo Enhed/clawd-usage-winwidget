@@ -11,9 +11,9 @@ $SpookPx  = 1.6
 $script:Spook = @{ w = 0; ghost = $null; wait = 80; spider = 0.0; spiderT = 0; scare = -1; night = $null }
 
 # Fog: soft green and purple clouds creeping along the bottom.
-$script:Fog = @()
+$script:SpookFog = @()
 foreach ($f in @(@('#86EFAC', 0.10), @('#A78BFA', 0.12), @('#86EFAC', 0.08), @('#C4B5FD', 0.10))) {
-    $script:Fog += @{ e = (New-SceneShape $SpookFx Ellipse 10 10 (New-Glow $f[0] $f[1])); ph = $script:Rnd.NextDouble() * 6.28 }
+    $script:SpookFog += @{ e = (New-SceneShape $SpookFx Ellipse 10 10 (New-Glow $f[0] $f[1])); ph = $script:Rnd.NextDouble() * 6.28 }
 }
 
 # Will-o'-the-wisps: little green lights wandering, glowing up and dying down.
@@ -124,13 +124,13 @@ foreach ($fx in @(0.24, 0.58)) {
     $script:Pumpkins += @{ c = $c; glow = $glow; face = $face; fx = $fx; ph = $script:Rnd.NextDouble() * 6.28 }
 }
 
-$ground = @('', '', '')
+$groundArt = @('', '', '')
 for ($x = 0; $x -lt 170; $x++) {
-    $ground[0] += $(if ($script:Rnd.Next(5) -eq 0) { 'g' } else { '.' })
-    $ground[1] += $(if ($script:Rnd.Next(3) -eq 0) { 'g' } else { 'd' })
-    $ground[2] += 'd'
+    $groundArt[0] += $(if ($script:Rnd.Next(5) -eq 0) { 'g' } else { '.' })
+    $groundArt[1] += $(if ($script:Rnd.Next(3) -eq 0) { 'g' } else { 'd' })
+    $groundArt[2] += 'd'
 }
-$SpookGround = New-ScenePixels $SpookSky $ground $SpookPx @{ d = '#FF2E1F3D'; g = '#FF3F2F52' }
+$SpookGround = New-ScenePixels $SpookSky $groundArt $SpookPx @{ d = '#FF2E1F3D'; g = '#FF3F2F52' }
 
 # The scare, a secret: at midnight, and not every night, lightning flashes
 # twice, the lights go out and a huge face with burning eyes and a jagged grin looms
@@ -197,8 +197,8 @@ function Step-Halloween([int]$t) {
     $w = $SpookFx.ActualWidth; $h = $SpookFx.ActualHeight
     if ($w -le 0 -or $h -le 0) { return }
 
-    for ($i = 0; $i -lt $script:Fog.Count; $i++) {
-        $f = $script:Fog[$i]
+    for ($i = 0; $i -lt $script:SpookFog.Count; $i++) {
+        $f = $script:SpookFog[$i]
         $fw = $w * (0.7 + 0.15 * $i); $fh = 70 + 15 * $i
         $f.e.Width = $fw; $f.e.Height = $fh
         $f.e.Opacity = 0.7 + 0.3 * [math]::Sin($t / 40.0 + $f.ph)

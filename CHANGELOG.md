@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.1
+
+- Fixed: after switching from the Halloween theme to another one the sky row
+  vanished, taking the animated themes' sky layer (planets, moon, jellyfish)
+  with it until restart.
+
 ## 1.15.0
 
 👻 **Halloween update**: the Halloween theme is animated now, and Clawd has
