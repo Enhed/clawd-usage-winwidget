@@ -16,7 +16,15 @@ $script:ListCur  = $null     # list shown
 $script:ListNew  = $false    # the add field takes a new list's name
 $script:ListKey  = $null
 
+# Whether a tab is on in Settings; the chat always is.
+$PanelTabKeys = @{ remind = 'showReminders'; tasks = 'showTasks'; actions = 'showActions'; lists = 'showLists' }
+function Test-PanelTab([string]$tab) {
+    if (-not $PanelTabKeys.ContainsKey($tab)) { return $true }
+    return [bool]$script:Cfg[$PanelTabKeys[$tab]]
+}
+
 function Set-PanelTab([string]$tab) {
+    if (-not (Test-PanelTab $tab)) { $tab = 'chat' }
     $script:PanelTab = $tab
     $UI.PageChat.Visibility   = $(if ($tab -eq 'chat')   { 'Visible' } else { 'Collapsed' })
     $UI.PageRemind.Visibility = $(if ($tab -eq 'remind') { 'Visible' } else { 'Collapsed' })
@@ -36,15 +44,19 @@ function Set-PanelTab([string]$tab) {
 # still to tick off in all the lists.
 function Update-PanelTabs {
     $count = { param($name, $n) $(if ($n) { "$(T $name) $n" } else { T $name }) }
-    $open = 0
-    foreach ($l in (Get-Lists)) { $open += @((Read-List $l).items | Where-Object { -not $_.done }).Count }
-    $UI.TabChat.Text    = T 'tab.chat'
-    $UI.TabRemind.Text  = & $count 'tab.remind' (Get-Reminders).Count
-    $UI.TabTasks.Text   = & $count 'tab.tasks' (Get-Tasks).Count
-    $UI.TabActions.Text = & $count 'tab.actions' (Get-Actions).Count
-    $UI.TabLists.Text   = & $count 'tab.lists' $open
+    $UI.TabChat.Text = T 'tab.chat'
+    # Only the tabs that are on are counted: that reads their files.
+    if (Test-PanelTab 'remind')  { $UI.TabRemind.Text  = & $count 'tab.remind' (Get-Reminders).Count }
+    if (Test-PanelTab 'tasks')   { $UI.TabTasks.Text   = & $count 'tab.tasks' (Get-Tasks).Count }
+    if (Test-PanelTab 'actions') { $UI.TabActions.Text = & $count 'tab.actions' (Get-Actions).Count }
+    if (Test-PanelTab 'lists') {
+        $open = 0
+        foreach ($l in (Get-Lists)) { $open += @((Read-List $l).items | Where-Object { -not $_.done }).Count }
+        $UI.TabLists.Text = & $count 'tab.lists' $open
+    }
     foreach ($p in @(@($UI.TabChat, 'chat'), @($UI.TabRemind, 'remind'), @($UI.TabTasks, 'tasks'),
                      @($UI.TabActions, 'actions'), @($UI.TabLists, 'lists'))) {
+        $p[0].Visibility = $(if (Test-PanelTab $p[1]) { 'Visible' } else { 'Collapsed' })
         $on = ($p[1] -eq $script:PanelTab)
         $p[0].Foreground = New-Brush $(if ($on) { '#FFF4F4F5' } else { '#FF6B7280' })
         # Assigned directly: through $( ) PowerShell would unroll the collection into one item.

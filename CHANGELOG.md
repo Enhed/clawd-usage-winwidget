@@ -14,6 +14,9 @@
   does it" sends the words to the chat. Save one under a name to keep it as a
   card, or run it just once without a name.
 - Every panel tab shows how much it holds, Lists - the items still to tick off.
+- **The panel's tabs can be turned off** in Settings → Clawd: Reminders, Tasks,
+  Actions, Lists. One turned off is gone from the panel and does nothing in the
+  background, and Clawd is told so.
 
 ## 1.15.1
 

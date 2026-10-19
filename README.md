@@ -121,7 +121,9 @@ saved.
 **Settings** — the gear in the window's header (or the tray menu): language,
 theme, Clawd's skin picked from cards with a live preview (he raises his arms
 under the mouse), size, opacity, always on top, which blocks the window shows,
-the tips, the chat, recurring tasks and Clawd's session. Everything applies at
+the tips, the chat, the panel's tabs (Reminders, Tasks, Actions, Lists - one
+turned off is gone from the panel and does nothing in the background, and Clawd
+is told so) and Clawd's session. Everything applies at
 once; the rest of the keys are in `config.json`, linked at the bottom.
 
 The **Claude Code** tab is Claude Code's own `~/.claude/settings.json`, a picked
@@ -447,7 +449,10 @@ are picked up on the fly, no restart needed.
 | `chatBypass` | the chat in `bypassPermissions`: reads anywhere, nothing is refused (Settings → Clawd) |
 | `chatCompact` | short replies and quick checks within `chatTimeoutSeconds`; off - a full agent, no time limit |
 | `quickModel` | model for small jobs: an unclear reminder time, recurring tasks (`haiku`) |
-| `showTasks` | run recurring tasks from `tasks\` in Clawd's home |
+| `showReminders` | the panel's Reminders tab; off - reminders don't fire either |
+| `showTasks` | run recurring tasks from `tasks\` in Clawd's home (the Tasks tab) |
+| `showActions` | the panel's Actions tab |
+| `showLists` | the panel's Lists tab |
 | `tasksMaxPercent` | tasks wait while the session or the week is at this percent or more (80; 100 — never wait) |
 | `advisorDiskGB` / `advisorJunkGB` | free space to warn below; size of temp files and caches worth mentioning, GB |
 | `advisorUnusedDays` / `advisorUptimeDays` / `advisorMemPercent` | when an app counts as unused; when to suggest a restart; memory share of one program worth a word |

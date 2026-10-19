@@ -441,6 +441,8 @@ function Update-PanelBusy {
 
 # The open tab is brought up to date; the others wait until they are opened.
 function Update-Panel([switch]$Force) {
+    # The open tab was turned off in Settings - back to the chat.
+    if (-not (Test-PanelTab $script:PanelTab)) { Set-PanelTab 'chat'; return }
     Update-PanelBusy
     Update-PanelTabs
     switch ($script:PanelTab) {

@@ -41,6 +41,7 @@ function Set-Setting([string]$key, $value) {
     Save-Config $script:Cfg
     if ($key -eq 'chatAutoRun') { $script:AutoChain = 0; Update-ChatAuto }
     try { Update-Widget } catch {}
+    if ($advWin.IsVisible) { Update-Panel }
     Update-Settings
 }
 
@@ -335,7 +336,12 @@ function Add-SetClawdPage($p) {
         [void]$p.Children.Add((New-SetToggle 'chatBypass' (T 'set.chatBypass') (T 'set.chatBypassTip')))
         [void]$p.Children.Add((New-SetToggle 'chatCompact' (T 'set.chatCompact') (T 'set.chatCompactTip')))
     }
-    [void]$p.Children.Add((New-SetToggle 'showTasks' (T 'set.showTasks')))
+
+    # The panel's tabs: one turned off is gone from the panel and does not work in the background.
+    [void]$p.Children.Add((New-SetHeader (T 'set.panelTabs')))
+    foreach ($k in @('showReminders', 'showTasks', 'showActions', 'showLists')) {
+        [void]$p.Children.Add((New-SetToggle $k (T "set.$k")))
+    }
 
     [void]$p.Children.Add((New-SetHeader 'Remote Control'))
     [void]$p.Children.Add((New-SetToggle 'clawdSession' (T 'set.clawdSession')))

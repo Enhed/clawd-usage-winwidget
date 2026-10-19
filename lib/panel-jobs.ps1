@@ -216,7 +216,7 @@ foreach ($tb in @($UI.TaskName, $UI.TaskText, $UI.TaskWhen)) { Add-FormKeys $tb 
 function Update-TasksPage {
     $tasks = Get-Tasks
     $tst = Load-TaskState
-    $key = (Get-Lang) + "|$($script:Cfg.showTasks)|" +
+    $key = (Get-Lang) + '|' +
            (@($tasks | ForEach-Object { "$($_.name)$($_.everyText)$($_.atText)$($_.paused)$($_.prompt.Length)$(if ($tst[$_.name]) { "$($tst[$_.name].last.Ticks)$($tst[$_.name].error)" })" }) -join ',') +
            "|$(if ($script:TaskProc) { $script:TaskProc.task.name })|$($script:TaskQueue -join ',')|$($script:TaskOpen)|" +
            (@($tasks | ForEach-Object { Get-TaskBudgetWait $_ }) -join ',') + "|$($script:TaskEdit.path)|" +
@@ -231,11 +231,6 @@ function Update-TasksPage {
     Update-TaskParsed
 
     $UI.TaskList.Children.Clear()
-    if (-not $script:Cfg.showTasks) {
-        $off = New-PanelText (T 'task.off') 10 $Palette.warn.Wpf
-        $off.Margin = New-Object System.Windows.Thickness 2, 0, 0, 6
-        [void]$UI.TaskList.Children.Add($off)
-    }
     if (-not $tasks.Count) {
         $none = New-PanelText (T 'task.none') 10 '#FF8B8B94'
         $none.Margin = New-Object System.Windows.Thickness 2, 0, 0, 4

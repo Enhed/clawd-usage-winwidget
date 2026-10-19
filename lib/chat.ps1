@@ -189,7 +189,9 @@ function Get-ChatContext {
         $lines += 'tips: none'
     }
     $rem = Get-Reminders
-    if ($rem.Count) {
+    if (-not $script:Cfg.showReminders) {
+        $lines += 'reminders: turned off by the user in Settings - do not set or offer any'
+    } elseif ($rem.Count) {
         $lines += 'reminders (file in the reminders folder - time - text):'
         foreach ($r in $rem) {
             $rep = $(if ($r.repeat) { " (repeats $($r.repeat))" } else { '' })
@@ -199,7 +201,9 @@ function Get-ChatContext {
         $lines += 'reminders: none'
     }
     $names = Get-Lists
-    if ($names.Count) {
+    if (-not $script:Cfg.showLists) {
+        $lines += 'lists: turned off by the user in Settings - do not keep any'
+    } elseif ($names.Count) {
         $lines += 'lists (files in the lists folder; "[x]" - ticked off):'
         foreach ($n in $names) {
             $items = @((Read-List $n).items | ForEach-Object { "$(if ($_.done) { '[x] ' })$($_.text)" })
@@ -207,7 +211,9 @@ function Get-ChatContext {
         }
     }
     $tasks = Get-Tasks
-    if ($tasks.Count) {
+    if (-not $script:Cfg.showTasks) {
+        $lines += 'recurring tasks: turned off by the user in Settings - they do not run; do not make any'
+    } elseif ($tasks.Count) {
         $st = Load-TaskState
         $lines += 'recurring tasks (files in the tasks folder):'
         foreach ($t in $tasks) {
@@ -217,7 +223,7 @@ function Get-ChatContext {
         }
     }
     $acts = Get-Actions
-    if ($acts.Count) {
+    if ($script:Cfg.showActions -and $acts.Count) {
         $lines += 'actions the user saved to run with a click (files in the actions folder; command - run by the widget itself, clawd - sent to you as a message):'
         foreach ($a in $acts) { $lines += "- $($a.name) ($($a.kind)): $(($a.text -replace '\s+', ' '))" }
     }
@@ -344,8 +350,19 @@ function Read-ChatReply([string]$reply) {
     $run = $null
     $notes = @()
     $rx = [regex]'(?ms)^```(run|remind|remind-cancel|list-add|list-check|list-uncheck|list-remove|task|task-remove)[ \t]*\r?\n(.*?)^```[ \t]*$'
+    $skipped = @()
     foreach ($m in $rx.Matches($reply)) {
         $body = $m.Groups[2].Value.Trim()
+        # A block for a part turned off in Settings is not acted on.
+        $off = switch -regex ($m.Groups[1].Value) {
+            '^remind'  { if (-not $script:Cfg.showReminders) { 'showReminders' } }
+            '^list-'   { if (-not $script:Cfg.showLists) { 'showLists' } }
+            '^task'    { if (-not $script:Cfg.showTasks) { 'showTasks' } }
+        }
+        if ($off) {
+            if ($skipped -notcontains $off) { $skipped += $off; $notes += (T 'chat.moduleOff') -f (T "set.$off") }
+            continue
+        }
         switch ($m.Groups[1].Value) {
             'run' { if ($body) { $run = @{ script = $body; state = 'pending'; code = $null } } }
             'remind' {

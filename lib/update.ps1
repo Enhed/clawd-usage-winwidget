@@ -212,7 +212,7 @@ function Update-Widget {
     Set-Theme
     Sync-Mascot
     Update-Advisor
-    Update-Reminders
+    if ($script:Cfg.showReminders) { Update-Reminders }
     Update-Tasks
     Update-Actions
     Update-RemoteFeed
