@@ -6,14 +6,14 @@
   administrator, everything it started was elevated too. Now action commands
   and recurring tasks run with your usual rights; the chat and Clawd's actions
   stay elevated. Turned off in Settings → Window (`jobsNoAdmin`) - for commands
-  that need admin rights.
+  that need admin rights. ([14fbd6f](https://github.com/Enhed/clawd-usage-winwidget/commit/14fbd6f0464c39cef99a7ad9bd99a0ae2e15d0d0))
 - Clawd knows what runs with which rights: elevated, he is told his commands
   and scripts run as administrator with no UAC to stop a mistake; not elevated -
-  that system folders and services are out of reach, and where to turn it on.
+  that system folders and services are out of reach, and where to turn it on. ([0be2e35](https://github.com/Enhed/clawd-usage-winwidget/commit/0be2e35a5ebf3d47f23a75f9907c0ed5fd64319f))
 - The Tasks form understands "how often" in your own words, as reminders do:
   what it doesn't know ("twice an hour in the daytime", "every morning at eight")
   goes to the small model on saving and comes back as a schedule. Days of the
-  week still can't be set.
+  week still can't be set. ([375d6af](https://github.com/Enhed/clawd-usage-winwidget/commit/375d6afb42671180ef619e0c88efb7fb146908a1))
 
 ## 1.16.0
 
