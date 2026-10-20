@@ -170,13 +170,30 @@ function Update-RemoteFeed {
 }
 
 # What Claude gets before each message: time, rights, tips with details, reminders.
+# Whose rights what runs with, said so Clawd keeps it in mind writing commands.
 # -Job: for a recurring task, which may run without the widget's rights (jobsNoAdmin).
+function Get-ChatRights([switch]$Job) {
+    if (-not $script:IsAdmin) {
+        return 'widget elevated: no - you, your run scripts, action commands and tasks have no admin rights: ' +
+               'system folders, services, HKLM and the like are refused; if a job needs them, say so ' +
+               '(Settings - Window - Run as administrator, from the next start)'
+    }
+    if ($Job) {
+        if (Test-JobsNoAdmin) { return 'widget elevated: yes, but this task runs without admin rights' }
+        return 'widget elevated: yes - this task runs as administrator too'
+    }
+    $jobs = $(if (Test-JobsNoAdmin) { 'without admin rights (the user''s usual ones; one that needs them - offer your run script instead)' }
+              else { 'as administrator too' })
+    return 'widget elevated: yes - your tools and run scripts run as administrator, with no UAC prompt to stop a mistake: ' +
+           "be careful with anything that deletes or changes the system; action commands and recurring tasks run $jobs"
+}
+
 function Get-ChatContext([switch]$Job) {
     $now = Get-Date
     $tz = [TimeZoneInfo]::Local.GetUtcOffset($now)
     $lines = @('<context>',
                "now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm')))",
-               "widget elevated: $(if ($Job -and (Test-JobsNoAdmin)) { 'yes, but this task runs without admin rights' } elseif ($script:IsAdmin) { 'yes' } else { 'no' })",
+               (Get-ChatRights -Job:$Job),
                "auto-run: $(if ($script:Cfg.chatAutoRun) { 'on - your run scripts start at once, without the user''s click' } else { 'off' })",
                "full access: $(if ($script:Cfg.chatBypass) { 'on - nothing is refused, read files anywhere on the computer' } else { 'off' })")
     $tips = @(Get-AdvisorTips)

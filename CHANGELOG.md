@@ -7,6 +7,9 @@
   and recurring tasks run with your usual rights; the chat and Clawd's actions
   stay elevated. Turned off in Settings → Window (`jobsNoAdmin`) - for commands
   that need admin rights.
+- Clawd knows what runs with which rights: elevated, he is told his commands
+  and scripts run as administrator with no UAC to stop a mistake; not elevated -
+  that system folders and services are out of reach, and where to turn it on.
 
 ## 1.16.0
 
