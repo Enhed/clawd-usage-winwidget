@@ -4,7 +4,7 @@
 
 - Text in chat messages can be selected and copied in part (Ctrl+C or right-click);
   the icon that copies the whole message moved to its bottom corner, where it is
-  at hand at the end of a long reply.
+  at hand at the end of a long reply. ([ce83282](https://github.com/Enhed/clawd-usage-winwidget/commit/ce83282ac3f12979a05b3f8ffc524cad48c0968a))
 
 ## 1.17.0
 
