@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.17.0
+
+- **Commands and tasks without admin rights.** With the widget running as
+  administrator, everything it started was elevated too. Now action commands
+  and recurring tasks run with your usual rights; the chat and Clawd's actions
+  stay elevated. Turned off in Settings → Window (`jobsNoAdmin`) - for commands
+  that need admin rights.
+
 ## 1.16.0
 
 - **Tasks get a tab of their own.** Recurring tasks moved out of Reminders to a

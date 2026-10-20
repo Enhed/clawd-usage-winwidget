@@ -48,6 +48,7 @@ $DefaultConfig = [ordered]@{
     accent                 = $null  # your own accent colour (#RRGGBB) over the theme's
     skin                   = 'classic' # Clawd's skin: built in (skins folder) or yours (<clawdHome>\skins)
     runAsAdmin             = $false # run the widget elevated (UAC prompt at start)
+    jobsNoAdmin            = $true  # elevated widget: action commands and recurring tasks still run with usual rights
     clawdHome              = $null  # Clawd's folder: chat, reminders, tips.md, his session; empty - ~\Clawd
     clawdSession           = $false # keep Clawd's own Claude Code session running there, with Remote Control
     clawdSessionName       = 'clawd-usage-winwidget' # its name in Remote Control and the session list

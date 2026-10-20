@@ -33,6 +33,7 @@ function Read-ChatReply($x) { @{ text = $x; run = $null; notes = @() } }
 $script:Said = @()
 function Add-ChatMessage($role, $text) { $script:Said += "$role|$text"; @{} }
 
+. (Join-Path $Repo 'lib\launch.ps1')   # not elevated here: Start-JobProcess calls the fake Start-Process
 . (Join-Path $Repo 'lib\tasks.ps1')
 
 # The fake claude: notes the model and the task, answers the next line of $Answers

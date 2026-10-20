@@ -332,7 +332,7 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
         $head += '</task>'
         # The rule once more after the task's own words ("stay silent" made small
         # models say so in a sentence).
-        $text = (Get-ChatContext) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt + "`n`n" +
+        $text = (Get-ChatContext -Job) + "`n`n" + ($head -join "`n") + "`n`n" + $t.prompt + "`n`n" +
                 '(Answer in the fields: tell = false unless the user needs to know or do something now; ' +
                 'message - only when tell is true; summary - always, one short line.)'
         [System.IO.File]::WriteAllText($in, $text, (New-Object System.Text.UTF8Encoding $false))
@@ -345,10 +345,7 @@ function Start-TaskRun($t, [string]$model = '', [switch]$Retry) {
                   '--append-system-prompt-file', (& $q $TasksPromptPath),
                   '--allowedTools') + @($ChatReadOnly | ForEach-Object { & $q "PowerShell($_`:*)" }) +
                 @($t.tools | ForEach-Object { & $q $_ })
-        $p = Start-Process -FilePath $script:ClaudeExe -WorkingDirectory (Get-ClawdHome) -ArgumentList $argv `
-                 -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err `
-                 -WindowStyle Hidden -PassThru
-        [void]$p.Handle
+        $p = Start-JobProcess $script:ClaudeExe $argv (Get-ClawdHome) $in $out $err
         $script:TaskProc = @{ proc = $p; out = $out; err = $err; at = Get-Date; task = $t; retry = [bool]$Retry }
     } catch {
         Set-TaskResult $t $null $_.Exception.Message

@@ -317,6 +317,9 @@ function Add-SetWindowPage($p) {
     [void]$p.Children.Add((New-SetHeader (T 'set.system')))
     [void]$p.Children.Add((New-SetToggle 'trayResetClock' (T 'set.trayResetClock')))
     [void]$p.Children.Add((New-SetToggle 'runAsAdmin' (T 'set.runAsAdmin') (T 'set.runAsAdminTip')))
+    if ($script:Cfg.runAsAdmin -or $script:IsAdmin) {
+        [void]$p.Children.Add((New-SetToggle 'jobsNoAdmin' (T 'set.jobsNoAdmin') (T 'set.jobsNoAdminTip')))
+    }
 }
 
 function Add-SetClawdPage($p) {

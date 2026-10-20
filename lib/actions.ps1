@@ -133,10 +133,8 @@ function Start-ActionRun($a) {
         # With BOM and UTF-8 output, as the chat's scripts (Start-ChatRun).
         $body = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`r`n" + $code
         [System.IO.File]::WriteAllText($ps1, $body, (New-Object System.Text.UTF8Encoding $true))
-        $p = Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -WorkingDirectory $env:USERPROFILE `
-                 -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$ps1`"" `
-                 -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden -PassThru
-        [void]$p.Handle
+        $p = Start-JobProcess (Join-Path $PSHOME 'powershell.exe') `
+                 @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$ps1`"") $env:USERPROFILE '' $out $err
         [void]$script:ActRuns.Add(@{ proc = $p; out = $out; err = $err; ps1 = $ps1; at = Get-Date; act = $a; stopped = $false })
         $actTimer.Start()
     } catch {

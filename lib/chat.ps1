@@ -170,12 +170,13 @@ function Update-RemoteFeed {
 }
 
 # What Claude gets before each message: time, rights, tips with details, reminders.
-function Get-ChatContext {
+# -Job: for a recurring task, which may run without the widget's rights (jobsNoAdmin).
+function Get-ChatContext([switch]$Job) {
     $now = Get-Date
     $tz = [TimeZoneInfo]::Local.GetUtcOffset($now)
     $lines = @('<context>',
                "now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm')))",
-               "widget elevated: $(if ($script:IsAdmin) { 'yes' } else { 'no' })",
+               "widget elevated: $(if ($Job -and (Test-JobsNoAdmin)) { 'yes, but this task runs without admin rights' } elseif ($script:IsAdmin) { 'yes' } else { 'no' })",
                "auto-run: $(if ($script:Cfg.chatAutoRun) { 'on - your run scripts start at once, without the user''s click' } else { 'off' })",
                "full access: $(if ($script:Cfg.chatBypass) { 'on - nothing is refused, read files anywhere on the computer' } else { 'off' })")
     $tips = @(Get-AdvisorTips)
