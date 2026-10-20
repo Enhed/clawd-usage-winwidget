@@ -17,7 +17,7 @@ Add-Type -Namespace Win32 -Name IconUtil -MemberDefinition @'
 '@
 
 # The widget's own version; what changed in each one - CHANGELOG.md.
-$WidgetVersion = '1.17.1'
+$WidgetVersion = '1.18.0'
 
 $script:Root       = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:ConfigPath = Join-Path $script:Root 'config.json'
@@ -72,7 +72,7 @@ Remove-Item (Join-Path $env:TEMP 'cuw-*') -Recurse -Force -Confirm:$false -Error
 # relies on the variables and functions of the previous ones.
 foreach ($m in @(
     'config', 'i18n', 'launch', 'usage', 'version', 'account', 'sessions', 'clawd-session', 'status', 'format', 'theme', 'window',
-    'mascot', 'skins', 'hearts', 'mascot-step', 'weather', 'sky', 'scene', 'space', 'ocean', 'halloween', 'advisor', 'history','reminders', 'lists', 'chat', 'tasks', 'actions', 'panel', 'panel-pages', 'panel-jobs', 'remind-popup', 'settings', 'claude-settings', 'mascot-menu', 'tray',
+    'mascot', 'skins', 'hearts', 'mascot-step', 'weather', 'sky', 'scene', 'space', 'ocean', 'halloween', 'cyberpunk', 'advisor', 'history','reminders', 'lists', 'chat', 'tasks', 'actions', 'panel', 'panel-pages', 'panel-jobs', 'remind-popup', 'settings', 'claude-settings', 'mascot-menu', 'tray',
     'update', 'tray-menu', 'events'
   )) {
     . (Join-Path $script:Root "lib\$m.ps1")

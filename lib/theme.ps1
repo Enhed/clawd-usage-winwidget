@@ -54,6 +54,10 @@ $Themes = [ordered]@{
                   textHi = '#FFF0F9FF'; text = '#FFE0F2FE'; text2 = '#FFCDE6F5'; text3 = '#FFA9C9DC'; text4 = '#FF93B6CB'
                   muted = '#FF86A9BF'; dim = '#FF62849A'; faint = '#FF456679'; off = '#FF2F4C5E'
                   accent = '#FF22D3EE'; accent2 = '#FF67E8F9'; pattern = 'ocean'; scene = 'ocean' }
+    cyberpunk = @{ bg = '#FF0C0B16'; code = '#FF08070F'; card = '#FF17152A'; card2 = '#FF221E3D'
+                   textHi = '#FFF2FBFF'; text = '#FFE3EEF5'; text2 = '#FFCBD9E3'; text3 = '#FFA8B8C6'; text4 = '#FF92A3B3'
+                   muted = '#FF8494A8'; dim = '#FF65708A'; faint = '#FF474F66'; off = '#FF33364A'
+                   accent = '#FF00E5FF'; accent2 = '#FF7DF9FF'; pattern = 'cyberpunk'; scene = 'cyberpunk' }
 }
 
 # Patterns: a tile of sprites ("." - empty, a letter - a colour), repeated over the window.
@@ -92,6 +96,12 @@ $Patterns = @{
             @{ x = 84; y = 76; art = @('.ww.', 'w..w', 'w..w', '.ww.') }
             @{ x = 94; y = 62; art = @('w') }
         )
+    }
+    # Scanlines, as on an old monitor.
+    cyberpunk = @{
+        tile = 3; px = 1; opacity = 0.05
+        colors = @{ c = '#FF00E5FF' }
+        sprites = @( @{ x = 0; y = 0; art = @('ccc') } )
     }
 }
 

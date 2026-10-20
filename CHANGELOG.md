@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.18.0
+
+- **Cyberpunk theme**, animated: a night in a neon megacity. Scanlines, neon
+  rain and the city's glow behind the widget, a glitch tearing across in red and
+  cyan now and then, searchlights sweeping the sky; in the sky row a skyline with
+  flickering windows, a tall tower with a blinking beacon, neon signs that stutter
+  ("2077" on a roof) and flying cars crossing between the towers. Two skins
+  go with it: Rockerboy (slicked-back hair, gold aviators, a goatee and a chrome
+  arm) and Netrunner (a dark visor with glowing cyan slits and a neural rig).
+
 ## 1.17.1
 
 - Text in chat messages can be selected and copied in part (Ctrl+C or right-click);

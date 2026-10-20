@@ -1,0 +1,13 @@
+---
+name: Netrunner
+eyes: #5EF6FF
+top: -1
+k: #1E1B2E
+v: #FF0F172A
+c: #5EF6FF
+---
+....kkkckkkckkk...
+..................
+..................
+..kvvvvvvvvvvvvvk.
+..kvcccvvvvvcccvk.

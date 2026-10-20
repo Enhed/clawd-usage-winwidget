@@ -1,0 +1,18 @@
+---
+name: Rockerboy
+top: -2
+k: #1C1917
+g: #D4A017
+s: #3B1F0E
+h: #F59E0B
+c: #E5E7EB
+d: #9CA3AF
+---
+.....kkkkkkkkkk...
+...kkkkkkkkkkkkkk.
+...k..........kkk.
+...ggggggggggggg..
+...ghssg...ghssg..
+....sss.....sss...
+.........k......cc
+........kkk.....dc
