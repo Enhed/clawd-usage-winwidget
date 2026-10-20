@@ -8,7 +8,7 @@
   flickering windows, a tall tower with a blinking beacon, neon signs that stutter
   ("2077" on a roof) and flying cars crossing between the towers. Two skins
   go with it: Rockerboy (slicked-back hair, gold aviators, a goatee and a chrome
-  arm) and Netrunner (a dark visor with glowing cyan slits and a neural rig).
+  arm) and Netrunner (a dark visor with glowing cyan slits and a neural rig). ([d578697](https://github.com/Enhed/clawd-usage-winwidget/commit/d578697f5711e3e43a0653a1378c177dbed550d0))
 
 ## 1.17.1
 
