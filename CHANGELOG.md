@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.17.1
+
+- Text in chat messages can be selected and copied in part (Ctrl+C or right-click);
+  the icon that copies the whole message moved to its bottom corner, where it is
+  at hand at the end of a long reply.
+
 ## 1.17.0
 
 - **Commands and tasks without admin rights.** With the widget running as

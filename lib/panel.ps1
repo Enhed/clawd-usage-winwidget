@@ -101,10 +101,8 @@ function New-PanelLink([string]$text, [string]$color, $tag, $onClick) {
 # A message's text with its links clickable: a bare http(s) address or a markdown
 # [text](url); a click opens it in the browser.
 $ChatLinkRx = [regex]'\[([^\]\r\n]+)\]\((https?://[^\s)]+)\)|https?://[^\s<>"''`\[\]]+'
-function New-ChatText([string]$text, [double]$size = 10.5, [string]$color = '#FFD4D4D8') {
+function Add-ChatInlines($inlines, [string]$text) {
     $found = $ChatLinkRx.Matches($text)
-    if (-not $found.Count) { return New-PanelText $text $size $color }
-    $t = New-PanelText '' $size $color
     $at = 0
     foreach ($m in $found) {
         $label = $(if ($m.Groups[1].Success) { $m.Groups[1].Value } else { '' })
@@ -120,18 +118,69 @@ function New-ChatText([string]$text, [double]$size = 10.5, [string]$color = '#FF
         }
         $uri = $null
         if (-not [uri]::TryCreate($url, [UriKind]::Absolute, [ref]$uri)) { continue }
-        if ($m.Index -gt $at) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at, $m.Index - $at))) }
+        if ($m.Index -gt $at) { $inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at, $m.Index - $at))) }
         $a = New-Object System.Windows.Documents.Hyperlink (New-Object System.Windows.Documents.Run $(if ($label) { $label } else { $url }))
         $a.NavigateUri = $uri
         $a.Foreground  = New-Brush '#FF60A5FA'
         $a.ToolTip     = $url
         $a.add_Click({ param($s, $e); try { Start-Process $s.NavigateUri.AbsoluteUri } catch {} })
-        $t.Inlines.Add($a)
-        if ($tail) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $tail)) }
+        $inlines.Add($a)
+        if ($tail) { $inlines.Add((New-Object System.Windows.Documents.Run $tail)) }
         $at = $m.Index + $m.Length
     }
-    if ($at -lt $text.Length) { $t.Inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at))) }
-    return $t
+    if ($at -lt $text.Length) { $inlines.Add((New-Object System.Windows.Documents.Run $text.Substring($at))) }
+}
+
+# The text is selectable: a read-only RichTextBox (links in it still work on a plain
+# click). It asks for all the width it is given, so it sits on a Canvas, which asks
+# for none, and takes its width from a hidden TextBlock with the same text - a short
+# message keeps a narrow card. The box keeps 5 px of page padding on each side
+# whatever it is told, so the TextBlock is that much wider than the place it takes
+# and the box is moved 5 px left; one more pixel keeps it from wrapping a line
+# earlier than the TextBlock did.
+function New-ChatText([string]$text, [double]$size = 10.5, [string]$color = '#FFD4D4D8') {
+    $shape = New-PanelText '' $size $color
+    Add-ChatInlines $shape.Inlines $text
+    $shape.Visibility = 'Hidden'
+    $shape.Padding    = New-Object System.Windows.Thickness 5, 0, 6, 0
+    $shape.Margin     = New-Object System.Windows.Thickness -5, 0, -6, 0
+    $para = New-Object System.Windows.Documents.Paragraph
+    $para.Margin = New-Object System.Windows.Thickness 0
+    Add-ChatInlines $para.Inlines $text
+    $doc = New-Object System.Windows.Documents.FlowDocument $para
+    $doc.FontFamily    = 'Segoe UI'
+    $doc.FontSize      = $size
+    $doc.Foreground    = New-Brush $color
+    $doc.TextAlignment = 'Left'
+    $box = New-Object System.Windows.Controls.RichTextBox
+    $box.Document          = $doc
+    $box.IsReadOnly        = $true
+    $box.IsDocumentEnabled = $true
+    $box.IsUndoEnabled     = $false
+    $box.Background        = [System.Windows.Media.Brushes]::Transparent
+    $box.Foreground        = New-Brush $color
+    $box.BorderThickness   = New-Object System.Windows.Thickness 0
+    $box.Padding           = New-Object System.Windows.Thickness 0
+    $box.Cursor            = [System.Windows.Input.Cursors]::IBeam
+    $box.VerticalScrollBarVisibility = 'Disabled'
+    # The box's own scroller would swallow the wheel - it goes on to the chat.
+    $box.add_PreviewMouseWheel({
+        param($s, $e)
+        $e.Handled = $true
+        $up = New-Object System.Windows.Input.MouseWheelEventArgs $e.MouseDevice, $e.Timestamp, $e.Delta
+        $up.RoutedEvent = [System.Windows.UIElement]::MouseWheelEvent
+        $s.Parent.RaiseEvent($up)
+    })
+    $fit = New-Object System.Windows.Data.Binding 'ActualWidth'
+    $fit.Source = $shape
+    [void]$box.SetBinding([System.Windows.FrameworkElement]::WidthProperty, $fit)
+    [System.Windows.Controls.Canvas]::SetLeft($box, -5)
+    $over = New-Object System.Windows.Controls.Canvas
+    [void]$over.Children.Add($box)
+    $grid = New-Object System.Windows.Controls.Grid
+    [void]$grid.Children.Add($shape)
+    [void]$grid.Children.Add($over)
+    return $grid
 }
 
 function New-PanelCard([string]$bg, [string]$edge = '#1AFFFFFF') {
@@ -318,28 +367,44 @@ function New-RemoteBox($msg, [string]$color) {
     return $box
 }
 
-# Right-click on a message: Copy, the text as it is.
+# Right-click on a message: Copy - the selected part, or the text as it is. The
+# text boxes get the same menu instead of their own Cut/Copy/Paste.
 function Add-CopyMenu($el, [string]$text) {
     if (-not $text) { return $el }
     $mi = New-Object System.Windows.Controls.MenuItem
     $mi.Header = T 'chat.copy'
     $mi.Tag    = $text
-    $mi.add_Click({ param($s, $e); try { [System.Windows.Clipboard]::SetText($s.Tag) } catch {} })
+    $mi.add_Click({
+        param($s, $e)
+        $what = $s.Tag
+        $from = $s.Parent.PlacementTarget
+        if ($from -is [System.Windows.Controls.RichTextBox] -and -not $from.Selection.IsEmpty) { $what = $from.Selection.Text }
+        try { [System.Windows.Clipboard]::SetText($what) } catch {}
+    })
     $cm = New-Object System.Windows.Controls.ContextMenu
     [void]$cm.Items.Add($mi)
     $el.ContextMenu = $cm
+    Set-ChatBoxMenu $el $cm
     return $el
 }
 
-# A copy icon in the card's top-right corner, shown on hover; a tick for a moment after the click.
+function Set-ChatBoxMenu($el, $cm) {
+    foreach ($c in [System.Windows.LogicalTreeHelper]::GetChildren($el)) {
+        if ($c -is [System.Windows.Controls.RichTextBox]) { $c.ContextMenu = $cm }
+        elseif ($c -is [System.Windows.DependencyObject]) { Set-ChatBoxMenu $c $cm }
+    }
+}
+
+# A copy icon in the card's bottom-right corner (a long message's top may be scrolled
+# away), shown on hover; a tick for a moment after the click.
 function Add-CopyIcon($card, [string]$text) {
     if (-not $text -or $card -isnot [System.Windows.Controls.Border]) { return }
     $icon = New-PanelText ([string][char]0xE8C8) 10 '#FF8B8B94'
     $icon.FontFamily          = 'Segoe MDL2 Assets'
     $icon.TextWrapping        = 'NoWrap'
     $icon.HorizontalAlignment = 'Right'
-    $icon.VerticalAlignment   = 'Top'
-    $icon.Margin              = New-Object System.Windows.Thickness 0, -2, -5, 0
+    $icon.VerticalAlignment   = 'Bottom'
+    $icon.Margin              = New-Object System.Windows.Thickness 0, 0, -5, -3
     $icon.Padding             = New-Object System.Windows.Thickness 3, 2, 1, 2
     $icon.Background          = $card.Background
     $icon.Cursor              = [System.Windows.Input.Cursors]::Hand
