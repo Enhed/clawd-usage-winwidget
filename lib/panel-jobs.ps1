@@ -166,13 +166,27 @@ function New-TaskRow($t, $st) {
     return $card
 }
 
+$script:TaskWhenBad = $null   # a "how often" Claude could not make a schedule of either
+
 # What the form would make, under it: the schedule as understood, or what is wrong.
+# Something the parser does not know goes to Claude on saving, as with reminders.
 function Update-TaskParsed {
     $when = $UI.TaskWhen.Text.Trim()
     $UI.TaskParsed.Foreground = New-Brush '#FF8B8B94'
     if (-not $when) { $UI.TaskParsed.Text = T 'task.permNote'; $UI.TaskParsed.Foreground = New-Brush '#FF6B7280'; return }
     $s = Read-TaskSchedule $when
-    if (-not $s) { $UI.TaskParsed.Text = T 'task.badWhen'; $UI.TaskParsed.Foreground = New-Brush $Palette.crit.Wpf; return }
+    if (-not $s) {
+        if ($script:WhenProc -and $script:WhenProc.kind -eq 'task' -and $script:WhenProc.when -eq $when) {
+            $UI.TaskParsed.Text = T 'rem.whenAsking'
+        } elseif ($when -eq $script:TaskWhenBad) {
+            $UI.TaskParsed.Text = T 'task.badWhen'
+            $UI.TaskParsed.Foreground = New-Brush $Palette.crit.Wpf
+        } else {
+            $UI.TaskParsed.Text = T 'rem.whenAsk'
+            $UI.TaskParsed.Foreground = New-Brush '#FF6B7280'
+        }
+        return
+    }
     $txt = "$([char]0x2192) $(Format-TaskWhen $s.sched)"
     if ($s.hoursList -and -not $s.at) { $txt += ", $((T 'task.hoursRange') -f $s.hoursList[0], $s.hoursList[1])" }
     $UI.TaskParsed.Text = $txt
@@ -185,21 +199,64 @@ function Save-TaskForm2 {
     $text = $UI.TaskText.Text.Trim()
     if (-not $name) { [void]$UI.TaskName.Focus(); return }
     if (-not $text) { [void]$UI.TaskText.Focus(); return }
-    $s = Read-TaskSchedule $UI.TaskWhen.Text
-    if (-not $s) { Update-TaskParsed; [void]$UI.TaskWhen.Focus(); return }
-    # A new one must not overwrite another task of the same name.
-    $other = Find-Task $name
-    if ($other -and -not ($script:TaskEdit -and $script:TaskEdit.path -eq $other.path)) {
-        $UI.TaskParsed.Text = T 'task.nameTaken'
-        $UI.TaskParsed.Foreground = New-Brush $Palette.crit.Wpf
-        [void]$UI.TaskName.Focus()
+    $when = $UI.TaskWhen.Text.Trim()
+    if (-not $when) { [void]$UI.TaskWhen.Focus(); return }
+    if (-not (Test-TaskNameFree $name $script:TaskEdit)) { return }
+    $s = Read-TaskSchedule $when
+    if (-not $s) {
+        if ($when -eq $script:TaskWhenBad) { [void]$UI.TaskWhen.Focus(); return }
+        if (Start-WhenProbe $when @{ name = $name; text = $text; edit = $script:TaskEdit } 'task') { $taskWhenTimer.Start() }
+        Update-TaskParsed
         return
     }
-    $new = Save-TaskForm $name $s $text $script:TaskEdit
-    if (-not $new) { return }
-    if ($script:TaskEdit -and $script:TaskOpen -eq $script:TaskEdit.name) { $script:TaskOpen = $new }
+    Save-TaskForm3 $name $s $text $script:TaskEdit
     Reset-TaskForm
 }
+
+# A new one must not overwrite another task of the same name.
+function Test-TaskNameFree([string]$name, $edit) {
+    $other = Find-Task $name
+    if (-not $other -or ($edit -and $edit.path -eq $other.path)) { return $true }
+    $UI.TaskParsed.Text = T 'task.nameTaken'
+    $UI.TaskParsed.Foreground = New-Brush $Palette.crit.Wpf
+    [void]$UI.TaskName.Focus()
+    return $false
+}
+
+function Save-TaskForm3([string]$name, $s, [string]$text, $edit) {
+    $new = Save-TaskForm $name $s $text $edit
+    if ($new -and $edit -and $script:TaskOpen -eq $edit.name) { $script:TaskOpen = $new }
+}
+
+# Claude's schedule. The form is cleared only if it still holds what was asked.
+$taskWhenTimer = New-Object System.Windows.Threading.DispatcherTimer
+$taskWhenTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+$taskWhenTimer.add_Tick({
+    try {
+        $r = Collect-WhenProbe
+        if (-not $r) { return }
+        $taskWhenTimer.Stop()
+        $d = $r.data
+        $same = ($UI.TaskWhen.Text.Trim() -eq $r.when -and $UI.TaskText.Text.Trim() -eq $d.text)
+        # Another task may have taken the name while Claude thought.
+        $other = Find-Task $d.name
+        if ($r.sched -and -not ($other -and -not ($d.edit -and $d.edit.path -eq $other.path))) {
+            Save-TaskForm3 $d.name $r.sched $d.text $d.edit
+            if ($same) { Reset-TaskForm } else { $script:TaskKey = $null; Update-Panel }
+        } elseif ($r.sched) {
+            if ($same) { [void](Test-TaskNameFree $d.name $d.edit) }
+        } else {
+            $script:TaskWhenBad = $r.when
+            Update-TaskParsed
+        }
+    } catch {
+        $taskWhenTimer.Stop()
+        try {
+            "$(Get-Date -Format s)`ttask when: $($_.Exception.Message)`t$($_.InvocationInfo.PositionMessage)" |
+                Out-File (Join-Path $script:Root 'widget-error.log') -Append -Encoding utf8
+        } catch {}
+    }
+})
 
 function Reset-TaskForm {
     $script:TaskEdit = $null

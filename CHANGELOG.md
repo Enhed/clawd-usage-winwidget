@@ -10,6 +10,10 @@
 - Clawd knows what runs with which rights: elevated, he is told his commands
   and scripts run as administrator with no UAC to stop a mistake; not elevated -
   that system folders and services are out of reach, and where to turn it on.
+- The Tasks form understands "how often" in your own words, as reminders do:
+  what it doesn't know ("twice an hour in the daytime", "every morning at eight")
+  goes to the small model on saving and comes back as a schedule. Days of the
+  week still can't be set.
 
 ## 1.16.0
 

@@ -363,7 +363,8 @@ costs one run a day, not a run every ten minutes. Ask in the chat ("check my mai
 "every 30 minutes" in the reminder form's "when" (it hands that to the chat), ask from
 the phone, write the file yourself, or fill in the form on the Tasks tab: a name,
 what to do and how often (`10m`, `2h`, `1d`, `09:00, 18:00`, with hours at the end:
-`10m 8-23`). The tab lists them with Run now, Change, Pause, Open and Delete; a click on a task shows a line on each of its latest runs
+`10m 8-23`; anything else, like "twice an hour in the daytime", goes to the small model
+on saving, as a reminder's "when" does). The tab lists them with Run now, Change, Pause, Open and Delete; a click on a task shows a line on each of its latest runs
 (brighter - what you were told), and those lines are what the next run is given
 about the past. A script a
 task proposes always waits for a click. Each run uses your plan's limits, so tasks

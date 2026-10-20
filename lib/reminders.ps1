@@ -243,35 +243,47 @@ function ConvertFrom-RemindWhen([string]$s) {
 
 # What the parser above does not know ("in a week and a half", "on the 1st of
 # November", "next Friday evening") goes to a small model: one `claude -p` with no
-# tools, outside Clawd's home, answering with a date or NONE.
-$script:WhenProc = $null   # @{ proc; out; at; when; data }
+# tools, outside Clawd's home, answering with a date or NONE. $kind 'task' - the
+# Tasks form's "how often" ("twice an hour in the daytime"): the answer is a
+# schedule in the form's own words, checked by Read-TaskSchedule.
+$script:WhenProc = $null   # @{ proc; out; at; when; data; kind }
 
-function Start-WhenProbe([string]$when, $data) {
+function Start-WhenProbe([string]$when, $data, [string]$kind = 'remind') {
     if ($script:WhenProc) { return $false }
     try {
         $now = Get-Date
         $tz  = [TimeZoneInfo]::Local.GetUtcOffset($now)
         $in  = Join-Path $env:TEMP "cuw-when-in-$PID.txt"
         $out = Join-Path $env:TEMP "cuw-when-out-$PID.txt"
-        $prompt = @(
+        $prompt = $(if ($kind -eq 'task') { @(
+            "A user wrote how often a recurring task should run: `"$when`"",
+            'Turn it into a schedule written one of these ways:',
+            '- every N minutes, hours or days: 30m, 2h, 1d (2m at least);',
+            '- times of day: 09:00 or 09:00, 13:30, 18:00;',
+            '- minutes and hours may end with the hours to run in: 30m 8-23 (from 8:00 till 23:00).',
+            'A time the user wrote is copied exactly: 21:15 stays 21:15, "in the morning at eight" is 08:00. Only where no time is given at all pick one yourself: morning 09:00, evening 19:00; daytime is 8-23.',
+            'Days of the week, dates and months cannot be set. If the text needs them, or names no period or time at all, the answer is NONE - never guess.',
+            'Reply with exactly one line: the schedule, or NONE.'
+        ) } else { @(
             "Now: $($now.ToString('yyyy-MM-dd HH:mm dddd', [System.Globalization.CultureInfo]::InvariantCulture)) (UTC$(if ($tz -ge [TimeSpan]::Zero) { '+' } else { '-' })$($tz.ToString('hh\:mm'))).",
             "A user wrote when a reminder should go off: `"$when`"",
             'Turn it into a local date and time. A day without a time is 10:00; a time already gone today is tomorrow.',
             'If the text names no day, date, time or period at all (it is a task, a word, gibberish), the answer is NONE - never guess.',
             'Reply with exactly one line: the time as yyyy-MM-ddTHH:mm, or NONE.'
-        ) -join "`n"
+        ) }) -join "`n"
         [System.IO.File]::WriteAllText($in, $prompt, (New-Object System.Text.UTF8Encoding $false))
         $argv = @('-p', '--output-format', 'text', '--model', [string]$script:Cfg.quickModel,
                   '--tools', '""', '--strict-mcp-config', '--no-session-persistence')
         $p = Start-Process -FilePath $script:ClaudeExe -WorkingDirectory $env:TEMP -ArgumentList $argv `
                  -RedirectStandardInput $in -RedirectStandardOutput $out -WindowStyle Hidden -PassThru
         [void]$p.Handle
-        $script:WhenProc = @{ proc = $p; out = $out; at = $now; when = $when; data = $data }
+        $script:WhenProc = @{ proc = $p; out = $out; at = $now; when = $when; data = $data; kind = $kind }
         return $true
     } catch { return $false }
 }
 
-# $null while it is still thinking; then @{ at = <datetime or $null>; when; data }.
+# $null while it is still thinking; then @{ at = <datetime or $null>; when; data }, for
+# a task @{ sched = <Read-TaskSchedule's result or $null>; when; data }.
 function Collect-WhenProbe {
     $w = $script:WhenProc
     if (-not $w) { return $null }
@@ -280,6 +292,15 @@ function Collect-WhenProbe {
         try { & taskkill.exe /PID $w.proc.Id /T /F 2>&1 | Out-Null } catch {}
     }
     $script:WhenProc = $null
+    if ($w.kind -eq 'task') {
+        $s = $null
+        try {
+            $line = @([System.IO.File]::ReadAllText($w.out, [System.Text.Encoding]::UTF8) -split '\r?\n' |
+                      ForEach-Object { $_.Trim().Trim('`', '"', '.') } | Where-Object { $_ })[0]
+            if ($line -and $line -notmatch '^NONE$') { $s = Read-TaskSchedule $line }
+        } catch {}
+        return @{ sched = $s; when = $w.when; data = $w.data }
+    }
     $at = $null
     try {
         $m = [regex]::Match([System.IO.File]::ReadAllText($w.out, [System.Text.Encoding]::UTF8), '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}')
