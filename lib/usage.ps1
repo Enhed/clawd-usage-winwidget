@@ -123,3 +123,16 @@ function Collect-UsageProbe {
         Add-UsageSample $u
     }
 }
+
+# mainLimit picks the limit shown big - the number, its bar, the tray icon - and
+# followed by Clawd's health and mood; the other one takes the small line under it.
+function Get-Limits($u) {
+    $session = @{ key = 'session'; pct = $null; reset = $null }
+    $week    = @{ key = 'week';    pct = $null; reset = $null }
+    if ($u) {
+        $session.pct = $u.session; $session.reset = $u.sessionReset
+        $week.pct    = $u.week;    $week.reset    = $u.weekReset
+    }
+    if ($script:Cfg.mainLimit -eq 'week') { return @{ main = $week; side = $session } }
+    return @{ main = $session; side = $week }
+}

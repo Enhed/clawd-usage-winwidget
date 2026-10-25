@@ -1,4 +1,4 @@
-﻿# ----- hearts: tamagotchi-style health = how much session limit is left -----
+﻿# ----- hearts: tamagotchi-style health = how much of the main limit is left -----
 # Three hearts with halves: every ~16.7% of what is left is one half. Zero hearts
 # only at 100%, exactly when Clawd lies down legs up.
 
@@ -80,7 +80,9 @@ function Step-Hearts {
     }
     $UI.Hearts.Visibility = 'Visible'
     $tip = T "health.$halves"
-    if ($null -ne $m.pct -and $null -eq $m.forceHearts) { $tip = (T 'hearts.left') -f $tip, (100 - $m.pct) }
+    if ($null -ne $m.pct -and $null -eq $m.forceHearts) {
+        $tip = (T $(if ($m.limit -eq 'week') { 'hearts.leftWeek' } else { 'hearts.left' })) -f $tip, (100 - $m.pct)
+    }
     if ($UI.Hearts.ToolTip -ne $tip) { $UI.Hearts.ToolTip = $tip }
 
     # Lost a heart - the lost part blinks for a couple of seconds.

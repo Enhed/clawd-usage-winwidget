@@ -11,6 +11,7 @@ $DefaultConfig = [ordered]@{
     opacity                = 1.0
     topmost                = $false # keep the window above all others
     trayResetClock         = $false # tray tooltip: resets as clock times (03:20, tmrw 01:00) instead of a countdown
+    mainLimit              = 'session' # the big number, the tray icon and Clawd's health: session (5 hours) or week
     showStats              = $true  # "last 24h" / "last 7 days" blocks in details
     showHistory            = $false # in details: chart of both percentages over 7 days and top projects
     showStatus             = $true  # Anthropic service status line
