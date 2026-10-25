@@ -165,20 +165,21 @@ function Get-DoneReminders([int]$count = 5) {
 # "In N units": +20m, in 2 hours, через час, через неделю, dans une semaine. A word
 # in front ("in", "через", "dans") may stand for one. Returns @{ n; unit = min|hour|day|week|month } or $null.
 function Read-RemindOffset([string]$s) {
-    $m = [regex]::Match($s, '^(\+|через |in |dans )?\s*(\d+|an?|une?)?\s*(m|min|mins|minutes?|м|мин\w*|полчаса|h|hours?|heures?|ч|час\w*|d|days?|jours?|д|дн\w*|день|w|weeks?|semaines?|н|нед\w*|mo|months?|mois|мес\w*)$')
+    $m = [regex]::Match($s, '^(\+|через |in |dans |daqui a |daqui |em )?\s*(\d+|an?|une?|uma?)?\s*(m|min|mins|minutes?|minutos?|м|мин\w*|полчаса|meia hora|h|hours?|heures?|horas?|ч|час\w*|d|days?|jours?|dias?|д|дн\w*|день|w|weeks?|semaines?|semanas?|н|нед\w*|mo|months?|mois|m[eê]s|meses|мес\w*)$')
     if (-not $m.Success) { return $null }
     $num = $m.Groups[2].Value
     if ($num -match '^\d+$') { $n = [int]$num }
-    elseif ($m.Groups[1].Value.Trim() -in @('через', 'in', 'dans')) { $n = 1 }
+    elseif ($m.Groups[1].Value.Trim() -in @('через', 'in', 'dans', 'daqui a', 'daqui', 'em')) { $n = 1 }
     else { return $null }
     $u = $m.Groups[3].Value
-    $unit = $(if ($u -eq 'полчаса') { 'half' } elseif ($u -match '^(mo|мес)') { 'month' } elseif ($u -match '^(w|н|sem)') { 'week' }
+    $unit = $(if ($u -in @('полчаса', 'meia hora')) { 'half' } elseif ($u -match '^(mo|мес|m[eê]s)') { 'month' } elseif ($u -match '^(w|н|sem)') { 'week' }
               elseif ($u -match '^(m|м)') { 'min' } elseif ($u -match '^(h|ч)') { 'hour' } else { 'day' })
     return @{ n = $n; unit = $unit }
 }
 
 # "When" as people write it: 18:30, tomorrow 10:00, +20m, in 2 hours, mon 9:00,
-# через неделю 15:00, demain 18h30, 19.10 14:00, 19.10.2026, 2026-10-19 14:00. A day without a
+# через неделю 15:00, demain 18h30, amanhã às 10, daqui a 20 min, 19.10 14:00,
+# 19/10 14:00 (where dates are written day first), 19.10.2026, 2026-10-19 14:00. A day without a
 # time is 10:00; a time already gone today is tomorrow. $null - not understood
 # (the panel then asks Claude, see Start-WhenProbe).
 function ConvertFrom-RemindWhen([string]$s) {
@@ -193,7 +194,7 @@ function ConvertFrom-RemindWhen([string]$s) {
     if ($o -and $o.unit -eq 'hour') { return $now.AddHours($o.n) }
     # Optional time at the end: "... 9", "... 9:30", "... 9.30", "... 9h", "... 9h30".
     $t = $null
-    $tm = [regex]::Match($s, '(?:^|\s)(?:в |at |à )?(\d{1,2})(?:[:.h](\d{2})|h)?$')
+    $tm = [regex]::Match($s, '(?:^|\s)(?:в |at |à |às |as )?(\d{1,2})(?:[:.h](\d{2})|h)?$')
     $rest = $s
     if ($tm.Success -and [int]$tm.Groups[1].Value -lt 24) {
         $t = & $time $tm.Groups[1].Value $tm.Groups[2].Value
@@ -210,14 +211,15 @@ function ConvertFrom-RemindWhen([string]$s) {
     if ($o -and $o.unit -eq 'day')   { return $now.Date.AddDays($o.n) + $t }
     if ($o -and $o.unit -eq 'week')  { return $now.Date.AddDays(7 * $o.n) + $t }
     if ($o -and $o.unit -eq 'month') { return $now.Date.AddMonths($o.n) + $t }
-    if ($rest -in @('сегодня', 'today', "aujourd'hui", "aujourd’hui")) { return $now.Date + $t }
-    if ($rest -in @('завтра', 'tomorrow', 'demain'))     { return $now.Date.AddDays(1) + $t }
-    if ($rest -in @('послезавтра', 'après-demain'))      { return $now.Date.AddDays(2) + $t }
+    if ($rest -in @('сегодня', 'today', "aujourd'hui", "aujourd’hui", 'hoje')) { return $now.Date + $t }
+    if ($rest -in @('завтра', 'tomorrow', 'demain', 'amanhã', 'amanha')) { return $now.Date.AddDays(1) + $t }
+    if ($rest -in @('послезавтра', 'après-demain', 'depois de amanhã', 'depois de amanha')) { return $now.Date.AddDays(2) + $t }
     $days = @{ 'пн' = 1; 'вт' = 2; 'ср' = 3; 'чт' = 4; 'пт' = 5; 'сб' = 6; 'вс' = 0
                'пон' = 1; 'вто' = 2; 'сре' = 3; 'чет' = 4; 'пят' = 5; 'суб' = 6; 'вос' = 0
                'mon' = 1; 'tue' = 2; 'wed' = 3; 'thu' = 4; 'fri' = 5; 'sat' = 6; 'sun' = 0
-               'lun' = 1; 'mar' = 2; 'mer' = 3; 'jeu' = 4; 'ven' = 5; 'sam' = 6; 'dim' = 0 }
-    $w = $rest -replace '^(в|во|on|le) ', ''
+               'lun' = 1; 'mar' = 2; 'mer' = 3; 'jeu' = 4; 'ven' = 5; 'sam' = 6; 'dim' = 0
+               'seg' = 1; 'ter' = 2; 'qua' = 3; 'qui' = 4; 'sex' = 5; 'sáb' = 6; 'sab' = 6; 'dom' = 0 }
+    $w = $rest -replace '^(в|во|on|le|na|no|nesta|neste|próxima|proxima|próximo|proximo) ', ''
     $key = $(if ($w.Length -ge 3 -and $days.ContainsKey($w.Substring(0, 3))) { $w.Substring(0, 3) }
              elseif ($w.Length -ge 2 -and $days.ContainsKey($w.Substring(0, 2))) { $w.Substring(0, 2) })
     if ($key) {
@@ -226,7 +228,10 @@ function ConvertFrom-RemindWhen([string]$s) {
         if ($at -le $now) { $at = $at.AddDays(7) }
         return $at
     }
-    $dm = [regex]::Match($rest, '^(\d{1,2})\.(\d{1,2})(?:\.(\d{2}|\d{4}))?$')
+    # Day first: 19.10 always; 19/10 too where the language writes dates day first
+    # (pt-BR, ru, fr) - in en-US 3/4 is the 4th of March.
+    $sep = $(if ((Get-LangCulture).DateTimeFormat.ShortDatePattern -match '^d') { '[./]' } else { '\.' })
+    $dm = [regex]::Match($rest, "^(\d{1,2})$sep(\d{1,2})(?:$sep(\d{2}|\d{4}))?$")
     if ($dm.Success) {
         $y = $(if ($dm.Groups[3].Value) { [int]$dm.Groups[3].Value } else { $now.Year })
         if ($y -lt 100) { $y += 2000 }

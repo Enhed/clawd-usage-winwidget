@@ -434,7 +434,7 @@ are picked up on the fly, no restart needed.
 
 | key | meaning |
 |---|---|
-| `language` | `en`, `ru` or `fr` (also in Settings) |
+| `language` | `en`, `ru`, `fr` or `pt-BR` (also in Settings) |
 | `scale` | window scale, 0.6–4.0 (default 1.35; also in Settings) |
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |

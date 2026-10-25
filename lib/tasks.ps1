@@ -27,9 +27,9 @@ $script:TaskProc = $null   # @{ proc; out; err; at; task }
 
 function Get-TasksDir { return Join-Path (Get-ClawdHome) 'tasks' }
 
-# "10m", "2h", "1d", "30 мин" -> TimeSpan; at least two minutes.
+# "10m", "2h", "1d", "30 мин", "2 horas" -> TimeSpan; at least two minutes.
 function Read-TaskEvery([string]$s) {
-    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|м|мин\w*|h|hours?|heures?|ч|час\w*|d|days?|j|jours?|д|дн\w*|день)$')
+    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|minutos?|м|мин\w*|h|hours?|heures?|horas?|ч|час\w*|d|days?|j|jours?|dias?|д|дн\w*|день)$')
     if (-not $m.Success) { return $null }
     $n = [int]$m.Groups[1].Value; $u = $m.Groups[2].Value
     $span = $(if ($u -match '^(m|м)') { [timespan]::FromMinutes($n) } elseif ($u -match '^(h|ч)') { [timespan]::FromHours($n) } else { [timespan]::FromDays($n) })
@@ -38,7 +38,8 @@ function Read-TaskEvery([string]$s) {
 }
 
 # "How often" as the panel's form takes it: "10m", "every 2 hours", "каждый час",
-# "09:00, 18:00", "в 9:30", with hours at the end - "10m 8-23". Returns the file's
+# "a cada 2 horas", "todo dia", "09:00, 18:00", "в 9:30", "às 9:30", with hours at
+# the end - "10m 8-23". Returns the file's
 # fields @{ every; at; hours } (as text) and the parsed @{ sched; hours }, or $null.
 function Read-TaskSchedule([string]$s) {
     $s = ($s.Trim().ToLower() -replace '\s+', ' ')
@@ -48,7 +49,7 @@ function Read-TaskSchedule([string]$s) {
         $hours = @([int]$h.Groups[1].Value, [int]$h.Groups[2].Value)
         $s = $s.Substring(0, $h.Index).Trim()
     }
-    $s = $s -replace '^(every|each|каждые|каждый|каждую|каждое|раз в|toutes les|tous les|chaque|в|at|à)\s+', ''
+    $s = $s -replace '^(every|each|каждые|каждый|каждую|каждое|раз в|toutes les|tous les|chaque|a cada|todos os|todas as|todo|toda|в|at|à|às|as)\s+', ''
     if (-not $s) { return $null }
     $every = Read-TaskEvery $s
     # "каждый час", "every day": one unit.

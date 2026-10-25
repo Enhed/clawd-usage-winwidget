@@ -491,7 +491,7 @@ Current week (Fable): 0% used · resets Sep 21, 6am (Europe/Moscow)
 
 | ключ | смысл |
 |---|---|
-| `language` | язык интерфейса: `en` (по умолчанию), `ru` или `fr` |
+| `language` | язык интерфейса: `en` (по умолчанию), `ru`, `fr` или `pt-BR` |
 | `refreshSeconds` | период перерисовки окна, сек |
 | `usageIntervalSeconds` | период опроса `/usage`, сек |
 | `versionIntervalSeconds` | период проверки обновления, сек |
