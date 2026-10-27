@@ -7,7 +7,7 @@ are doing.
 
 ![A session starts working, finishes, then waits for you](docs/tour.gif)
 
-**English** · [Русский](README.ru.md)
+**English** · [Русский](README.ru.md) · [Español](README.es.md)
 
 - **Official numbers only.** Percentages come from `claude -p "/usage"` — the
   slash command runs headless, talks to Anthropic with your existing login and
@@ -434,7 +434,7 @@ are picked up on the fly, no restart needed.
 
 | key | meaning |
 |---|---|
-| `language` | `en`, `ru` or `fr` (also in Settings) |
+| `language` | `en`, `ru`, `fr` or `es` (also in Settings) |
 | `scale` | window scale, 0.6–4.0 (default 1.35; also in Settings) |
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |
