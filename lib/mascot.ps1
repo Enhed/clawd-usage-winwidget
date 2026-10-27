@@ -358,7 +358,7 @@ $script:Mz  = @{
     force = $null; forceCrit = $false; demo = -1; demoT = 0
     pct = $null; halves = $null; heartsKey = ''; lostT = -1; lostFrom = 0
     forceHearts = $null; drainT = -1; loveT = -1; noteT = -1; confT = -1
-    busy = -1; waiting = 0; lastReset = $null; lastPct = $null
+    busy = -1; waiting = 0; limit = $null; lastReset = $null; lastPct = $null
     broken = $false; buried = $false
 }
 
@@ -461,8 +461,8 @@ function Set-MascotMood($ss, $real) {
     $m = $script:Mz
     $busy    = @($ss | Where-Object { $_.busy }).Count
     $waiting = @($ss | Where-Object { $_.waiting }).Count
-    $pct     = $null
-    if ($real) { $pct = $real.session }
+    $main    = (Get-Limits $real).main
+    $pct     = $main.pct
 
     if ($null -ne $pct -and $pct -ge 100) { $mood = 'dead' }
     elseif ($waiting)                     { $mood = 'wait' }
@@ -481,13 +481,16 @@ function Set-MascotMood($ss, $real) {
     $m.crit    = $null -ne $pct -and (Get-Level $pct) -eq 'crit'
     $m.pct     = $pct
 
-    # The 5-hour window reset: reset time moved forward, percent dropped - celebrate.
-    if ($real -and $real.sessionReset) {
-        if ($m.lastReset -and $real.sessionReset -gt $m.lastReset -and
+    # The main limit reset: reset time moved forward, percent dropped - celebrate.
+    # Switching mainLimit starts over, so the switch itself is no reset - and no lost heart.
+    if ($m.limit -ne $main.key) { $m.lastReset = $null; $m.lastPct = $null; $m.halves = $null }
+    $m.limit = $main.key
+    if ($main.reset) {
+        if ($m.lastReset -and $main.reset -gt $m.lastReset -and
             $null -ne $m.lastPct -and $pct -lt $m.lastPct) {
             Start-MascotAct 'celebrate'
         }
-        $m.lastReset = $real.sessionReset
+        $m.lastReset = $main.reset
         $m.lastPct   = $pct
     }
 }

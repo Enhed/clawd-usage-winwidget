@@ -308,6 +308,11 @@ function Add-SetWindowPage($p) {
         Set-Setting 'opacity' ([math]::Min(1.0, [math]::Round([double]$script:Cfg.opacity + 0.05, 2)))
     }))
     [void]$p.Children.Add((New-SetToggle 'topmost' (T 'set.topmost')))
+    [void]$p.Children.Add((New-SetSwitch (T 'set.mainWeek') ($script:Cfg.mainLimit -eq 'week') (T 'set.mainWeekTip') 'mainLimit' {
+        param($s, $e)
+        $e.Handled = $true
+        Set-Setting 'mainLimit' $(if ($script:Cfg.mainLimit -eq 'week') { 'session' } else { 'week' })
+    }))
 
     [void]$p.Children.Add((New-SetHeader (T 'set.shown')))
     foreach ($k in @('showMascot', 'showSky', 'showStatus', 'showSessions', 'showAccount', 'showStats', 'showHistory')) {

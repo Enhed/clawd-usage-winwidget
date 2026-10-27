@@ -31,7 +31,6 @@ function Update-Texts {
     $UI.BtnHide.ToolTip     = T 'ui.hide'
     $UI.BtnExit.ToolTip     = T 'ui.exit'
     $UI.StatusRow.ToolTip   = T 'ui.openStatus'
-    $UI.LblWeek.Text        = T 'ui.week'
     $UI.LblFable.Text       = T 'ui.fable'
     $UI.LblSessions.Text    = T 'ui.sessions'
     $UI.LblDay.Text         = T 'ui.day'
@@ -104,10 +103,15 @@ function Update-Widget {
     }
 
     $real = $script:Usage
+    # The big number, BarSession and LineReset show the main limit; LblWeek, LineWeek
+    # and BarWeek the other one (mainLimit; the 5-hour session unless set to week).
+    $lim  = Get-Limits $real
+    $main = $lim.main
+    $side = $lim.side
 
-    # --- current session (5-hour window) ------------------------------------
+    # --- main limit ---------------------------------------------------------
 
-    if (-not $real -or $null -eq $real.session) {
+    if ($null -eq $main.pct) {
         $UI.PctText.Text       = '--'
         $UI.PctText.Foreground = New-Brush $Palette.dead.Wpf
         $UI.BarSession.Width   = 0
@@ -116,7 +120,7 @@ function Update-Widget {
         Set-TrayIcon '--' $Palette.dead.Drawing
         $notify.Text = T 'tray.noData'
     } else {
-        $pct   = [int]$real.session
+        $pct   = [int]$main.pct
         $level = Get-Level $pct
         $brush = New-Brush $Palette[$level].Wpf
 
@@ -126,18 +130,19 @@ function Update-Widget {
         $UI.BarSession.Width      = [math]::Max(0, ([math]::Min(100, $pct) / 100.0) * $BarWidth)
 
         $resetSpan = $null
-        if ($real.sessionReset) { $resetSpan = Format-Span $real.sessionReset }
-        if ($resetSpan)             { $UI.LineReset.Text = (T 'reset.in') -f $resetSpan }
-        elseif ($real.sessionReset) { $UI.LineReset.Text = T 'reset.closed' }
-        else                        { $UI.LineReset.Text = '' }
+        if ($main.reset) { $resetSpan = Format-Span $main.reset }
+        if ($resetSpan)      { $UI.LineReset.Text = (T 'reset.in') -f $resetSpan }
+        elseif ($main.reset) { $UI.LineReset.Text = T 'reset.closed' }
+        else                 { $UI.LineReset.Text = '' }
 
         Set-TrayIcon "$pct" $Palette[$level].Drawing
         # NotifyIcon.Text is hard-limited to 63 characters - otherwise an exception.
         if ($script:Cfg.trayResetClock) {
-            # One line per limit with the reset as a clock time; Fable only if it fits.
+            # One line per limit, the main one first, with the reset as a clock time;
+            # Fable only if it fits.
             $rows = @()
-            foreach ($r in @(@('tray.clock.session', $pct, $real.sessionReset),
-                             @('tray.clock.week', $real.week, $real.weekReset),
+            foreach ($r in @(@("tray.clock.$($main.key)", $pct, $main.reset),
+                             @("tray.clock.$($side.key)", $side.pct, $side.reset),
                              @('tray.clock.fable', $real.fable, $real.fableReset))) {
                 if ($null -eq $r[1]) { continue }
                 $row = (T $r[0]) -f $r[1]
@@ -149,10 +154,10 @@ function Update-Widget {
                 if (($tip + "`n" + $rows[$i]).Length -le 63) { $tip += "`n" + $rows[$i] }
             }
         } else {
-            $tip = (T 'tray.session') -f $pct
+            $tip = (T "tray.$($main.key)") -f $pct
             if ($resetSpan) { $tip += " · $resetSpan" }
             $tip2 = @()
-            if ($null -ne $real.week)  { $tip2 += (T 'tray.week') -f $real.week }
+            if ($null -ne $side.pct)   { $tip2 += (T "tray.$($side.key)") -f $side.pct }
             if ($null -ne $real.fable) { $tip2 += "Fable $($real.fable)%" }
             if ($tip2.Count) { $tip += "`n" + ($tip2 -join ' · ') }
         }
@@ -160,17 +165,18 @@ function Update-Widget {
         $notify.Text = $tip
     }
 
-    # --- week ---------------------------------------------------------------
+    # --- the other limit, on the small line ---------------------------------
 
-    if (-not $real -or $null -eq $real.week) {
+    $UI.LblWeek.Text = T "ui.$($side.key)"
+    if ($null -eq $side.pct) {
         $UI.BarWeek.Width = 0
         $UI.LineWeek.Text = T 'noData'
     } else {
-        $wPct = [int]$real.week
+        $wPct = [int]$side.pct
         $UI.BarWeek.Width = [math]::Max(0, ([math]::Min(100, $wPct) / 100.0) * $BarWidth)
         $wLine = "$wPct%"
-        if ($real.weekReset) {
-            $s = Format-Span $real.weekReset
+        if ($side.reset) {
+            $s = Format-Span $side.reset
             if ($s) { $wLine += "  ·  $s" }
         }
         $UI.LineWeek.Text = $wLine

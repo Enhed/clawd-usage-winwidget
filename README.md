@@ -52,7 +52,9 @@ Settings → Personalization → Taskbar → Other system tray icons → `clawd-
 ## What it shows
 
 - **Big number** — current session (the 5-hour window), straight from the server.
-  The bar goes green → yellow (60%) → red (85%).
+  The bar goes green → yellow (60%) → red (85%). With **Week as the main limit**
+  (Settings → Window, `mainLimit`) it shows the week instead: the tray icon and
+  Clawd's hearts follow it, and the session takes the small line below.
 - **resets in 3h 03m** — time until the window resets, from the exact reset time
   in `/usage`.
 - **WEEK** — weekly limit and time to reset. **FABLE · WEEK** — the separate
@@ -439,6 +441,7 @@ are picked up on the fly, no restart needed.
 | `opacity` | window opacity, 0–1 |
 | `topmost` | keep the window above all others |
 | `trayResetClock` | tray tooltip shows resets as clock times (`5h: 36% (resets 03:20)`, `7d: 81% (resets tmrw 01:00)`) instead of a countdown |
+| `mainLimit` | the limit shown big - the number, its bar, the tray icon - and followed by Clawd's hearts and mood: `session` (5 hours, default) or `week`; the other one takes the small line (also in Settings → Window) |
 | `warnPercent` / `critPercent` | yellow and red thresholds |
 | `expanded` | details expanded |
 | `showStats` / `showStatus` / `showSessions` / `showAccount` | show the corresponding block |

@@ -237,7 +237,7 @@ function Step-Mascot {
         $UI.MascotBubble.Visibility = 'Collapsed'
     }
 
-    # Session limit almost used up - sweats.
+    # Main limit almost used up - sweats.
     if (($m.crit -or $m.forceCrit -or $tier.sweat) -and $mood -notin @('sleep', 'dead')) {
         $p = ($m.tick % 20) / 20.0
         $s = $UI.MascotSweat
