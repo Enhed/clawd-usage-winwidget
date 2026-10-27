@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.19.0
+
+- Program memory tips now count private working sets instead of counting shared
+  pages repeatedly across browser processes. ([10ec478](https://github.com/Enhed/clawd-usage-winwidget/commit/10ec478a349d002e06e5421b97637c7b64620ec6))
+- Choose the session or the week as the main limit for the large number, tray
+  icon and Clawd's health and mood. ([3768564](https://github.com/Enhed/clawd-usage-winwidget/commit/3768564a7ef007cb2beaff3377e0f40de143a019))
+- Brazilian Portuguese interface, reminders and task schedules. Weekday parsing
+  now matches complete names or abbreviations, so duration text such as
+  "quinze minutes" cannot turn into Thursday. ([84bf79c](https://github.com/Enhed/clawd-usage-winwidget/commit/84bf79ca67d01aa0193036de76600da0b3b74784))
+- Spanish interface, reminders, task schedules and README, compatible with
+  Brazilian Portuguese and the main-limit setting. ([b667bb6](https://github.com/Enhed/clawd-usage-winwidget/commit/b667bb624a5055833ee05495b37dafa492930c1c))
+- Offline smoke tests with a fake CLI, integration checks on fixed data and
+  screenshots in either main-limit mode without Claude Code. ([44b7ce2](https://github.com/Enhed/clawd-usage-winwidget/commit/44b7ce2fd532b299a0ccb68a38a86e99e7f3bfc5))
+
 ## 1.18.0
 
 - **Cyberpunk theme**, animated: a night in a neon megacity. Scanlines, neon
