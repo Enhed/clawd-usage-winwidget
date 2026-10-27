@@ -149,7 +149,7 @@ $ClaudeItems = @(
     @{ head = 'cc.hModel' }
     @{ k = 'model'; t = 'choice'; opts = @('', 'opus', 'sonnet', 'haiku', 'fable') }
     @{ k = 'fastMode'; t = 'toggle'; def = $false }
-    @{ k = 'language'; t = 'choice'; opts = @('', 'english', 'russian', 'french', 'portuguese') }
+    @{ k = 'language'; t = 'choice'; opts = @('', 'english', 'russian', 'french', 'portuguese', 'spanish') }
     @{ k = 'permissions.defaultMode'; t = 'choice'; opts = @('default', 'acceptEdits', 'plan', 'auto'); def = 'default' }
     @{ head = 'cc.hWork' }
     @{ k = 'autoCompactEnabled'; t = 'toggle'; def = $true }

@@ -1,6 +1,6 @@
 ﻿#requires -version 5
 <#
-  Reminder parser regressions without Claude, WPF or user files.
+  Reminder and task parser regressions without Claude, WPF or user files.
   powershell -NoProfile -ExecutionPolicy Bypass -File tools\reminders-test.ps1
 #>
 $ErrorActionPreference = 'Stop'
@@ -10,6 +10,17 @@ $ast = [System.Management.Automation.Language.Parser]::ParseFile(
     (Join-Path $repo 'lib\reminders.ps1'), [ref]$null, [ref]$errors)
 if ($errors) { throw ($errors -join "`n") }
 foreach ($name in @('Read-RemindOffset', 'ConvertFrom-RemindWhen')) {
+    $fn = $ast.Find({ param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
+    }, $true)
+    if (-not $fn) { throw "Function not found: $name" }
+    . ([scriptblock]::Create($fn.Extent.Text))
+}
+
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    (Join-Path $repo 'lib\tasks.ps1'), [ref]$null, [ref]$errors)
+if ($errors) { throw ($errors -join "`n") }
+foreach ($name in @('Read-TaskEvery', 'Read-TaskSchedule', 'Read-TaskAt')) {
     $fn = $ast.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
     }, $true)
@@ -41,10 +52,24 @@ function Check([string]$inputText, $want) {
 
 # An unknown phrase must reach the model fallback, not become a weekday.
 foreach ($text in @('quinze minutes', 'quinze dias', 'dans quinze minutes', 'em quinze minutos',
-    'daqui a quinze minutos', 'quarter hour', 'money', 'sunday evening', 'sexta depois do almoço', '3/4')) {
+    'daqui a quinze minutos', 'quarter hour', 'money', 'sunday evening', 'sexta depois do almoço', '3/4', 'mierda', 'jueves por la tarde', 'el viernes por la tarde', 'domingo siguiente')) {
     Check $text $null
 }
 foreach ($case in @(
+    @('hoy', '2026-10-27 10:00'),
+    @('mañana a las 10', '2026-10-28 10:00'),
+    @('manana a la 1', '2026-10-28 01:00'),
+    @('pasado mañana', '2026-10-29 10:00'),
+    @('pasado manana', '2026-10-29 10:00'),
+    @('en 20 minutos', '2026-10-27 16:20'),
+    @('en 2 horas', '2026-10-27 18:00'),
+    @('dentro de una hora', '2026-10-27 17:00'),
+    @('en media hora', '2026-10-27 16:30'),
+    @('en 3 días', '2026-10-30 10:00'),
+    @('en 3 dias', '2026-10-30 10:00'),
+    @('dentro de una semana', '2026-11-03 10:00'),
+    @('en 2 meses', '2026-12-27 10:00'),
+    @('el próximo martes a las 9:30', '2026-11-03 09:30'),
     @('tomorrow 10:00', '2026-10-28 10:00'),
     @('in 2 hours', '2026-10-27 18:00'),
     @('через неделю 15:00', '2026-11-03 15:00'),
@@ -62,6 +87,9 @@ foreach ($case in @(
 
 # Full names, common abbreviations and inflected Russian names remain supported.
 $weekdays = @(
+    @('lunes', 1), @('mar', 2), @('el martes', 2), @('el próximo miércoles', 3), @('el proximo miercoles', 3),
+    @('mié', 3), @('mie.', 3), @('jue', 4), @('este jueves', 4), @('viernes', 5), @('el viernes', 5),
+    @('vie', 5), @('sáb', 6), @('sab.', 6), @('dom', 0),
     @('mon', 1), @('on Monday', 1), @('tuesday', 2), @('wednesday', 3), @('thursday', 4),
     @('friday', 5), @('saturday', 6), @('sun.', 0), @('Sunday', 0),
     @('пн', 1), @('в понедельник', 1), @('во вторник', 2), @('в среду', 3), @('четверг', 4),
@@ -78,9 +106,34 @@ foreach ($case in $weekdays) {
     if ($want -le $script:Now) { $want = $want.AddDays(7) }
     Check $case[0] $want.ToString('yyyy-MM-dd HH:mm')
 }
-foreach ($culture in @('ru-RU', 'fr-FR', 'pt-BR')) {
+foreach ($culture in @('ru-RU', 'fr-FR', 'pt-BR', 'es-ES')) {
     $script:TestCulture = $culture
     Check '25/12 14:00' '2026-12-25 14:00'
 }
-if ($script:Failed) { throw "$script:Failed of $script:Count reminder parser checks failed" }
-Write-Host "PASS $script:Count reminder parser checks"
+
+# Check both language additions together: neither set of task forms may be lost.
+function Check-Task([string]$inputText, $want) {
+    $script:Count++
+    $r = Read-TaskSchedule $inputText
+    $got = $(if ($null -ne $r) { "$($r.every)|$($r.at)|$($r.hours)" } else { '<fallback>' })
+    $expected = $(if ($null -ne $want) { [string]$want } else { '<fallback>' })
+    if ($got -ne $expected) {
+        Write-Host "FAIL task [$inputText] got [$got], want [$expected]"
+        $script:Failed++
+    }
+}
+foreach ($case in @(
+    @('cada 2 horas', '2h||'), @('cada 30 minutos', '30m||'), @('cada hora', '1h||'),
+    @('cada día', '1d||'), @('cada dia', '1d||'), @('todos los días', '1d||'),
+    @('todos los dias', '1d||'), @('a las 9:30', '|09:30|'), @('a la 1', '|01:00|'),
+    @('cada 2 horas 8-23', '2h||8-23'),
+    @('a cada 2 horas', '2h||'), @('a cada 30 minutos', '30m||'), @('todo dia', '1d||'),
+    @('todos os dias', '1d||'), @('toda hora', '1h||'), @('às 9:30', '|09:30|'),
+    @('every 2 hours', '2h||'), @('каждый час', '1h||'), @('tous les jours', '1d||'),
+    @('09:00, 18:00', '|09:00, 18:00|')
+)) { Check-Task $case[0] $case[1] }
+foreach ($text in @('cada quince minutos', 'todos los lunes', 'cada día por la tarde', 'a las 25:00', 'daqui a quinze minutos')) {
+    Check-Task $text $null
+}
+if ($script:Failed) { throw "$script:Failed of $script:Count reminder/task parser checks failed" }
+Write-Host "PASS $script:Count reminder/task parser checks"

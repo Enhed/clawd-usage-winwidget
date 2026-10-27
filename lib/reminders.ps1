@@ -165,14 +165,14 @@ function Get-DoneReminders([int]$count = 5) {
 # "In N units": +20m, in 2 hours, через час, через неделю, dans une semaine. A word
 # in front ("in", "через", "dans") may stand for one. Returns @{ n; unit = min|hour|day|week|month } or $null.
 function Read-RemindOffset([string]$s) {
-    $m = [regex]::Match($s, '^(\+|через |in |dans |daqui a |daqui |em )?\s*(\d+|an?|une?|uma?)?\s*(m|min|mins|minutes?|minutos?|м|мин\w*|полчаса|meia hora|h|hours?|heures?|horas?|ч|час\w*|d|days?|jours?|dias?|д|дн\w*|день|w|weeks?|semaines?|semanas?|н|нед\w*|mo|months?|mois|m[eê]s|meses|мес\w*)$')
+    $m = [regex]::Match($s, '^(\+|через |in |dans |daqui a |daqui |em |en |dentro de )?\s*(\d+|an?|une?|uma?|una)?\s*(m|min|mins|minutes?|minutos?|м|мин\w*|полчаса|meia hora|media hora|h|hours?|heures?|horas?|ч|час\w*|d|days?|jours?|d[ií]as?|д|дн\w*|день|w|weeks?|semaines?|semanas?|н|нед\w*|mo|months?|mois|m[eê]s|meses|мес\w*)$')
     if (-not $m.Success) { return $null }
     $num = $m.Groups[2].Value
     if ($num -match '^\d+$') { $n = [int]$num }
-    elseif ($m.Groups[1].Value.Trim() -in @('через', 'in', 'dans', 'daqui a', 'daqui', 'em')) { $n = 1 }
+    elseif ($m.Groups[1].Value.Trim() -in @('через', 'in', 'dans', 'daqui a', 'daqui', 'em', 'en', 'dentro de')) { $n = 1 }
     else { return $null }
     $u = $m.Groups[3].Value
-    $unit = $(if ($u -in @('полчаса', 'meia hora')) { 'half' } elseif ($u -match '^(mo|мес|m[eê]s)') { 'month' } elseif ($u -match '^(w|н|sem)') { 'week' }
+    $unit = $(if ($u -in @('полчаса', 'meia hora', 'media hora')) { 'half' } elseif ($u -match '^(mo|мес|m[eê]s)') { 'month' } elseif ($u -match '^(w|н|sem)') { 'week' }
               elseif ($u -match '^(m|м)') { 'min' } elseif ($u -match '^(h|ч)') { 'hour' } else { 'day' })
     return @{ n = $n; unit = $unit }
 }
@@ -194,7 +194,7 @@ function ConvertFrom-RemindWhen([string]$s) {
     if ($o -and $o.unit -eq 'hour') { return $now.AddHours($o.n) }
     # Optional time at the end: "... 9", "... 9:30", "... 9.30", "... 9h", "... 9h30".
     $t = $null
-    $tm = [regex]::Match($s, '(?:^|\s)(?:в |at |à |às |as )?(\d{1,2})(?:[:.h](\d{2})|h)?$')
+    $tm = [regex]::Match($s, '(?:^|\s)(?:в |at |à |às |as |a las |a la )?(\d{1,2})(?:[:.h](\d{2})|h)?$')
     $rest = $s
     if ($tm.Success -and [int]$tm.Groups[1].Value -lt 24) {
         $t = & $time $tm.Groups[1].Value $tm.Groups[2].Value
@@ -211,15 +211,16 @@ function ConvertFrom-RemindWhen([string]$s) {
     if ($o -and $o.unit -eq 'day')   { return $now.Date.AddDays($o.n) + $t }
     if ($o -and $o.unit -eq 'week')  { return $now.Date.AddDays(7 * $o.n) + $t }
     if ($o -and $o.unit -eq 'month') { return $now.Date.AddMonths($o.n) + $t }
-    if ($rest -in @('сегодня', 'today', "aujourd'hui", "aujourd’hui", 'hoje')) { return $now.Date + $t }
-    if ($rest -in @('завтра', 'tomorrow', 'demain', 'amanhã', 'amanha')) { return $now.Date.AddDays(1) + $t }
-    if ($rest -in @('послезавтра', 'après-demain', 'depois de amanhã', 'depois de amanha')) { return $now.Date.AddDays(2) + $t }
+    if ($rest -in @('сегодня', 'today', "aujourd'hui", "aujourd’hui", 'hoje', 'hoy')) { return $now.Date + $t }
+    if ($rest -in @('завтра', 'tomorrow', 'demain', 'amanhã', 'amanha', 'mañana', 'manana')) { return $now.Date.AddDays(1) + $t }
+    if ($rest -in @('послезавтра', 'après-demain', 'depois de amanhã', 'depois de amanha', 'pasado mañana', 'pasado manana')) { return $now.Date.AddDays(2) + $t }
     $days = @{ 'пн' = 1; 'вт' = 2; 'ср' = 3; 'чт' = 4; 'пт' = 5; 'сб' = 6; 'вс' = 0
                'пон' = 1; 'вто' = 2; 'сре' = 3; 'чет' = 4; 'пят' = 5; 'суб' = 6; 'вос' = 0
                'mon' = 1; 'tue' = 2; 'wed' = 3; 'thu' = 4; 'fri' = 5; 'sat' = 6; 'sun' = 0
                'lun' = 1; 'mar' = 2; 'mer' = 3; 'jeu' = 4; 'ven' = 5; 'sam' = 6; 'dim' = 0
+               'mié' = 3; 'mie' = 3; 'jue' = 4; 'vie' = 5
                'seg' = 1; 'ter' = 2; 'qua' = 3; 'qui' = 4; 'sex' = 5; 'sáb' = 6; 'sab' = 6; 'dom' = 0 }
-    $w = $rest -replace '^(в|во|on|le|na|no|nesta|neste|próxima|proxima|próximo|proximo) ', ''
+    $w = $rest -replace '^(el pr[oó]ximo|pr[oó]ximo|este|el|в|во|on|le|na|no|nesta|neste|próxima|proxima|próximo|proximo) ', ''
     # Match complete weekday names, never a prefix of unrelated text ("quinze minutes").
     $names = @{
         'monday' = 1; 'tuesday' = 2; 'wednesday' = 3; 'thursday' = 4; 'friday' = 5; 'saturday' = 6; 'sunday' = 0
@@ -228,6 +229,7 @@ function ConvertFrom-RemindWhen([string]$s) {
         'lundi' = 1; 'mardi' = 2; 'mercredi' = 3; 'jeudi' = 4; 'vendredi' = 5; 'samedi' = 6; 'dimanche' = 0
         'segunda' = 1; 'segunda-feira' = 1; 'terça' = 2; 'terca' = 2; 'terça-feira' = 2; 'terca-feira' = 2
         'quarta' = 3; 'quarta-feira' = 3; 'quinta' = 4; 'quinta-feira' = 4; 'sexta' = 5; 'sexta-feira' = 5
+        'lunes' = 1; 'martes' = 2; 'miércoles' = 3; 'miercoles' = 3; 'jueves' = 4; 'viernes' = 5
         'sábado' = 6; 'sabado' = 6; 'domingo' = 0
     }
     $w = $w.TrimEnd('.')

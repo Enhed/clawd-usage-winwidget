@@ -29,7 +29,7 @@ function Get-TasksDir { return Join-Path (Get-ClawdHome) 'tasks' }
 
 # "10m", "2h", "1d", "30 мин", "2 horas" -> TimeSpan; at least two minutes.
 function Read-TaskEvery([string]$s) {
-    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|minutos?|м|мин\w*|h|hours?|heures?|horas?|ч|час\w*|d|days?|j|jours?|dias?|д|дн\w*|день)$')
+    $m = [regex]::Match($s.Trim().ToLower(), '^(\d+)\s*(m|min|mins|minutes?|minutos?|м|мин\w*|h|hours?|heures?|horas?|ч|час\w*|d|days?|j|jours?|d[ií]as?|д|дн\w*|день)$')
     if (-not $m.Success) { return $null }
     $n = [int]$m.Groups[1].Value; $u = $m.Groups[2].Value
     $span = $(if ($u -match '^(m|м)') { [timespan]::FromMinutes($n) } elseif ($u -match '^(h|ч)') { [timespan]::FromHours($n) } else { [timespan]::FromDays($n) })
@@ -49,7 +49,7 @@ function Read-TaskSchedule([string]$s) {
         $hours = @([int]$h.Groups[1].Value, [int]$h.Groups[2].Value)
         $s = $s.Substring(0, $h.Index).Trim()
     }
-    $s = $s -replace '^(every|each|каждые|каждый|каждую|каждое|раз в|toutes les|tous les|chaque|a cada|todos os|todas as|todo|toda|в|at|à|às|as)\s+', ''
+    $s = $s -replace '^(every|each|каждые|каждый|каждую|каждое|раз в|toutes les|tous les|chaque|a cada|cada|todos los|todas las|a las|a la|todos os|todas as|todo|toda|в|at|à|às|as)\s+', ''
     if (-not $s) { return $null }
     $every = Read-TaskEvery $s
     # "каждый час", "every day": one unit.
