@@ -265,9 +265,22 @@ $AdvisorScan = {
         # Fast Startup keeps the kernel across "shut down" - this counts from a real restart.
         $r.uptimeDays = [math]::Floor(((Get-Date) - $os.LastBootUpTime).TotalDays)
         $ram = [double]$os.TotalVisibleMemorySize * 1KB
+        # Private working set, as Task Manager shows it. WorkingSet64 also counts pages
+        # shared with other processes (DLLs, shared memory), so summed over a browser's
+        # dozens of processes the same pages count many times over.
+        $private = @{}
+        try {
+            foreach ($c in Get-CimInstance Win32_PerfRawData_PerfProc_Process -ErrorAction Stop) {
+                # Idle and _Total both come as process 0.
+                if ($c.IDProcess) { $private[[int]$c.IDProcess] = [double]$c.WorkingSetPrivate }
+            }
+        } catch {}
         $groups = Get-Process -ErrorAction SilentlyContinue | Group-Object Name
         foreach ($g in $groups) {
-            $ws = [double]($g.Group | Measure-Object WorkingSet64 -Sum).Sum
+            $ws = 0.0
+            foreach ($p in $g.Group) {
+                if ($private.ContainsKey($p.Id)) { $ws += $private[$p.Id] } else { $ws += [double]$p.PrivateMemorySize64 }
+            }
             if ($ws -ge $ram * $opt.memPercent / 100) {
                 $desc = $g.Name
                 try { $x = @($g.Group | Where-Object { $_.Description } | Select-Object -First 1); if ($x) { $desc = $x[0].Description } } catch {}
