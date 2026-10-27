@@ -575,6 +575,17 @@ foreach ($f in @('.\widget.ps1') + (Get-ChildItem .\lib\*.ps1).FullName) {
 трогается) с тем мусором, на котором он однажды завис, и проверяет обновление и
 откат через `self-update.ps1`.
 
+Проверки на подставных данных без Claude Code и сетевых запросов:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 -MockClaude
+powershell -ExecutionPolicy Bypass -File tools\reminders-test.ps1
+powershell -ExecutionPolicy Bypass -File tools\integration-test.ps1
+```
+
+`tools\screenshot.ps1 preview -Lang es -MainLimit week` рисует подставные данные
+без Claude Code; `-MainLimit session` проверяет обычную раскладку.
+
 Ещё в `tools/` — скрипт, которым записаны гифки для README: запускает виджет на
 подставных данных по сценарию и рендерит кадры прямо из WPF. Ему нужны ffmpeg и
 Pillow; самому виджету — нет.

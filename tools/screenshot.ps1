@@ -14,7 +14,8 @@
     .\tools\screenshot.ps1 history -Out $env:TEMP\h.png -Lang ru
 #>
 param([Parameter(Mandatory)][ValidateSet('preview', 'history', 'claude')][string]$Kind,
-      [string]$Out, [string]$Lang = 'en')
+      [string]$Out, [string]$Lang = 'en',
+      [ValidateSet('session', 'week')][string]$MainLimit = 'session')
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 if (-not $Out) { $Out = Join-Path $repo "docs\$(if ($Kind -eq 'claude') { 'claude-settings' } else { $Kind }).png" }
 $isHist = $Kind -eq 'history'
@@ -40,9 +41,10 @@ $script:ConfigPath = Join-Path $Root 'config.json'
 $script:IsAdmin    = $false
 
 @{
-    language = $Lang; scale = 1.0; expanded = $true; showAccount = $false; showStats = (-not $isHist)
+    language = $Lang; mainLimit = $MainLimit; scale = 1.0; expanded = $true; showAccount = $false; showStats = (-not $isHist)
     showSessions = $true; showStatus = $true; showHistory = $isHist; showMascot = $true; showSky = $true
     showAdvisor = $false; showChat = $false; showTasks = $false; clawdSession = $false
+    clawdHome = (Join-Path $Root 'home')
     topmost = $true; left = 40; top = 40; theme = 'default'; skin = 'default'
 } | ConvertTo-Json | Out-File $script:ConfigPath -Encoding utf8
 
@@ -102,6 +104,9 @@ if ($Kind -eq 'claude') {
 }
 [System.IO.File]::WriteAllText((Join-Path $Root 'usage-history.json'), '{"backfilled":true,"samples":[' + ($rows -join ',') + ']}')
 
+# Satisfy usage module discovery without requiring or calling an installed CLI.
+function claude { throw 'Screenshots must not call Claude Code.' }
+
 foreach ($m in @(
     'config', 'i18n', 'usage', 'version', 'account', 'sessions', 'clawd-session', 'status', 'format', 'theme', 'window',
     'mascot', 'skins', 'hearts', 'mascot-step', 'weather', 'sky', 'scene', 'space', 'ocean', 'halloween', 'cyberpunk', 'advisor', 'history','reminders', 'lists', 'chat', 'tasks', 'actions', 'panel', 'panel-pages', 'panel-jobs', 'remind-popup', 'settings', 'claude-settings', 'mascot-menu', 'tray',
@@ -110,11 +115,14 @@ foreach ($m in @(
     . (Join-Path $script:Root "lib\$m.ps1")
 }
 
-# No real probes: everything but the status line is made up.
+# No real probes: all displayed data is made up.
+$script:Status = @{ indicator = 'none'; incidents = @(); broken = @() }
+function Start-StatusProbe { }
 function Start-UsageProbe { }
 function Start-AuthProbe { }
 function Start-VersionProbe { }
 function Start-ReleaseProbe { }
+function Start-ChangelogProbe { }
 function Start-WeatherProbe { }
 function Start-AdvisorScan { }
 function Start-ClawdSession { }

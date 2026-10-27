@@ -18,14 +18,17 @@
     tasks     tools/tasks-test.ps1: the task queue, the retry after an empty
               answer, finding and removing one task (no Claude calls).
 
-  powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 [-Cases start,update]
+  powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 [-Cases start,update] [-MockClaude]
+  -MockClaude uses a local fake CLI with fixed usage/auth/version responses;
+  Claude Code does not need to be installed and no model calls are made.
   Exit code 0 - all passed.
 #>
-param([string[]]$Cases = @('start', 'update', 'rollback', 'locked', 'tasks'))
+param([string[]]$Cases = @('start', 'update', 'rollback', 'locked', 'tasks'), [switch]$MockClaude)
 
 $ErrorActionPreference = 'Stop'
 $Repo  = Split-Path -Parent $PSScriptRoot
-$Box   = Join-Path ([System.IO.Path]::GetTempPath()) "clawd-smoke-$PID"
+$BoxBase = [System.IO.Path]::GetTempPath()
+$Box   = Join-Path $BoxBase "clawd-smoke-$PID"
 $Shell = Join-Path $PSHOME 'powershell.exe'
 $failed = 0
 
@@ -37,6 +40,28 @@ function Copy-Tree([string]$to) {
         $dst = Join-Path $to $rel
         [void][System.IO.Directory]::CreateDirectory((Split-Path -Parent $dst))
         Copy-Item -LiteralPath (Join-Path $Repo $rel) -Destination $dst -Force
+    }
+    if ($MockClaude) {
+        # Override only the disposable copy, after its normal module loading.
+        # Smoke tests stay offline while exercising the real usage/auth CLI path.
+        $p = Join-Path $to 'widget.ps1'
+        $s = [System.IO.File]::ReadAllText($p)
+        $hook = [regex]::new('(?m)^Update-Texts\r?$')
+        if ($hook.Matches($s).Count -ne 1) { throw 'Cannot install offline smoke overrides.' }
+        $offline = @'
+# Offline smoke fixtures: never query service status or release servers.
+function Start-VersionProbe {
+    $script:VerAt = Get-Date
+    $script:VerLocal = '2.0.0'
+    $script:VerLatest = '2.0.0'
+}
+function Start-ReleaseProbe {}
+function Start-StatusProbe {}
+function Start-ChangelogProbe {}
+Update-Texts
+'@
+        $s = $hook.Replace($s, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $offline })
+        [System.IO.File]::WriteAllText($p, ($s -replace '\r?\n', "`r`n"), (New-Object System.Text.UTF8Encoding $true))
     }
 }
 
@@ -87,6 +112,21 @@ function Report([string]$case, [bool]$ok, [string]$why) {
     if ($ok) { Write-Host "PASS  $case" -ForegroundColor Green }
     else     { Write-Host "FAIL  $case - $why" -ForegroundColor Red; $script:failed++ }
 }
+
+# Restore the caller's environment even when setup or a test fails.
+$previousEnv = @{}
+foreach ($name in @('PATH', 'TEMP', 'TMP', 'CUW_SMOKE', 'CUW_READY_FILE')) {
+    $previousEnv[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+}
+
+try {
+    if ($MockClaude) {
+        $mockBin = Join-Path $Box 'mock-bin'
+        [void][System.IO.Directory]::CreateDirectory($mockBin)
+        Add-Type -TypeDefinition ([System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'mock-claude.cs'))) `
+            -OutputAssembly (Join-Path $mockBin 'claude.exe') -OutputType ConsoleApplication
+        $env:PATH = "$mockBin;$env:PATH"
+    }
 
 # Child processes take the sandbox's TEMP and the smoke mutex from here.
 $env:CUW_SMOKE = '1'
@@ -178,8 +218,17 @@ foreach ($case in $Cases) {
     }
 }
 
-Stop-Sandbox $Box
-Start-Sleep -Seconds 1
-Remove-Item $Box -Recurse -Force -ErrorAction SilentlyContinue
+} finally {
+    Stop-Sandbox $Box
+    foreach ($name in $previousEnv.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $previousEnv[$name], 'Process')
+    }
+    Start-Sleep -Seconds 1
+    # Only remove the test directory under the original temporary directory.
+    $expectedBox = [System.IO.Path]::GetFullPath((Join-Path $BoxBase "clawd-smoke-$PID"))
+    if ([System.IO.Path]::GetFullPath($Box) -eq $expectedBox) {
+        Remove-Item -LiteralPath $Box -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 if ($failed) { Write-Host "$failed failed" -ForegroundColor Red; exit 1 }
 Write-Host 'all passed' -ForegroundColor Green

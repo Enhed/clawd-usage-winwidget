@@ -504,6 +504,17 @@ copy of the working tree in a sandbox (own folder, TEMP and mutex — the runnin
 widget is not touched), with the junk that once hung it, and checks an update
 and a rollback through `self-update.ps1`.
 
+To run on fixed data without Claude Code or network probes:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 -MockClaude
+powershell -ExecutionPolicy Bypass -File tools\reminders-test.ps1
+powershell -ExecutionPolicy Bypass -File tools\integration-test.ps1
+```
+
+`tools\screenshot.ps1 preview -Lang es -MainLimit week` renders mock data without
+Claude Code; `-MainLimit session` checks the default layout.
+
 `tools/` also holds the recorder that made the GIFs in this README: it boots the
 widget with scripted fake data and renders frames straight from WPF. It needs
 ffmpeg and Pillow; the widget itself doesn't.

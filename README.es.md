@@ -542,6 +542,17 @@ versión: arranca una copia del árbol de trabajo en un entorno aislado (carpeta
 y mutex propios; el widget en marcha no se toca), con la basura que una vez lo
 colgó, y comprueba una actualización y una vuelta atrás con `self-update.ps1`.
 
+Pruebas con datos fijos, sin Claude Code ni consultas de red:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\smoke.ps1 -MockClaude
+powershell -ExecutionPolicy Bypass -File tools\reminders-test.ps1
+powershell -ExecutionPolicy Bypass -File tools\integration-test.ps1
+```
+
+`tools\screenshot.ps1 preview -Lang es -MainLimit week` genera una imagen con
+datos de prueba sin Claude Code; `-MainLimit session` comprueba el modo habitual.
+
 `tools/` también contiene el grabador que hizo los GIF de este README: arranca el
 widget con datos falsos guionizados y renderiza los fotogramas directamente desde
 WPF. Necesita ffmpeg y Pillow; el widget en sí no.
