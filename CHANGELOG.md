@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.1
+
+- Bring the widget back to the primary monitor when its saved position is off-screen. Keep visible positions near screen edges and account for gaps between monitors and the widget scale. ([0ee1ebd](https://github.com/Enhed/clawd-usage-winwidget/commit/0ee1ebdbc8f5cedd1c123a9a1a5843856e0d9f69), [0e8c5fc](https://github.com/Enhed/clawd-usage-winwidget/commit/0e8c5fc5bd01ade9b43ac44c0fa89bd6e4de8c1c))
+
 ## 1.20.0
 
 - Animated Christmas theme: falling snow, a blinking garland, a snowy house with chimney smoke, a snowman, a lit tree and Santa's sleigh. By season now selects Halloween in September and October and Christmas from November through January 14; includes all five interface languages and scene regression checks. ([bc8d469](https://github.com/Enhed/clawd-usage-winwidget/commit/bc8d469d6333a69f60d837844e7d2b191998756d))
