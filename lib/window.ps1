@@ -38,11 +38,40 @@ function Set-Scale([double]$k) {
 Set-Scale ([double]$script:Cfg.scale)
 
 $win.WindowStartupLocation = 'Manual'
+# Keep enough of the scaled header on a monitor to let the user drag the window.
+# The virtual screen's bounding rectangle also covers gaps between monitors.
+function Test-SavedPlace([double]$left, [double]$top, [double]$width, [double]$scale,
+                         [System.Windows.Rect[]]$workAreas) {
+    $headerTop = $top + 11 * $scale
+    $headerBottom = $top + 30 * $scale
+    foreach ($area in $workAreas) {
+        $visibleWidth = [math]::Min($left + $width, $area.Right) - [math]::Max($left, $area.Left)
+        $visibleHeight = [math]::Min($headerBottom, $area.Bottom) - [math]::Max($headerTop, $area.Top)
+        if ($visibleWidth -ge 60 -and $visibleHeight -ge (12 * $scale)) { return $true }
+    }
+    return $false
+}
+
+$windowScale = $win.Content.LayoutTransform.ScaleX
+$windowWidth = $win.Content.Width * $windowScale
+$area = [System.Windows.SystemParameters]::WorkArea
+$win.Left = [math]::Max($area.Left, $area.Right - $windowWidth - 20)
+$win.Top = $area.Top + 20
+
 if ($null -ne $script:Cfg.left -and $null -ne $script:Cfg.top) {
-    $win.Left = [double]$script:Cfg.left
-    $win.Top  = [double]$script:Cfg.top
-} else {
-    $area = [System.Windows.SystemParameters]::WorkArea   # in DIP, like the window Left/Top
-    $win.Left = $area.Right - 282
-    $win.Top  = $area.Top + 20
+    # PowerShell hosts the widget with system DPI awareness. Convert the WinForms
+    # screen rectangles to the same device-independent units as WPF Left/Top.
+    $dpi = [System.Windows.Media.VisualTreeHelper]::GetDpi($win)
+    $workAreas = foreach ($screen in [System.Windows.Forms.Screen]::AllScreens) {
+        $bounds = $screen.WorkingArea
+        [System.Windows.Rect]::new(
+            $bounds.Left / $dpi.DpiScaleX, $bounds.Top / $dpi.DpiScaleY,
+            $bounds.Width / $dpi.DpiScaleX, $bounds.Height / $dpi.DpiScaleY)
+    }
+    $left = [double]$script:Cfg.left
+    $top = [double]$script:Cfg.top
+    if (Test-SavedPlace $left $top $windowWidth $windowScale $workAreas) {
+        $win.Left = $left
+        $win.Top = $top
+    }
 }
