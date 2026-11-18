@@ -118,7 +118,7 @@ The ▾ in the header expands details (remembered between runs):
 
 Left-click the tray icon to show/hide the window; right-click for the menu:
 show/hide, refresh, settings, exit. Drag the window anywhere — the position is
-saved.
+saved. If the saved position is off-screen, the widget starts on the primary display.
 
 **Settings** — the gear in the window's header (or the tray menu): language,
 theme, Clawd's skin picked from cards with a live preview (he raises his arms
