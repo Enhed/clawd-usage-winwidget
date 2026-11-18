@@ -40,10 +40,11 @@ function Parse-ResetStamp([string]$s) {
         $stamp = '{0} {1} {2} {3}:{4} {5}' -f $m.Groups[1].Value, $m.Groups[2].Value,
                  (Get-Date).Year, $m.Groups[3].Value, $min, $m.Groups[5].Value.ToUpper()
         $dt = [datetime]::ParseExact($stamp, 'MMM d yyyy h:mm tt',
-                  [System.Globalization.CultureInfo]::InvariantCulture)
+                  [System.Globalization.CultureInfo]::InvariantCulture,
+                  [System.Globalization.DateTimeStyles]::AssumeLocal)
         # Around New Year the date may land in the past - then it is next year.
         if ($dt -lt (Get-Date).AddDays(-30)) { $dt = $dt.AddYears(1) }
-        return $dt
+        return [datetime]::SpecifyKind($dt, [System.DateTimeKind]::Local)
     } catch { return $null }
 }
 
