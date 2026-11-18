@@ -38,7 +38,19 @@ function Set-Scale([double]$k) {
 Set-Scale ([double]$script:Cfg.scale)
 
 $win.WindowStartupLocation = 'Manual'
-if ($null -ne $script:Cfg.left -and $null -ne $script:Cfg.top) {
+# The saved place can be on a screen that is gone now: a second monitor unplugged,
+# or the widget started on the laptop alone after using a setup with more screens.
+# It is used only if the window still shows enough to be dragged back (60 DIP of
+# width and the title row inside the virtual screen); otherwise the default corner.
+function Test-SavedPlace([double]$left, [double]$top) {
+    $vl = [System.Windows.SystemParameters]::VirtualScreenLeft
+    $vt = [System.Windows.SystemParameters]::VirtualScreenTop
+    $vr = $vl + [System.Windows.SystemParameters]::VirtualScreenWidth
+    $vb = $vt + [System.Windows.SystemParameters]::VirtualScreenHeight
+    return ($left + 60 -gt $vl) -and ($left -lt $vr - 60) -and ($top + 20 -gt $vt) -and ($top -lt $vb - 20)
+}
+if ($null -ne $script:Cfg.left -and $null -ne $script:Cfg.top -and
+    (Test-SavedPlace ([double]$script:Cfg.left) ([double]$script:Cfg.top))) {
     $win.Left = [double]$script:Cfg.left
     $win.Top  = [double]$script:Cfg.top
 } else {
