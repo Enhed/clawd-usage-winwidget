@@ -11,7 +11,9 @@ function Format-Span([datetime]$endUtc) {
 
 # Reset as a clock time: "03:20" today, "tmrw 01:00" tomorrow, "Sun 01:49" further off.
 function Format-ResetClock([datetime]$at) {
-    $at = $at.ToLocalTime()
+    if ($at.Kind -eq [System.DateTimeKind]::Utc) {
+        $at = $at.ToLocalTime()
+    }
     $hm = $at.ToString('HH:mm')
     $days = ($at.Date - (Get-Date).Date).Days
     if ($days -le 0) { return $hm }

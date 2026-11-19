@@ -33,6 +33,8 @@ function Read-Function([string]$file, [string]$name) {
 . (Read-Function 'lib\usage.ps1' 'Parse-ResetStamp')
 . (Read-Function 'lib\usage.ps1' 'Collect-UsageProbe')
 . (Read-Function 'lib\format.ps1' 'Get-Level')
+. (Read-Function 'lib\format.ps1' 'Format-ResetClock')
+. (Read-Function 'lib\format.ps1' 'Format-Span')
 . (Read-Function 'lib\mascot.ps1' 'Set-MascotMood')
 
 $cultures = @{ en = 'en-US'; ru = 'ru-RU'; fr = 'fr-FR'; 'pt-BR' = 'pt-BR'; es = 'es-ES' }
@@ -97,8 +99,16 @@ Last 24h: 24 requests, 3 sessions
     $singular = Parse-Period "Last 7d: 1 request, 1 session`r`n  one detail`r`n" 'Last 7d'
     Check 'singular seven-day counts parse' ($singular.requests -eq 1 -and $singular.sessions -eq 1 -and
         $singular.lines[0] -eq 'one detail')
-    Check 'reset stamp with at and pm' ((Parse-ResetStamp 'Oct 28 at 2:29pm') -eq [datetime]'2026-10-28T14:29:00')
+    $script:Cfg.language = 'en'
+    $stamp = Parse-ResetStamp 'Oct 28 at 2:29pm'
+    Check 'reset stamp with at and pm' ($stamp -eq [datetime]'2026-10-28T14:29:00')
+    Check 'reset stamp has Local kind' ($stamp.Kind -eq [System.DateTimeKind]::Local)
     Check 'invalid reset stamp stays absent' ($null -eq (Parse-ResetStamp 'unknown'))
+    Check 'Format-ResetClock formats tomorrow' ((Format-ResetClock $stamp) -eq 'tmrw 14:29')
+    Check 'Format-ResetClock formats today' ((Format-ResetClock (Parse-ResetStamp 'Oct 27 at 2:29pm')) -eq '14:29')
+    Check 'Format-ResetClock formats later day' ((Format-ResetClock (Parse-ResetStamp 'Oct 31, 6am')) -eq 'Sat 06:00')
+    $script:Cfg.language = 'es'
+    Check 'Format-ResetClock Spanish tomorrow' ((Format-ResetClock $stamp) -eq 'mañana 14:29')
 } finally {
     Remove-Item -LiteralPath $script:UsageFile -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-Date
