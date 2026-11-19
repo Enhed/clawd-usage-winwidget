@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.2
+
+- Fix the reset time shown in the tray tooltip when clock times are enabled. Preserve local reset times reported by Claude Code so the hour and day display correctly. ([bfdb9bc](https://github.com/Enhed/clawd-usage-winwidget/commit/bfdb9bc9903fcd3b03bacdbb3a506d55afe6d1e3))
+
 ## 1.20.1
 
 - Bring the widget back to the primary monitor when its saved position is off-screen. Keep visible positions near screen edges and account for gaps between monitors and the widget scale. ([0ee1ebd](https://github.com/Enhed/clawd-usage-winwidget/commit/0ee1ebdbc8f5cedd1c123a9a1a5843856e0d9f69), [0e8c5fc](https://github.com/Enhed/clawd-usage-winwidget/commit/0e8c5fc5bd01ade9b43ac44c0fa89bd6e4de8c1c))
